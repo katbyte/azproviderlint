@@ -111,6 +111,7 @@ Rules are named `AZ<category letter><number>`, aligned with [tfproviderlint](htt
 | [AZR004](checks/AZR/AZR004_resource_id_equality_comparison) | Resource IDs must not be compared with `==`/`!=` — use `resourceids.Match` |
 | [AZR005](checks/AZR/AZR005_case_insensitive_segments_feature_flag) | `features.TreatUserSpecifiedSegmentsAsCaseInsensitive` must not be set — the case-aware comparisons feature is not ready for use |
 | [AZR006](checks/AZR/AZR006_stop_context_without_timeouts) | `ctx` must not be assigned directly from `meta.(*clients.Client).StopContext` — use `timeouts.ForCreate`/`ForRead`/`ForUpdate`/`ForDelete` so Custom Timeouts work |
+| [AZR007](checks/AZR/AZR007_state_change_conf) | `StateChangeConf`from `github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry` must not be used — prefer a custom poller implementing `pollers.PollerType` driven via `pollers.NewPoller(...).PollUntilDone(ctx)` |
 
 ### AZD — Data Sources
 
