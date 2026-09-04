@@ -1,6 +1,6 @@
 ## Unreleased
 
-- `AZG002`: `out := *p; &out` names both forms in the report; `fix-pointer-copy` picks the fix — `none` (default, person decides), `copy` (`pointer.To(*p)`/`new(*p)`), or `share` (`p` directly, an aliasing change)
+- `AZG002`: `out := *p; &out` names both forms in the report; `fix-pointer-copy` picks the fix — `none` (default, person decides), `copy` (`pointer.To(*p)`/`new(*p)`), or `share` (`p` directly, an aliasing change) ([#35](https://github.com/katbyte/azproviderlint/pull/35))
 
 ## v0.7.1 (2026-09-04)
 
