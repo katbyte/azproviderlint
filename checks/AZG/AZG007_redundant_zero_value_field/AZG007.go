@@ -10,9 +10,12 @@ import (
 	"go/types"
 	"strings"
 
+	"github.com/katbyte/azproviderlint/checks/azignore"
 	"github.com/katbyte/azproviderlint/lib/astx"
 	"golang.org/x/tools/go/analysis"
 )
+
+const ruleName = "AZG007"
 
 // Analyzer checks for fields explicitly initialised to their zero value in a struct literal —
 // a pointer set to `nil`, a string set to `""`, a numeric set to `0`, or a bool set to `false` —
@@ -23,7 +26,7 @@ import (
 // files are skipped by default (the tests flag opts in), since a zero entry in a test table is
 // often semantically meaningful.
 var Analyzer = &analysis.Analyzer{
-	Name: "AZG007",
+	Name: ruleName,
 	Doc:  "check for redundant zero-value assignments to struct literal fields that should be omitted",
 	URL:  "https://github.com/katbyte/azproviderlint/blob/main/checks/AZG/AZG007_redundant_zero_value_field/README.md",
 	Run:  run,
@@ -40,6 +43,8 @@ func init() {
 }
 
 func run(pass *analysis.Pass) (any, error) {
+	ignored := azignore.ExactLines(pass, ruleName)
+
 	for _, file := range pass.Files {
 		// A zero entry in a test table is often semantically meaningful, so skip test files
 		// unless the tests flag opts in.
@@ -55,6 +60,11 @@ func run(pass *analysis.Pass) (any, error) {
 			compositeLit, ok := n.(*ast.CompositeLit)
 			if !ok {
 				return true
+			}
+
+			pos := pass.Fset.Position(compositeLit.Pos())
+			if ignored[pos.Filename][pos.Line] {
+				return false
 			}
 
 			for i, elt := range compositeLit.Elts {

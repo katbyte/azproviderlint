@@ -1,5 +1,6 @@
 ## Unreleased
 
+- `AZG007`: a `//azignore:AZG007` directive on a composite literal's opening line suppresses every finding within that literal, including nested literals ([#33](https://github.com/katbyte/azproviderlint/pull/33))
 - `AZG002`/`AZG005`/`AZG006`: no longer inline past an intervening statement that reads a variable the initializer's calls may mutate through a pointer-like argument or receiver (`result := astutil.Apply(f, ...)` then a read of `f`), nor when an intervening call receives an operand pointer-like — moving the call re-orders observable side effects; the pure go-azure-helpers pointer package is exempt ([#34](https://github.com/katbyte/azproviderlint/pull/34))
 
 ## v0.7.0 (2026-09-03)

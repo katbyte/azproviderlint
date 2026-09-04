@@ -102,3 +102,30 @@ func Lines(pass *analysis.Pass, name string) map[string]map[int]bool {
 
 	return ignored
 }
+
+// ExactLines collects, per filename, only the lines carrying a matching directive for the
+// named analyzer — unlike Lines, it does not also mark the line below. Checks that scope a
+// suppression to an exact line (e.g. a directive on a composite literal's opening line) use
+// this so a trailing directive does not leak onto the following line.
+func ExactLines(pass *analysis.Pass, name string) map[string]map[int]bool {
+	ignored := map[string]map[int]bool{}
+
+	for _, file := range pass.Files {
+		for _, group := range file.Comments {
+			for _, comment := range group.List {
+				rules, _, ok := ParseDirective(comment.Text)
+				if !ok || !slices.Contains(rules, name) {
+					continue
+				}
+
+				pos := pass.Fset.Position(comment.Pos())
+				if ignored[pos.Filename] == nil {
+					ignored[pos.Filename] = map[int]bool{}
+				}
+				ignored[pos.Filename][pos.Line] = true
+			}
+		}
+	}
+
+	return ignored
+}

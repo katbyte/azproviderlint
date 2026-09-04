@@ -74,6 +74,33 @@ func invalidNumericAndBool() *Settings {
 	return &Settings{}
 }
 
+func ignoredCompositeLiteralSameLine() *Settings {
+	return &Settings{ //azignore:AZG007 - all fields in this literal are intentionally populated
+		Retries: 0,
+		Ratio:   0.0,
+		Enabled: false,
+	}
+}
+
+// A directive on the opening line also suppresses nested literals within.
+func ignoredCompositeLiteralNested() *Config {
+	return &Config{ //azignore:AZG007 - whole literal intentionally populated
+		Name: nil,
+		Options: &Options{
+			Enabled: false,
+		},
+	}
+}
+
+// A trailing directive on a field line suppresses only that field, not a nested literal that
+// merely opens on the following line.
+func trailingDirectiveDoesNotSuppressNested(name *string) *Config {
+	return &Config{
+		Name:    name, //azignore:AZG007 - only the field on this line
+		Options: &Options{},
+	}
+}
+
 // Should NOT be flagged: slices and maps default to nil meaningfully
 func validSliceAndMap() *Config {
 	return &Config{
