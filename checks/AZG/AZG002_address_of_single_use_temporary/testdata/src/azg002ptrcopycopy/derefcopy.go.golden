@@ -1,0 +1,8 @@
+package azg002ptrcopycopy
+
+type props struct{ Name *string }
+
+// fix-pointer-copy=copy keeps the copy-preserving inline.
+func derefCopy(p props) *string {
+	return new(*p.Name)
+}
