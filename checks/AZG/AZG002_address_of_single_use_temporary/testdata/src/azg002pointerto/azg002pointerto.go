@@ -28,3 +28,10 @@ func invalidConversion(s string) *Enum {
 func validExisting(p *props) {
 	p.Count = pointer.To(1)
 }
+
+// Should be flagged, with the aliasing hint: the temporary copies a dereferenced pointer, so
+// the human may prefer returning the original pointer over the copy. No fix is offered.
+func invalidDerefCopy(p props) *string {
+	out := *p.Name // want `"out" is only used as an address by the following statement and should be inlined with pointer\.To - or, if sharing the original pointer is acceptable, use p\.Name directly`
+	return &out
+}

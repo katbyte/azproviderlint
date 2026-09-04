@@ -8,6 +8,8 @@ The `&v` may sit anywhere in a later statement of the same block — a call argu
 
 The report carries a suggested fix, so `azproviderlint -AZG002 -fix` inlines the temporary automatically; in pointer.To mode the fix adds the pointer import when the file lacks it, and a conversion initializer fixes to `pointer.To(sdk.Enum(v))` — exactly the shape [AZG003](../AZG003_pointer_to_enum_conversion) then rewrites to `pointer.ToEnum`, so running both fixes converges.
 
+When the temporary copies a dereferenced pointer (`out := *p; return &out`), the message names both options and `fix-pointer-copy` picks the fix: `none` (default) offers no fix so a person chooses, `copy` keeps the copy-preserving `pointer.To(*p)`/`new(*p)`, and `share` substitutes `p` itself — an aliasing change the config opts into globally.
+
 ## Flagged Code
 
 ```go
@@ -50,6 +52,7 @@ payload.Name = &name // the variable has other uses
 | `use` | `new` | suggested creation form: `new` or `pointer.To`; new mode errors on packages below go1.26 |
 | `allow` | | comma-separated forms to leave unreported where they already appear: `pointer.To` |
 | `max-gap` | 100 | maximum source lines between the declaration and the statement taking its address |
+| `fix-pointer-copy` | `none` | fix for a dereference-copy temporary (`out := *p; &out`): `none` reports without a fix, `copy` keeps the copy (`pointer.To(*p)`/`new(*p)`), `share` substitutes `p` — an aliasing change |
 
 Set via `-AZG002.<option>` on the CLI or a rule-name key in the plugin's golangci settings.
 
