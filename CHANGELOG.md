@@ -1,3 +1,7 @@
+## Unreleased
+
+- `AZG002`: `out := *p; &out` names both forms in the report; `fix-pointer-copy` picks the fix — `none` (default, person decides), `copy` (`pointer.To(*p)`/`new(*p)`), or `share` (`p` directly, an aliasing change) ([#35](https://github.com/katbyte/azproviderlint/pull/35))
+
 ## v0.7.1 (2026-09-04)
 
 - `AZG007`: an `//azignore:AZG007` on a composite literal's opening line suppresses the whole literal, nested literals included ([#33](https://github.com/katbyte/azproviderlint/pull/33))
