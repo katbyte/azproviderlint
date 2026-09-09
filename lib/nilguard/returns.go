@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/katbyte/azproviderlint/lib/astx"
 	"golang.org/x/tools/go/analysis"
 	"golang.org/x/tools/go/analysis/passes/inspect"
 	"golang.org/x/tools/go/ast/inspector"
@@ -176,7 +177,7 @@ func returnMask(pass *analysis.Pass, parents map[ast.Node]ast.Node, ret *ast.Ret
 		}
 	case len(ret.Results) == 1 && len(named) > 1:
 		if call, ok := ast.Unparen(ret.Results[0]).(*ast.CallExpr); ok {
-			if fn := calledFunc(pass, call); fn != nil {
+			if fn := astx.CalledFunc(pass, call); fn != nil {
 				for i := range named {
 					if nonNilResult(pass, fn, i) {
 						mask |= 1 << i

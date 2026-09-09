@@ -1,9 +1,11 @@
 package azg008
 
 import (
+	"context"
 	"os"
 
 	"github.com/example/helpers"
+	"github.com/example/sdk/widgets"
 	"github.com/hashicorp/go-azure-helpers/lang/pointer"
 	"github.com/hashicorp/go-azure-helpers/resourcemanager/commonids"
 )
@@ -577,4 +579,28 @@ func validHelperNonNil(d data, raw []interface{}) {
 func invalidHelperMaybe(d data, raw []interface{}) {
 	v := helpers.ExpandMaybe(raw)
 	d.Set("maybe", pointer.From(v)) // want "dereference of possibly-nil `v` may panic - add a nil check or use pointer.From"
+}
+
+type widgetHolder struct{ Model *widgets.Widget }
+
+// Should be flagged WITHOUT a fix: the value is marshalled as a PUT body by the callee (known
+// through writebody facts, including via a delegating wrapper), passed directly or through
+// a local.
+func invalidPayloadDirect(c widgets.WidgetsClient, ctx context.Context, h widgetHolder) {
+	_ = c.CreateOrUpdate(ctx, "id", *h.Model) // want "may panic - add a nil check \\(no fix: the value is sent as a write request body"
+}
+
+func invalidPayloadWrapper(c widgets.WidgetsClient, ctx context.Context, h widgetHolder) {
+	_ = c.ForRegionCreateOrUpdateThenPoll(ctx, "id", *h.Model) // want "may panic - add a nil check \\(no fix: the value is sent as a write request body"
+}
+
+func invalidPayloadViaLocal(c widgets.WidgetsClient, ctx context.Context, h widgetHolder) {
+	m := *h.Model // want "may panic - add a nil check \\(no fix: the value is sent as a write request body"
+	m.Name = nil
+	_ = c.CreateOrUpdate(ctx, "id", m)
+}
+
+// Should be flagged WITH a fix: a GET sends no body, whatever the argument.
+func invalidNotPayload(c widgets.WidgetsClient, ctx context.Context, h widgetHolder) {
+	_ = c.Get(ctx, "id", pointer.From(h.Model)) // want "may panic - add a nil check or use pointer.From"
 }

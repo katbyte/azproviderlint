@@ -531,7 +531,7 @@ func assignmentGuard(pass *analysis.Pass, assign *ast.AssignStmt, key string, fo
 				// return nil there, or once a later `if err != nil { return }` /
 				// `if !ok { return }` exited (the Go contract)
 				if lk == key {
-					if nonNilResult(pass, calledFunc(pass, call), j) {
+					if nonNilResult(pass, astx.CalledFunc(pass, call), j) {
 						return true, "", false, true
 					}
 					return companionCheckedBetween(pass, assign, following), "", true, true
@@ -592,7 +592,7 @@ func compositeIDArg(pass *analysis.Pass, expr ast.Expr, suffix string) ast.Expr 
 	if !ok || len(call.Args) < 2 {
 		return nil
 	}
-	fn := calledFunc(pass, call)
+	fn := astx.CalledFunc(pass, call)
 	if fn == nil || fn.Pkg() == nil || fn.Pkg().Path() != commonIDsPkgPath ||
 		(fn.Name() != "NewCompositeResourceID" && fn.Name() != "ParseCompositeResourceID") {
 		return nil
@@ -607,29 +607,6 @@ func compositeIDArg(pass *analysis.Pass, expr ast.Expr, suffix string) ast.Expr 
 }
 
 const commonIDsPkgPath = "github.com/hashicorp/go-azure-helpers/resourcemanager/commonids"
-
-// calledFunc resolves the function a call invokes, through parens and explicit generic
-// instantiation; nil for builtins, function values, and method values on unresolved types.
-func calledFunc(pass *analysis.Pass, call *ast.CallExpr) *types.Func {
-	fun := ast.Unparen(call.Fun)
-	switch ix := fun.(type) {
-	case *ast.IndexExpr:
-		fun = ix.X
-	case *ast.IndexListExpr:
-		fun = ix.X
-	}
-	var id *ast.Ident
-	switch f := fun.(type) {
-	case *ast.Ident:
-		id = f
-	case *ast.SelectorExpr:
-		id = f.Sel
-	default:
-		return nil
-	}
-	fn, _ := pass.TypesInfo.Uses[id].(*types.Func)
-	return fn
-}
 
 // companionKeys returns the keys of the error and ok-bool results assign binds alongside its
 // other results.
@@ -784,7 +761,7 @@ func isNonNilSource(pass *analysis.Pass, expr ast.Expr) bool {
 		if lit, ok := ast.Unparen(x.Fun).(*ast.FuncLit); ok {
 			return funcLitReturnsNonNil(pass, lit)
 		}
-		fn := calledFunc(pass, x)
+		fn := astx.CalledFunc(pass, x)
 		if fn == nil || fn.Pkg() == nil {
 			return false
 		}
@@ -837,7 +814,7 @@ func fromNonZero(pass *analysis.Pass, cmp *ast.BinaryExpr, key string) bool {
 		if !ok || len(call.Args) != 1 {
 			return false
 		}
-		if fn := calledFunc(pass, call); fn != nil && fn.Pkg() != nil && fn.Pkg().Path() == pointerpkg.PkgPath && fn.Name() == "From" {
+		if fn := astx.CalledFunc(pass, call); fn != nil && fn.Pkg() != nil && fn.Pkg().Path() == pointerpkg.PkgPath && fn.Name() == "From" {
 			k, ok := PathKey(pass, call.Args[0])
 			return ok && k == key && op == token.NEQ && isZeroConst(pass, other)
 		}
@@ -849,7 +826,7 @@ func fromNonZero(pass *analysis.Pass, cmp *ast.BinaryExpr, key string) bool {
 			if !ok || len(inner.Args) != 1 {
 				return false
 			}
-			fn := calledFunc(pass, inner)
+			fn := astx.CalledFunc(pass, inner)
 			if fn == nil || fn.Pkg() == nil || fn.Pkg().Path() != pointerpkg.PkgPath || fn.Name() != "From" {
 				return false
 			}

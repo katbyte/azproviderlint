@@ -274,3 +274,26 @@ func SourceText(pass *analysis.Pass, node ast.Node) ([]byte, bool) {
 	}
 	return content[start:end], true
 }
+
+// CalledFunc resolves the function a call invokes, through parens and explicit generic
+// instantiation; nil for builtins, function values, and method values on unresolved types.
+func CalledFunc(pass *analysis.Pass, call *ast.CallExpr) *types.Func {
+	fun := ast.Unparen(call.Fun)
+	switch ix := fun.(type) {
+	case *ast.IndexExpr:
+		fun = ix.X
+	case *ast.IndexListExpr:
+		fun = ix.X
+	}
+	var id *ast.Ident
+	switch f := fun.(type) {
+	case *ast.Ident:
+		id = f
+	case *ast.SelectorExpr:
+		id = f.Sel
+	default:
+		return nil
+	}
+	fn, _ := pass.TypesInfo.Uses[id].(*types.Func)
+	return fn
+}
