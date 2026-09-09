@@ -1,4 +1,4 @@
-package writebody
+package requestbody
 
 import (
 	"context"

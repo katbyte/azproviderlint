@@ -11,6 +11,8 @@ import (
 
 type Widget struct{ Name *string }
 
+type Envelope struct{ Widget Widget }
+
 type WidgetsClient struct{ Client client.Client }
 
 func (c WidgetsClient) CreateOrUpdate(ctx context.Context, id string, input Widget) error {
@@ -30,4 +32,22 @@ func (c WidgetsClient) Get(ctx context.Context, id string, input Widget) error {
 	opts := client.RequestOptions{HttpMethod: http.MethodGet, Path: id}
 	_, err := c.Client.NewRequest(ctx, opts)
 	return err
+}
+
+func (c WidgetsClient) Put(ctx context.Context, id string, input Envelope) error {
+	opts := client.RequestOptions{HttpMethod: http.MethodPut, Path: id}
+	req, err := c.Client.NewRequest(ctx, opts)
+	if err != nil {
+		return err
+	}
+	return req.Marshal(input)
+}
+
+func (c WidgetsClient) PutPtr(ctx context.Context, id string, input *Widget) error {
+	opts := client.RequestOptions{HttpMethod: http.MethodPut, Path: id}
+	req, err := c.Client.NewRequest(ctx, opts)
+	if err != nil {
+		return err
+	}
+	return req.Marshal(input)
 }

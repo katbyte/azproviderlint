@@ -1,7 +1,7 @@
-// Package writebody records which parameters of a function are sent as the body of an HTTP
+// Package requestbody records which parameters of a function are sent as the body of an HTTP
 // write (PUT, PATCH, POST), so callers can tell when a value they pass becomes a request
 // payload.
-package writebody
+package requestbody
 
 import (
 	"go/ast"
@@ -26,7 +26,7 @@ import (
 // naming: go-azure-sdk's `req.Marshal(input)` and autorest's `WithJSON(v)` qualify because
 // their bodies marshal, and `CreateOrUpdateThenPoll` qualifies because it delegates.
 var Analyzer = &analysis.Analyzer{
-	Name:       "writebody",
+	Name:       "requestbody",
 	Doc:        "record which parameters of each function are sent as an HTTP write body",
 	Requires:   []*analysis.Analyzer{inspect.Analyzer},
 	FactTypes:  []analysis.Fact{(*bodyFact)(nil)},

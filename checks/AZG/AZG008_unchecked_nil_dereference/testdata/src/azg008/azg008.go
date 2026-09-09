@@ -583,24 +583,19 @@ func invalidHelperMaybe(d data, raw []interface{}) {
 
 type widgetHolder struct{ Model *widgets.Widget }
 
-// Should be flagged WITHOUT a fix: the value is marshalled as a PUT body by the callee (known
-// through writebody facts, including via a delegating wrapper), passed directly or through
-// a local.
-func invalidPayloadDirect(c widgets.WidgetsClient, ctx context.Context, h widgetHolder) {
-	_ = c.CreateOrUpdate(ctx, "id", *h.Model) // want "may panic - add a nil check \\(no fix: the value is sent as a write request body"
-}
-
-func invalidPayloadWrapper(c widgets.WidgetsClient, ctx context.Context, h widgetHolder) {
-	_ = c.ForRegionCreateOrUpdateThenPoll(ctx, "id", *h.Model) // want "may panic - add a nil check \\(no fix: the value is sent as a write request body"
-}
-
-func invalidPayloadViaLocal(c widgets.WidgetsClient, ctx context.Context, h widgetHolder) {
-	m := *h.Model // want "may panic - add a nil check \\(no fix: the value is sent as a write request body"
-	m.Name = nil
-	_ = c.CreateOrUpdate(ctx, "id", m)
-}
-
 // Should be flagged WITH a fix: a GET sends no body, whatever the argument.
 func invalidNotPayload(c widgets.WidgetsClient, ctx context.Context, h widgetHolder) {
 	_ = c.Get(ctx, "id", *h.Model) // want "may panic - add a nil check or use pointer.From"
+}
+
+// Should be flagged WITH a fix: the copy never reaches a write.
+func invalidCopyNotSent(d data, h widgetHolder) {
+	env := widgets.Envelope{Widget: *h.Model} // want "may panic - add a nil check or use pointer.From"
+	d.Set("env", env)
+}
+
+// Not reported by default: the value is a PUT body, which only the requestbody option reports
+// (without a fix). See the azg008requestbody fixtures.
+func validPayloadOffByDefault(c widgets.WidgetsClient, ctx context.Context, h widgetHolder) {
+	_ = c.CreateOrUpdate(ctx, "id", *h.Model)
 }

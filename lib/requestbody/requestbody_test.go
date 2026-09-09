@@ -1,4 +1,4 @@
-package writebody
+package requestbody
 
 import (
 	"testing"
@@ -9,5 +9,5 @@ import (
 func TestAnalyzer(t *testing.T) {
 	t.Parallel()
 
-	analysistest.Run(t, analysistest.TestData(), Analyzer, "writebody")
+	analysistest.Run(t, analysistest.TestData(), Analyzer, "requestbody")
 }
