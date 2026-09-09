@@ -6,13 +6,17 @@ A dereference counts as guarded when any of these proves the exact dereferenced 
 
 - an enclosing `if`/`for`/`case` condition containing `x != nil`, including via `&&` (`x != nil && *x > 0`) and short-circuit `||` (`x == nil || *x == 0`), or the else branch of a pure-`||` nil condition
 - an earlier statement in an enclosing block reading `if x == nil { ... }` whose body ends in `return`, `break`/`continue`, `panic`, `os.Exit`, or a `Fatal*` call
-- every assignment to the variable being a provably non-nil source: `&T{...}`, `new(T)`, `pointer.To(...)`, a `flag` package constructor
-- the variable coming from `x, err := f(...)` or `x, ok := f(...)` with a later `if err != nil` / `if !ok` exit — the conventional Go contracts under which the other results are valid
+- every assignment to the variable being a provably non-nil source: `&T{...}`, `new(T)`, `pointer.To(...)`, a `flag` package constructor, an immediately-invoked func literal whose every return is one of these, or a call to a function proven never to return nil in that position (every return statement supplies a non-nil source or a proven local, propagated across packages as analysis facts, so `helpers.ExpandStringSlice` and the `expand*` helpers returning `&x` count; a function with any `return nil` path does not) — including a field set that way inside the composite literal that built the struct (`x := T{F: pointer.To(v)}` proves `x.F`, nested `&U{...}` literals included)
+- an earlier `if x == nil { x = &T{} }` default-init
+- the variable coming from `x, err := f(...)` or `x, ok := f(...)` with an `if err != nil` / `if !ok` exit (as a following statement or with the call as the if's init), the body of `if err == nil` / `if ok`, or the else branch of `if err != nil` / `if !ok` — the conventional Go contracts under which the other results are valid; a companion reassigned before the check no longer counts, and a type assertion's or map lookup's ok never does
+- `id.First` / `id.Second` of a `commonids.NewCompositeResourceID` / `ParseCompositeResourceID` result, when the matching argument is itself non-nil
+- `pointer.From(x) != ""` or `len(pointer.From(x)) > 0` in the enclosing condition
 - the variable aliasing a chain that satisfies any of the above (`payload := existing.Model` after an `existing.Model == nil` early return)
+- a nil check on an alias of the chain (`if v := x.F; v != nil { *x.F }`, `v := x.F` earlier in the block, or `m := r.Model` in an enclosing if's init); an alias goes stale once either side is reassigned
 
 Guards are matched by path equality on the whole chain — `if m.Properties != nil` does not cover `*m.Properties.Name`. A reassignment from an unknown source between guard and dereference invalidates the guard, including guards in enclosing scopes (`if x != nil { x = f(); *x }` is reported). Dereferences of bare pointer parameters are trusted by default (the nil check belongs at the call sites); field dereferences through a parameter are always in scope. Chains containing calls or index expressions are out of scope. `_test.go` files are checked by default; set `tests` to false to skip them.
 
-The report carries a suggested fix: `string(*x)` of a string-kinded enum pointer becomes `pointer.FromEnum(x)`, other dereferences become `pointer.From(x)`, and the pointer import is added when missing. Both change behaviour from panic to zero value — the desired semantics in flatten/read paths, but review before applying elsewhere. `fix-with: none` reports without fixes. Dereferences whose context needs the pointer itself (`*x = v`, `&*x`, `(*x)++`) are reported by AZG009 instead.
+The report carries a suggested fix: `string(*x)` of a string-kinded enum pointer becomes `pointer.FromEnum(x)`, other dereferences become `pointer.From(x)`, and the pointer import is added when missing. Both change behaviour from panic to zero value — the desired semantics in flatten/read paths, but review before applying elsewhere. `fix-with: none` reports without fixes. Dereferences whose pointee must stay addressable (`*x = v`, `(*x).F = v`, `&*x`, `(*x)++`, a pointer-receiver method `(*x).M()`) are reported by AZG009 instead.
 
 ## Flagged Code
 

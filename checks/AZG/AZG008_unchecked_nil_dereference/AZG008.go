@@ -40,7 +40,7 @@ var Analyzer = &analysis.Analyzer{
 	Name:     "AZG008",
 	Doc:      "check for pointer dereferences with no reachable nil guard that should use pointer.From",
 	URL:      "https://github.com/katbyte/azproviderlint/blob/main/checks/AZG/AZG008_unchecked_nil_dereference/README.md",
-	Requires: []*analysis.Analyzer{inspect.Analyzer},
+	Requires: []*analysis.Analyzer{inspect.Analyzer, nilguard.ReturnsAnalyzer},
 	Run:      run,
 }
 
@@ -118,9 +118,9 @@ func checkDeref(pass *analysis.Pass, parents map[ast.Node]ast.Node, params map[t
 		}
 	}
 
-	// contexts that need the pointer itself (*x = v, &*x, (*x)++) cannot take pointer.From
-	// and are AZG009's to report
-	if nilguard.DerefNeedsPointer(parents, star) {
+	// contexts that need an addressable pointee (*x = v, (*x).F = v, &*x, (*x)++, a pointer
+	// method on *x) cannot take pointer.From and are AZG009's to report
+	if nilguard.DerefNeedsPointer(pass, parents, star) {
 		return
 	}
 

@@ -1,3 +1,9 @@
+## Unreleased
+
+- `AZG008`: more guard shapes recognised — a nil check on an alias of the dereferenced chain (`if v := x.F; v != nil { *x.F }`, `v := x.F` earlier in the block, or in an enclosing if's init), `if x == nil { x = &T{} }` default-init, err/ok companions checked in the call's own if-init or via `if err == nil` / else of `if err != nil`, `commonids` composite-ID `First`/`Second`, `pointer.From(x) != ""` / `len(pointer.From(x)) > 0` conditions, `pointer.ToEnum[T]` and an immediately-invoked func literal whose every return is non-nil as non-nil sources, fields set from a non-nil source (or aliased) inside the composite literal that built the struct, and code after `if x == nil { return } else { ... }`; aliases and companions go stale once reassigned, and a type assertion's ok is not a nil guard
+- `AZG008`: calls to functions that never return nil in a result position now count as non-nil sources — proven per function from its return statements (non-nil sources, proven locals, delegating calls) and shared across packages via analysis facts, so `expand*` helpers returning `&x` and `helpers.ExpandStringSlice` no longer trigger reports at their call sites; facts make the CLI load dependencies from source (≈3× memory on azurerm, same wall time)
+- `AZG008`: no longer reports (or rewrites into non-compiling code) dereferences whose pointee must be addressable: `(*x).F = v`, `(*x)[i] = v` on an array, `(*x)[:]`, `&(*x).F`, pointer-receiver method calls `(*x).M()`
+
 ## v0.7.1 (2026-09-04)
 
 - `AZG007`: an `//azignore:AZG007` on a composite literal's opening line suppresses the whole literal, nested literals included ([#33](https://github.com/katbyte/azproviderlint/pull/33))
