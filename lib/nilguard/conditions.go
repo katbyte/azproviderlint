@@ -198,7 +198,7 @@ func fromNonZero(pass *analysis.Pass, cmp *ast.BinaryExpr, key string) bool {
 		k, ok := PathKey(pass, arg)
 		return ok && k == key
 	}
-	switch cmp.Op { //nolint:exhaustive // only the three comparisons that can prove non-nil matter
+	switch cmp.Op {
 	case token.NEQ:
 		return proves(cmp.X, cmp.Y, token.NEQ) || proves(cmp.Y, cmp.X, token.NEQ)
 	case token.GTR:
