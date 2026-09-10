@@ -1,6 +1,6 @@
 ## Unreleased
 
-- add rule `AZP001`: Microsoft Learn/Docs URLs in comments and strings must not carry a locale segment (`/en-us/`), so readers get their own language; fixable with `-fix`; new `AZP` category for provider-wide conventions ([#PR](https://github.com/katbyte/azproviderlint/pull/PR))
+- add rule `AZP001`: Microsoft Learn/Docs URLs in comments and strings must not carry a locale segment (`/en-us/`), so readers get their own language; fixable with `-fix`; new `AZP` category for provider-wide conventions ([#47](https://github.com/katbyte/azproviderlint/pull/47))
 
 ## v0.8.0 (2026-09-09)
 
