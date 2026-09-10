@@ -1,5 +1,6 @@
 // The guard walk: from a dereference outward through enclosing conditions and preceding
 // statements, deciding whether a path is proven non-nil where it is used.
+
 package nilguard
 
 import (

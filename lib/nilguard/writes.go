@@ -1,5 +1,6 @@
 // Writes: what an assignment does to a path — proves it, aliases it, or leaves it unknown —
 // including writes buried inside compound statements.
+
 package nilguard
 
 import (

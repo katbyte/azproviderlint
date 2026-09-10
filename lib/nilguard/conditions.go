@@ -1,5 +1,6 @@
 // Conditions and companions: what an if/for/case condition proves about a path, and the
 // err/ok contract of multi-result calls.
+
 package nilguard
 
 import (
@@ -197,15 +198,16 @@ func fromNonZero(pass *analysis.Pass, cmp *ast.BinaryExpr, key string) bool {
 		k, ok := PathKey(pass, arg)
 		return ok && k == key
 	}
-	switch cmp.Op {
+	switch cmp.Op { //nolint:exhaustive // only the three comparisons that can prove non-nil matter
 	case token.NEQ:
 		return proves(cmp.X, cmp.Y, token.NEQ) || proves(cmp.Y, cmp.X, token.NEQ)
 	case token.GTR:
 		return proves(cmp.X, cmp.Y, token.GTR)
 	case token.LSS:
 		return proves(cmp.Y, cmp.X, token.GTR)
+	default:
+		return false
 	}
-	return false
 }
 
 // isZeroConst reports whether e is a constant "" or 0.

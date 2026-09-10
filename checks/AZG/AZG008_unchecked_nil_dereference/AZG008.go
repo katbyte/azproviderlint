@@ -106,7 +106,7 @@ func run(pass *analysis.Pass) (any, error) {
 
 // checkDeref reports star when it dereferences a pointer-typed path in value context with no
 // reachable guard.
-func checkDeref(pass *analysis.Pass, parents map[ast.Node]ast.Node, params map[types.Object]bool, sinks map[types.Object]bool, star *ast.StarExpr) {
+func checkDeref(pass *analysis.Pass, parents map[ast.Node]ast.Node, params, sinks map[types.Object]bool, star *ast.StarExpr) {
 	tv, ok := pass.TypesInfo.Types[star.X]
 	if !ok || tv.Type == nil {
 		return

@@ -1,5 +1,6 @@
 // Non-nil sources: expressions that can never be nil, and the field descent through literals
 // and composite IDs that carries their guarantee.
+
 package nilguard
 
 import (
