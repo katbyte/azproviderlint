@@ -1,18 +1,8 @@
 # AZR008 - flatten functions must return empty slices/maps, not nil
 
-The AZR008 analyzer reports `flatten*` functions that return `nil` for a slice or map result instead of an empty container (`[]T{}`, `map[K]V{}`).
+AZR008 reports `flatten*` functions that return `nil` where a slice or map is expected. Return an empty one instead: `[]T{}` or `map[K]V{}`.
 
-Flatten results feed straight into schema state, where a nil container is not interchangeable with an empty one: it can surface as a spurious plan diff or a nil assignment downstream.
-
-The check covers any `flatten*` function (case-insensitive) with slice or map results, named types included, and reports a position that is provably nil:
-
-- a literal `nil`, including conversions like `[]T(nil)`
-- a naked `return` whose named container result has not been assigned yet
-- a variable that is still nil: a zero-value `var` or named result, unassigned before the return, address never taken
-
-Error paths are skipped — `return nil, err` is legitimate — but only when the error can actually be non-nil, so `var noErr error; return nil, noErr` is still reported. Out of scope: pointers (`*T`, `*[]T`, `*map[K]V` — nil means absent), `interface{}` results (container shape undeclared), and `expand*` functions (nil is idiomatic there).
-
-Reports carry a suggested fix applied via `-fix`: nils become empty literals, naked returns become explicit (`return []T{}, err`), and a returned variable's now-unused declaration is deleted when safe.
+Flatten functions turn an API response into what goes into state. There, a nil slice and an empty slice are not the same thing. A nil can show up as a plan diff that never goes away, or as a nil that something downstream trips over.
 
 ## Flagged Code
 
@@ -39,7 +29,7 @@ func flattenReplicaSets(input *[]ReplicaSet) (ret []interface{}) {
 	// ...
 }
 
-// out is provably still nil
+// out is still nil here
 func flattenRules(input *RuleSet) []Rule {
 	var out []Rule
 	if input == nil {
@@ -59,7 +49,7 @@ func flattenNetworkACLs(input *NetworkRuleSet) []NetworkACLs {
 	// ...
 }
 
-// error path: nil container is legitimate
+// error path: a nil container alongside an error is fine
 func flattenSku(input *Sku) ([]interface{}, error) {
 	if input.Name == nil {
 		return nil, fmt.Errorf("`name` was nil")
@@ -67,7 +57,7 @@ func flattenSku(input *Sku) ([]interface{}, error) {
 	// ...
 }
 
-// nil pointer means absent, not empty
+// a nil pointer means "absent", which is a different thing
 func flattenOptionalTags(input *Resource) *map[string]string {
 	if input == nil {
 		return nil
@@ -76,16 +66,31 @@ func flattenOptionalTags(input *Resource) *map[string]string {
 }
 ```
 
+## What counts
+
+Any function whose name starts with `flatten` (any casing) and returns a slice or map, named types included. A result is reported when it is provably nil at the return:
+
+- a literal `nil`, including conversions like `[]T(nil)`
+- a naked `return` before the named result was assigned
+- a variable that is still nil: declared with `var` or as a named result, never assigned, address never taken
+
+Not reported:
+
+- `return nil, err` when the error can be non-nil. `var noErr error; return nil, noErr` is still reported.
+- pointer results (`*T`, `*[]T`, `*map[K]V`), where nil means absent
+- `interface{}` results, where the container shape is not declared
+- `expand*` functions, where nil is normal
+
+## The fix
+
+`-fix` replaces the nil with an empty literal, turns a naked return into an explicit one (`return []T{}, err`), and deletes the returned variable's declaration when nothing else uses it.
+
 ## Ignoring Reports
 
-When run via golangci-lint, reports can be ignored with a `//nolint:azproviderlint` Go code comment at the end of the offending line or on the line immediately preceding it:
-
-```go
-return nil //nolint:azproviderlint
-```
-
-To ignore only this check on a line — leaving any other azproviderlint checks active — use a `//azignore:AZR008 - <reason>` comment instead, in the same positions:
+Put `//azignore:AZR008 - <reason>` at the end of the line, or on the line above it. The reason is required.
 
 ```go
 return nil //azignore:AZR008 - <reason>
 ```
+
+Under golangci-lint, `//nolint:azproviderlint` in the same place also works, but it silences every azproviderlint check on that line.

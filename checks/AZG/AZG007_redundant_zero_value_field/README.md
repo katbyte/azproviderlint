@@ -1,28 +1,23 @@
-# AZG007
+# AZG007 - omit struct literal fields explicitly set to their zero value
 
-The AZG007 analyzer reports struct literal fields explicitly initialised to their zero value — a pointer set to `nil` (`Selector: nil`), a string set to `""`, a numeric set to `0`, or a bool set to `false` — where the field should simply be omitted. An omitted field already takes its zero value, so the assignment adds noise without changing behaviour.
+AZG007 reports struct literal fields set to the value they would have anyway: a pointer set to `nil`, a string to `""`, a number to `0`, a bool to `false`. Leave the field out.
 
-Slices, maps, and interfaces are deliberately left alone: an explicit `nil` there can be a readable, intentional signal, and omitting it is not always equivalent in intent. Zero values written as a named constant (`Mode: ModeNone`) are also left alone, since the name documents intent and omitting the field would lose that.
-
-Any compile-time-constant zero is flagged, however it is spelled — `0`, `-0.0`, `'\x00'`, `int64(0)`, `""`, `false` — unless the expression names a constant (`Mode: ModeNone`, `N: int64(ZeroCount)`), since the name documents intent.
-
-The report carries a suggested fix, so `azproviderlint -AZG007 -fix` (or an editor applying the suggested fix) removes the redundant field — along with its trailing comma and any trailing comment — automatically, leaving gofmt to tidy up the surrounding whitespace. A field with a standalone comment directly above it is reported without a fix: deleting the field would re-attach the comment to the next one, so a person decides whether to drop the field, keep it, or convert the comment to an `//azignore:AZG007 - <reason>`.
+An omitted field already gets its zero value, so the line changes nothing and gives the reader one more thing to check.
 
 ## Flagged Code
 
 ```go
 return &profiles.ProfileLogScrubbing{
 	State:    &policyDisabled,
-	Selector: nil, // Selector is *string — redundant
+	Selector: nil, // Selector is *string
 }
 
-// string, numeric, and bool zero values are redundant too
 return KubeConfigModel{
 	Host:              cluster.Server,
 	Username:          name,
-	Password:          "", // redundant
-	ClientCertificate: "", // redundant
-	ClientKey:         "", // redundant
+	Password:          "",
+	ClientCertificate: "",
+	ClientKey:         "",
 }
 ```
 
@@ -33,51 +28,54 @@ return &profiles.ProfileLogScrubbing{
 	State: &policyDisabled,
 }
 
-// left alone: slices, maps, and interfaces
+// slices, maps, and interfaces are left alone
 return &Config{
 	Items: nil,
 	Data:  nil,
 }
 
-// left alone: a named constant documents intent even when it is zero
+// a named constant says something, even when it is zero
 return &Settings{
 	Mode: ModeNone,
 }
 ```
 
-## Flags
+## What counts
 
-`-AZG007.tests` also reports inside `_test.go` files, which are skipped by default because a zero entry in a test table is often a deliberate, meaningful row. Via the golangci-lint plugin the flag is set through settings:
+Any compile-time zero however it is spelled: `0`, `-0.0`, `'\x00'`, `int64(0)`, `""`, `false`.
 
-```yaml
-linters:
-  settings:
-    custom:
-      azproviderlint:
-        settings:
-          AZG007:
-            tests: true
-```
+Not reported:
+
+- slices, maps, and interfaces, where an explicit `nil` can be a deliberate signal
+- named constants (`Mode: ModeNone`, `N: int64(ZeroCount)`), where the name carries meaning
+- `_test.go` files, unless `tests` is on, since a zero entry in a test table is often a meaningful row
+
+## The fix
+
+`-fix` removes the field, its comma, and any trailing comment, and leaves gofmt to tidy the whitespace. A field with its own comment on the line above is reported without a fix, because deleting the field would leave that comment attached to the next field. A person decides whether to drop it, keep it, or turn the comment into an `//azignore:AZG007 - <reason>`.
+
+## Options
+
+| Option | Default | Effect |
+|---|---|---|
+| `tests` | false | also check `_test.go` files |
+
+Set with `-AZG007.<option>` on the CLI or under the rule name in the golangci settings; see the [root README](../../../README.md#options).
 
 ## Ignoring Reports
 
-When run via golangci-lint, reports can be ignored with a `//nolint:azproviderlint` Go code comment at the end of the offending line or on the line immediately preceding it:
-
-```go
-Selector: nil, //nolint:azproviderlint
-```
-
-To ignore only this check on a line — leaving any other azproviderlint checks active — use a `//azignore:AZG007 - <reason>` comment instead, in the same positions:
+Put `//azignore:AZG007 - <reason>` at the end of the field's line, or on the line above it. The reason is required.
 
 ```go
 Selector: nil, //azignore:AZG007 - <reason>
 ```
 
-Placing the directive on the opening line of a composite literal suppresses every AZG007
-report within that literal, including nested literals:
+On the opening line of a struct literal it covers every field in that literal, nested literals included:
 
 ```go
 return UserFeatures{ //azignore:AZG007 - all nested objects must be fully populated
 	// ...
 }
 ```
+
+Under golangci-lint, `//nolint:azproviderlint` in the same place also works, but it silences every azproviderlint check on that line.

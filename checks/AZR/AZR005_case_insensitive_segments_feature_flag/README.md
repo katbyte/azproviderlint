@@ -1,8 +1,8 @@
 # AZR005 - do not set the case-insensitive segments feature flag
 
-The AZR005 analyzer reports assignments to the `features.TreatUserSpecifiedSegmentsAsCaseInsensitive` feature flag.
+AZR005 reports any assignment to `features.TreatUserSpecifiedSegmentsAsCaseInsensitive`.
 
-The case-aware comparisons feature is not ready for use: there is a substantial number of unresolved dependencies required for it to not cause more problems than it solves. Until the rollout is completed it must not be configured or exposed in any form.
+The case-insensitive ID comparison feature is not finished. Too many other pieces still need to change before it works without causing more problems than it fixes. Until that work is done the flag must not be set or exposed anywhere.
 
 ## Flagged Code
 
@@ -12,20 +12,14 @@ features.TreatUserSpecifiedSegmentsAsCaseInsensitive = true
 
 ## Passing Code
 
-```go
-// remove the assignment entirely - the flag must not be set
-```
+Remove the assignment.
 
 ## Ignoring Reports
 
-When run via golangci-lint, reports can be ignored with a `//nolint:azproviderlint` Go code comment at the end of the offending line or on the line immediately preceding it:
-
-```go
-features.TreatUserSpecifiedSegmentsAsCaseInsensitive = true //nolint:azproviderlint
-```
-
-To ignore only this check on a line — leaving any other azproviderlint checks active — use a `//azignore:AZR005 - <reason>` comment instead, in the same positions:
+Put `//azignore:AZR005 - <reason>` at the end of the line, or on the line above it. The reason is required.
 
 ```go
 features.TreatUserSpecifiedSegmentsAsCaseInsensitive = true //azignore:AZR005 - <reason>
 ```
+
+Under golangci-lint, `//nolint:azproviderlint` in the same place also works, but it silences every azproviderlint check on that line.

@@ -1,12 +1,10 @@
 # AZR007 - use custom pollers instead of StateChangeConf
 
-The AZR007 analyzer reports use of `StateChangeConf{...}`. Going forward the provider prefers custom pollers that implement the [go-azure-sdk](https://github.com/hashicorp/go-azure-sdk) `pollers.PollerType` interface and are driven via `pollers.NewPoller(...).PollUntilDone(ctx)`.
+AZR007 reports `StateChangeConf{...}` literals.
 
-The check matches by resolving the composite literal's type to the underlying `StateChangeConf` declared in `github.com/hashicorp/terraform-plugin-sdk/v2/helper/retry`. This catches every spelling — `pluginsdk.StateChangeConf{...}`, `retry.StateChangeConf{...}`, `resource.StateChangeConf{...}` — regardless of import alias. It matches whether the literal is taken by value or by pointer.
+`StateChangeConf` is the plugin SDK's old way of waiting for something to reach a state. The provider now prefers custom pollers: a small type that implements the [go-azure-sdk](https://github.com/hashicorp/go-azure-sdk) `pollers.PollerType` interface, run with `pollers.NewPoller(...).PollUntilDone(ctx)`. See the [new resource guide](https://github.com/hashicorp/terraform-provider-azurerm/blob/main/contributing/topics/guide-new-resource.md).
 
-Caveat: this check intentionally covers explicit `StateChangeConf{...}` composite literals only. Helper APIs such as `pluginsdk.Retry()` hide the `StateChangeConf` construction internally, so they are not reported by AZR007 even though they use the same deprecated retry machinery.
-
-Reference: [terraform-provider-azurerm#guide-new-resource](https://github.com/hashicorp/terraform-provider-azurerm/blob/main/contributing/topics/guide-new-resource.md)
+The check resolves the literal's type, so it catches `pluginsdk.StateChangeConf`, `retry.StateChangeConf`, and `resource.StateChangeConf` under any import alias, by value or by pointer. It does not look inside helpers such as `pluginsdk.Retry()` that build a `StateChangeConf` for you.
 
 ## Flagged Code
 
@@ -32,13 +30,10 @@ if err := poller.PollUntilDone(ctx); err != nil {
 
 ## Ignoring Reports
 
-When run via golangci-lint, reports can be ignored with a `//nolint:azproviderlint` Go code comment at the end of the offending line or on the line immediately preceding it:
+Put `//azignore:AZR007 - <reason>` at the end of the line, or on the line above it. The reason is required.
 
 ```go
-stateConf := &pluginsdk.StateChangeConf{ //nolint:azproviderlint
+stateConf := &pluginsdk.StateChangeConf{ //azignore:AZR007 - <reason>
 ```
-To ignore only this check on a line — leaving any other azproviderlint checks active — use a `//azignore:AZR007` comment instead, in the same positions:
 
-```go
-stateConf := &pluginsdk.StateChangeConf{ //azignore:AZR007
-```
+Under golangci-lint, `//nolint:azproviderlint` in the same place also works, but it silences every azproviderlint check on that line.
