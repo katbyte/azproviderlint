@@ -42,7 +42,7 @@ func TestParseDirective(t *testing.T) {
 		{"list then reason without a dash", "//azignore:AZG001, AZR001 deliberate", []string{"AZG001", "AZR001"}, "deliberate", true},
 		{"bare with trailing comma", "//azignore:AZG001,", []string{"AZG001"}, "", true},
 		{"en dash reason", "//azignore:AZG001 – deliberate", []string{"AZG001"}, "deliberate", true},
-		{"em dash reason", "//azignore:AZS006 — deliberately not exposed", []string{"AZS006"}, "deliberately not exposed", true},
+		{"em dash reason", "//azignore:AZP003 — deliberately not exposed", []string{"AZP003"}, "deliberately not exposed", true},
 		{"rule list with reason", "//azignore:AZG001,AZR001 - why not", []string{"AZG001", "AZR001"}, "why not", true},
 		{"empty reason after dash", "//azignore:AZG001 - ", []string{"AZG001"}, "", true},
 		{"reason containing dashes", "//azignore:AZG001 - see ADR-042 - long story", []string{"AZG001"}, "see ADR-042 - long story", true},

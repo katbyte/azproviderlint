@@ -47,6 +47,16 @@ Rules are named `AZ`, a category letter, and a number. The letters follow [tfpro
 | [AZG007](checks/AZG/AZG007_redundant_zero_value_field) | omit struct literal fields explicitly set to their zero value |
 | [AZG008](checks/AZG/AZG008_unchecked_nil_dereference) | pointer dereferences must have a nil guard or use pointer.From |
 
+### AZP - Provider-Wide Conventions
+
+| Rule | Description |
+|------|-------------|
+| [AZP001](checks/AZP/AZP001_microsoft_docs_url_locale) | Microsoft docs URLs must not carry a locale segment like /en-us/ |
+| [AZP002](checks/AZP/AZP002_resource_missing_data_source) | registered resources must have a same-named data source |
+| [AZP003](checks/AZP/AZP003_data_source_missing_properties) | data sources must expose their same-named resource's properties |
+| [AZP004](checks/AZP/AZP004_registration_entries_sorted) | registration entries must be sorted alphabetically |
+| [AZP005](checks/AZP/AZP005_case_insensitive_segments_feature_flag) | do not set the case-insensitive segments feature flag |
+
 ### AZR - Resource Implementation
 
 | Rule | Description |
@@ -55,7 +65,6 @@ Rules are named `AZ`, a category letter, and a number. The letters follow [tfpro
 | [AZR002](checks/AZR/AZR002_combined_create_update_method) | separate Create and Update methods |
 | [AZR003](checks/AZR/AZR003_resource_data_get_in_delete) | no d.Get in Delete functions |
 | [AZR004](checks/AZR/AZR004_resource_id_equality_comparison) | compare resource id types with resourceids.Match |
-| [AZR005](checks/AZR/AZR005_case_insensitive_segments_feature_flag) | do not set the case-insensitive segments feature flag |
 | [AZR006](checks/AZR/AZR006_stop_context_without_timeouts) | use timeouts wrappers, not StopContext |
 | [AZR007](checks/AZR/AZR007_state_change_conf_custom_poller) | use custom pollers instead of StateChangeConf |
 | [AZR008](checks/AZR/AZR008_flatten_returns_nil_slice) | flatten functions must return empty slices/maps, not nil |
@@ -77,10 +86,7 @@ Rules are named `AZ`, a category letter, and a number. The letters follow [tfpro
 | [AZS002](checks/AZS/AZS002_schema_default_type_mismatch) | schema Default values must match the declared Type |
 | [AZS003](checks/AZS/AZS003_schema_allows_empty_block) | TypeList blocks must not allow empty blocks |
 | [AZS004](checks/AZS/AZS004_enum_validation_possible_values) | enum validation must use the SDK's possible-values helper |
-| [AZS005](checks/AZS/AZS005_resource_missing_data_source) | registered resources must have a same-named data source |
-| [AZS006](checks/AZS/AZS006_data_source_missing_properties) | data sources must expose their same-named resource's properties |
 | [AZS007](checks/AZS/AZS007_optional_computed_missing_comment) | optional+computed fields must have a Note: O+C comment |
-| [AZS008](checks/AZS/AZS008_registration_entries_sorted) | registration entries must be sorted alphabetically |
 | [AZS009](checks/AZS/AZS009_computed_only_field_input_attributes) | computed-only fields must not set input-only schema attributes |
 
 ### AZC - Clients & SDK Usage
@@ -88,12 +94,6 @@ Rules are named `AZ`, a category letter, and a number. The letters follow [tfpro
 | Rule | Description |
 |------|-------------|
 | [AZC001](checks/AZC/AZC001_client_missing_resource_manager_endpoint) | clients must set an explicit resource manager endpoint |
-
-### AZP - Provider-Wide Conventions
-
-| Rule | Description |
-|------|-------------|
-| [AZP001](checks/AZP/AZP001_microsoft_docs_url_locale) | Microsoft docs URLs must not carry a locale segment like /en-us/ |
 
 ### AZT - Acceptance Testing
 
