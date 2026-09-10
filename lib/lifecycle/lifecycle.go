@@ -5,16 +5,23 @@ package lifecycle
 import (
 	"go/ast"
 
-	"golang.org/x/tools/go/analysis"
 	"golang.org/x/tools/go/ast/inspector"
 )
 
-// Funcs returns every function in the pass that implements a lifecycle step, with the step's
-// name: untyped resources' functions registered under a `Create:`, `Read:`, `Update:`, or
-// `Delete:` key (the `*Context` spellings too), and typed resources' methods of those names
-// returning `sdk.ResourceFunc`. A function registered under two keys (a combined
+// The lifecycle steps, as Funcs names them.
+const (
+	Create = "Create"
+	Read   = "Read"
+	Update = "Update"
+	Delete = "Delete"
+)
+
+// Funcs returns every function in the package that implements a lifecycle step, with the
+// step's name: untyped resources' functions registered under a `Create:`, `Read:`, `Update:`,
+// or `Delete:` key (the `*Context` spellings too), and typed resources' methods of those
+// names returning `sdk.ResourceFunc`. A function registered under two keys (a combined
 // CreateUpdate) is reported under the first seen.
-func Funcs(pass *analysis.Pass, insp *inspector.Inspector) map[*ast.FuncDecl]string {
+func Funcs(insp *inspector.Inspector) map[*ast.FuncDecl]string {
 	registered := map[string]string{} // function name -> step
 	insp.Preorder([]ast.Node{(*ast.KeyValueExpr)(nil)}, func(n ast.Node) {
 		kv, ok := n.(*ast.KeyValueExpr)
@@ -64,10 +71,10 @@ func Funcs(pass *analysis.Pass, insp *inspector.Inspector) map[*ast.FuncDecl]str
 
 // steps maps a registration key or typed method name to its lifecycle step.
 var steps = map[string]string{
-	"Create": "Create", "CreateContext": "Create",
-	"Read": "Read", "ReadContext": "Read",
-	"Update": "Update", "UpdateContext": "Update",
-	"Delete": "Delete", "DeleteContext": "Delete",
+	Create: Create, Create + "Context": Create,
+	Read: Read, Read + "Context": Read,
+	Update: Update, Update + "Context": Update,
+	Delete: Delete, Delete + "Context": Delete,
 }
 
 // returnsResourceFunc reports whether the function's single result type is (sdk.)ResourceFunc.

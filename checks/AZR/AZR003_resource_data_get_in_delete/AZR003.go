@@ -29,8 +29,8 @@ func run(pass *analysis.Pass) (any, error) {
 		return nil, nil
 	}
 
-	for fn, step := range lifecycle.Funcs(pass, insp) {
-		if step != "Delete" {
+	for fn, step := range lifecycle.Funcs(insp) {
+		if step != lifecycle.Delete {
 			continue
 		}
 		if fn.Recv == nil {
