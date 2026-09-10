@@ -1,3 +1,7 @@
+## Unreleased
+
+- add rule `AZP001`: Microsoft Learn/Docs URLs in comments and strings must not carry a locale segment (`/en-us/`), so readers get their own language; fixable with `-fix`; new `AZP` category for provider-wide conventions ([#PR](https://github.com/katbyte/azproviderlint/pull/PR))
+
 ## v0.8.0 (2026-09-09)
 
 - add rule `AZR010`: `flatten*` functions handle nil input themselves — callers must not nil-check the argument first; a fix drops the check when the flatten function already handles nil ([#46](https://github.com/katbyte/azproviderlint/pull/46))
