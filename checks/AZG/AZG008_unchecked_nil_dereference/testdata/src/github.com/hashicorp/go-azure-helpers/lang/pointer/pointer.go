@@ -23,3 +23,9 @@ func FromEnum[T ~string](input *T) (output string) {
 func To[T any](v T) *T {
 	return &v
 }
+
+// ToEnum returns a pointer to the enum value of input.
+func ToEnum[T ~string](input string) *T {
+	v := T(input)
+	return &v
+}

@@ -7,11 +7,13 @@ import (
 	"flag"
 	"fmt"
 	"go/ast"
+	"go/token"
 	"go/types"
 
 	"github.com/katbyte/azproviderlint/lib/astx"
 	"github.com/katbyte/azproviderlint/lib/nilguard"
 	"github.com/katbyte/azproviderlint/lib/pointerpkg"
+	"github.com/katbyte/azproviderlint/lib/requestbody"
 	"golang.org/x/tools/go/analysis"
 	"golang.org/x/tools/go/analysis/passes/inspect"
 	"golang.org/x/tools/go/ast/inspector"
@@ -40,7 +42,7 @@ var Analyzer = &analysis.Analyzer{
 	Name:     "AZG008",
 	Doc:      "check for pointer dereferences with no reachable nil guard that should use pointer.From",
 	URL:      "https://github.com/katbyte/azproviderlint/blob/main/checks/AZG/AZG008_unchecked_nil_dereference/README.md",
-	Requires: []*analysis.Analyzer{inspect.Analyzer},
+	Requires: []*analysis.Analyzer{inspect.Analyzer, nilguard.ReturnsAnalyzer, requestbody.Analyzer},
 	Run:      run,
 }
 
@@ -59,6 +61,11 @@ var includeParameters bool
 // provider, but still fails the run.
 var checkTests bool
 
+// reportRequestBody also reports dereferences whose value is sent as a PUT/PATCH/POST body.
+// Those get no fix (pointer.From would send an empty request) and need a hand-written guard,
+// so they are opt-in: off by default, on for a dedicated pass over the write paths.
+var reportRequestBody bool
+
 // fixWith picks the suggested-fix form: pointer.From (string conversions of enum pointers
 // upgrade to pointer.FromEnum) or none to report without fixes.
 var fixWith string
@@ -69,6 +76,8 @@ func init() {
 		"also report dereferences of bare pointer parameters (callers' nil-check contract is otherwise trusted)")
 	Analyzer.Flags.BoolVar(&checkTests, "tests", true,
 		"check _test.go files (false skips them)")
+	Analyzer.Flags.BoolVar(&reportRequestBody, "requestbody", false,
+		"also report dereferences sent as a PUT/PATCH/POST body (reported without a fix)")
 	Analyzer.Flags.StringVar(&fixWith, "fix-with", fixPointerFrom,
 		"suggested-fix form: pointer.From or none")
 }
@@ -118,9 +127,9 @@ func checkDeref(pass *analysis.Pass, parents map[ast.Node]ast.Node, params map[t
 		}
 	}
 
-	// contexts that need the pointer itself (*x = v, &*x, (*x)++) cannot take pointer.From
-	// and are AZG009's to report
-	if nilguard.DerefNeedsPointer(parents, star) {
+	// contexts that need an addressable pointee (*x = v, (*x).F = v, &*x, (*x)++, a pointer
+	// method on *x) cannot take pointer.From and are AZG009's to report
+	if nilguard.DerefNeedsPointer(pass, parents, star) {
 		return
 	}
 
@@ -128,13 +137,106 @@ func checkDeref(pass *analysis.Pass, parents map[ast.Node]ast.Node, params map[t
 		return
 	}
 
+	// a value sent as the body of a PUT/PATCH/POST must not be rewritten: pointer.From would
+	// turn the panic into an empty (or partly empty) write request. The report stands,
+	// without a fix, so the site gets a real guard. The dereferenced value counts when,
+	// climbing out through parens, conversions, composite literals, and address-of, it lands
+	// on a write-body argument (requestbody facts) or on an assignment into a local — whole,
+	// or one of its fields — that reaches such an argument anywhere in the function.
+	rootObj := func(e ast.Expr) types.Object {
+		for {
+			switch x := ast.Unparen(e).(type) {
+			case *ast.Ident:
+				if o := pass.TypesInfo.Uses[x]; o != nil {
+					return o
+				}
+				return pass.TypesInfo.Defs[x]
+			case *ast.SelectorExpr:
+				e = x.X
+			case *ast.StarExpr:
+				e = x.X
+			case *ast.IndexExpr:
+				e = x.X
+			case *ast.UnaryExpr:
+				if x.Op != token.AND {
+					return nil
+				}
+				e = x.X
+			default:
+				return nil
+			}
+		}
+	}
+	var body ast.Node = star
+	for parents[body] != nil {
+		body = parents[body]
+	}
+	sinks := map[types.Object]bool{}
+	ast.Inspect(body, func(n ast.Node) bool {
+		if call, ok := n.(*ast.CallExpr); ok {
+			for j, a := range call.Args {
+				if requestbody.CallBodyArg(pass, call, j) {
+					if o := rootObj(a); o != nil {
+						sinks[o] = true
+					}
+				}
+			}
+		}
+		return true
+	})
+	payload := false
+	node := ast.Node(star)
+climb:
+	for {
+		switch p := parents[node].(type) {
+		case *ast.ParenExpr, *ast.CompositeLit, *ast.KeyValueExpr:
+			node = p
+		case *ast.UnaryExpr:
+			if p.Op != token.AND {
+				break climb
+			}
+			node = p
+		case *ast.CallExpr:
+			for i, a := range p.Args {
+				if a == node && requestbody.CallBodyArg(pass, p, i) {
+					payload = true
+				}
+			}
+			// a conversion (T(*x)) is still building the value
+			if tv, ok := pass.TypesInfo.Types[p.Fun]; !payload && ok && tv.IsType() && len(p.Args) == 1 && p.Args[0] == node {
+				node = p
+				continue
+			}
+			break climb
+		case *ast.AssignStmt:
+			if len(p.Lhs) == len(p.Rhs) {
+				for i, r := range p.Rhs {
+					if r == node && sinks[rootObj(p.Lhs[i])] {
+						payload = true
+					}
+				}
+			}
+			break climb
+		default:
+			break climb
+		}
+	}
+
+	if payload && !reportRequestBody {
+		return
+	}
+
+	msg := "dereference of possibly-nil `" + types.ExprString(star.X) + "` may panic - add a nil check or use pointer.From"
 	var fixes []analysis.SuggestedFix
-	if fixWith == fixPointerFrom {
+	switch {
+	case payload:
+		msg = "dereference of possibly-nil `" + types.ExprString(star.X) + "` may panic - add a nil check (no fix: the value is sent as a write request body, pointer.From would send it empty)"
+	case fixWith == fixPointerFrom:
 		fixes = suggestedFixes(pass, parents, star)
 	}
 	pass.Report(analysis.Diagnostic{
 		Pos:            star.Pos(),
-		Message:        "dereference of possibly-nil `" + types.ExprString(star.X) + "` may panic - add a nil check or use pointer.From",
+		Message:        msg,
 		SuggestedFixes: fixes,
 	})
 }
