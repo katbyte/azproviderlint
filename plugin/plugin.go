@@ -24,13 +24,13 @@ const (
 
 // Settings allows rules to be enabled/disabled per-rule from .golangci.yml via
 // linters.settings.custom.azproviderlint.settings. An empty enable list means all rules. A
-// list entry names either a rule (AZS006) or a whole category (AZG — a rule name with the
+// list entry names either a rule (AZP003) or a whole category (AZG — a rule name with the
 // digits stripped, matching every rule in it). Any other top-level key must be a rule name
 // and sets that rule's analyzer flags:
 //
 //	settings:
-//	  enable: [AZG, AZS006]
-//	  AZS006:
+//	  enable: [AZG, AZP003]
+//	  AZP003:
 //	    ignore-sensitive: true
 type Settings struct {
 	Enable  []string `json:"enable"`
@@ -131,7 +131,7 @@ func (p *Plugin) BuildAnalyzers() ([]*analysis.Analyzer, error) {
 }
 
 // category returns the rule family a rule name belongs to: its name with the trailing digits
-// stripped (AZS006 -> AZS).
+// stripped (AZP003 -> AZP).
 func category(name string) string {
 	return strings.TrimRight(name, "0123456789")
 }

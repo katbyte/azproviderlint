@@ -121,17 +121,17 @@ func TestBuildAnalyzersRuleFlags(t *testing.T) {
 	t.Parallel()
 
 	names, err := buildAnalyzers(t, map[string]any{
-		"enable": []string{"AZS006"},
-		"AZS006": map[string]any{"ignore-sensitive": true}, // unquoted YAML bool
+		"enable": []string{"AZP003"},
+		"AZP003": map[string]any{"ignore-sensitive": true}, // unquoted YAML bool
 	})
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(names) != 1 || names[0] != "AZS006" {
-		t.Fatalf("expected exactly [AZS006], got %v", names)
+	if len(names) != 1 || names[0] != "AZP003" {
+		t.Fatalf("expected exactly [AZP003], got %v", names)
 	}
 
-	p, err := New(map[string]any{"AZS006": map[string]any{"ignore-sensitive": "true"}})
+	p, err := New(map[string]any{"AZP003": map[string]any{"ignore-sensitive": "true"}})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -144,11 +144,11 @@ func TestBuildAnalyzersRuleFlags(t *testing.T) {
 		t.Fatal(err)
 	}
 	for _, a := range analyzers {
-		if a.Name != "AZS006" {
+		if a.Name != "AZP003" {
 			continue
 		}
 		if f := a.Flags.Lookup("ignore-sensitive"); f == nil || f.Value.String() != "true" {
-			t.Fatalf("expected AZS006 ignore-sensitive flag to be true, got %v", f)
+			t.Fatalf("expected AZP003 ignore-sensitive flag to be true, got %v", f)
 		}
 	}
 }
@@ -159,10 +159,10 @@ func TestBuildAnalyzersRuleFlagErrors(t *testing.T) {
 	if _, err := buildAnalyzers(t, map[string]any{"AZX999": map[string]any{"some-flag": "true"}}); err == nil {
 		t.Fatal("expected an error for flags on an unknown rule name")
 	}
-	if _, err := New(map[string]any{"AZS006": "not-a-map"}); err == nil {
+	if _, err := New(map[string]any{"AZP003": "not-a-map"}); err == nil {
 		t.Fatal("expected an error for a non-map rule settings value")
 	}
-	if _, err := buildAnalyzers(t, map[string]any{"AZS006": map[string]any{"no-such-flag": "true"}}); err == nil {
+	if _, err := buildAnalyzers(t, map[string]any{"AZP003": map[string]any{"no-such-flag": "true"}}); err == nil {
 		t.Fatal("expected an error for an unknown flag name")
 	}
 }
