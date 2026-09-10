@@ -5,6 +5,7 @@ package AZR003
 import (
 	"go/ast"
 
+	"github.com/katbyte/azproviderlint/lib/lifecycle"
 	"golang.org/x/tools/go/analysis"
 	"golang.org/x/tools/go/analysis/passes/inspect"
 	"golang.org/x/tools/go/ast/inspector"
@@ -28,44 +29,18 @@ func run(pass *analysis.Pass) (any, error) {
 		return nil, nil
 	}
 
-	// collect the functions registered as `Delete:` in resource definitions
-	deleteFuncs := map[string]bool{}
-	insp.Preorder([]ast.Node{(*ast.KeyValueExpr)(nil)}, func(n ast.Node) {
-		kv, ok := n.(*ast.KeyValueExpr)
-		if !ok {
-			return
+	for fn, step := range lifecycle.Funcs(insp) {
+		if step != lifecycle.Delete {
+			continue
 		}
-
-		key, ok := kv.Key.(*ast.Ident)
-		if !ok || key.Name != "Delete" {
-			return
-		}
-
-		switch v := kv.Value.(type) {
-		case *ast.Ident:
-			deleteFuncs[v.Name] = true
-		case *ast.SelectorExpr:
-			deleteFuncs[v.Sel.Name] = true
-		}
-	})
-
-	insp.Preorder([]ast.Node{(*ast.FuncDecl)(nil)}, func(n ast.Node) {
-		fn, ok := n.(*ast.FuncDecl)
-		if !ok || fn.Body == nil {
-			return
-		}
-
-		// untyped resources: the function registered via `Delete: resourceFooDelete,`
-		if fn.Recv == nil && deleteFuncs[fn.Name.Name] {
+		if fn.Recv == nil {
+			// untyped resources: the function registered via `Delete: resourceFooDelete,`
 			checkUntypedDelete(pass, fn)
-			return
-		}
-
-		// typed resources: the `Delete() sdk.ResourceFunc` method
-		if fn.Recv != nil && fn.Name.Name == "Delete" && returnsResourceFunc(fn) {
+		} else {
+			// typed resources: the `Delete() sdk.ResourceFunc` method
 			checkTypedDelete(pass, fn)
 		}
-	})
+	}
 
 	return nil, nil
 }
@@ -121,21 +96,6 @@ func checkTypedDelete(pass *analysis.Pass, fn *ast.FuncDecl) {
 			"ResourceData.Get should not be used within a Delete function as it does not work as expected during deletion")
 		return true
 	})
-}
-
-// returnsResourceFunc reports whether the function's single result type is (sdk.)ResourceFunc.
-func returnsResourceFunc(fn *ast.FuncDecl) bool {
-	if fn.Type.Results == nil || len(fn.Type.Results.List) != 1 {
-		return false
-	}
-
-	switch t := fn.Type.Results.List[0].Type.(type) {
-	case *ast.Ident:
-		return t.Name == "ResourceFunc"
-	case *ast.SelectorExpr:
-		return t.Sel.Name == "ResourceFunc"
-	}
-	return false
 }
 
 func firstParamName(fn *ast.FuncDecl) string {

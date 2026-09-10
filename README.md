@@ -125,6 +125,7 @@ Rules are named `AZ<category letter><number>`, aligned with [tfproviderlint](htt
 | [AZR006](checks/AZR/AZR006_stop_context_without_timeouts) | use timeouts wrappers, not StopContext |
 | [AZR007](checks/AZR/AZR007_state_change_conf_custom_poller) | use custom pollers instead of StateChangeConf |
 | [AZR008](checks/AZR/AZR008_flatten_returns_nil_slice) | flatten functions must return empty slices/maps, not nil |
+| [AZR009](checks/AZR/AZR009_lifecycle_logging) | no lifecycle narration logging in Create/Read/Update/Delete |
 
 ### AZD — Data Sources
 
