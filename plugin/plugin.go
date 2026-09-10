@@ -136,7 +136,7 @@ func category(name string) string {
 	return strings.TrimRight(name, "0123456789")
 }
 
-func (p *Plugin) GetLoadMode() string {
+func (*Plugin) GetLoadMode() string {
 	// AZS001 resolves named types and aliases via the type checker
 	return register.LoadModeTypesInfo
 }

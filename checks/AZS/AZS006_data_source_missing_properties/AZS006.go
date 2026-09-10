@@ -9,7 +9,6 @@ import (
 	"go/token"
 	"go/types"
 	"slices"
-	"sort"
 	"strconv"
 	"strings"
 
@@ -168,7 +167,7 @@ func run(pass *analysis.Pass) (any, error) {
 		if len(missing) == 0 {
 			continue
 		}
-		sort.Strings(missing)
+		slices.Sort(missing)
 
 		pass.Reportf(ds.pos, "data source %q is missing resource properties: %s", ds.name, strings.Join(missing, ", "))
 	}
