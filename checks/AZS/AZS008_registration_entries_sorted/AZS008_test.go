@@ -12,9 +12,7 @@ func TestAZS008(t *testing.T) {
 	t.Parallel()
 
 	_, filename, _, _ := runtime.Caller(0)
-	dir := filepath.Join(filepath.Dir(filename), "testdata")
-
-	analysistest.RunWithSuggestedFixes(t, dir, Analyzer, "azs008")
+	analysistest.RunWithSuggestedFixes(t, filepath.Join(filepath.Dir(filename), "testdata"), Analyzer, "azs008")
 }
 
 //nolint:paralleltest // mutates the package-level generated flag; must finish before parallel tests resume

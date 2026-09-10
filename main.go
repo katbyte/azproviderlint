@@ -1,3 +1,5 @@
+// Command azproviderlint runs the analyzers in checks/ over Go packages, as a standalone
+// multichecker; the same analyzers ship as a golangci-lint module plugin (see plugin/).
 package main
 
 import (

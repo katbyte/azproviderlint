@@ -1,5 +1,9 @@
 package azg006
 
+import (
+	"github.com/hashicorp/go-azure-helpers/lang/pointer"
+)
+
 type props struct{ V *string }
 
 type resourceData struct{}
@@ -94,4 +98,42 @@ func validInterveningOperandWrite(d resourceData, p props) {
 	apns := flattenThing(p.V)
 	p.V = nil
 	d.Set("apns_credential", apns)
+}
+
+type tree struct{ lines int }
+
+func rewrite(t *tree) *tree {
+	t.lines++
+	return t
+}
+
+// Should NOT be flagged: the initializer's call may mutate *t, and the intervening statement
+// observes t — inlining would move the mutation past the read.
+func validSideEffectObserved(d resourceData, t *tree) {
+	result := rewrite(t)
+	d.Set("line_count", t.lines)
+	sink(result)
+}
+
+// Should NOT be flagged: an intervening call may write through t, which the initializer read.
+func validInterveningCallMutation(d resourceData, t *tree) {
+	count := t.lines
+	rewrite(t)
+	d.Set("line_count", count)
+}
+
+// Should be flagged: the intervening statement touches nothing the initializer's call can
+// reach — a value-typed operand cannot be mutated by the callee.
+func invalidValueOperandUntouched(d resourceData, p props, other int) {
+	apns := flattenThing(p.V) // want `"apns" is only used by the call on line \d+ and should be inlined`
+	sink(other)
+	d.Set("apns_credential", apns)
+}
+
+// Should be flagged: pointer.From is pure, so an intervening plain read of p cannot observe
+// anything the initializer's call did.
+func invalidPureHelperOperand(d resourceData, p props) {
+	name := pointer.From(p.V) // want `"name" is only used by the call on line \d+ and should be inlined`
+	_ = p.V
+	d.Set("name", name)
 }

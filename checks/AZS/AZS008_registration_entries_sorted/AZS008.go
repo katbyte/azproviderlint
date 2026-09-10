@@ -9,7 +9,7 @@ import (
 	"go/token"
 	"go/types"
 	"path/filepath"
-	"sort"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -339,8 +339,8 @@ func sortSectionEdit(tf *token.File, content []byte, comments []*ast.CommentGrou
 		blocks[i] = block{key: key, text: content[tf.Offset(lineStart):tf.Offset(lineEnd)]}
 	}
 
-	sort.SliceStable(blocks, func(i, j int) bool {
-		return lessFold(blocks[i].key, blocks[j].key)
+	slices.SortStableFunc(blocks, func(a, b block) int {
+		return strings.Compare(strings.ToLower(a.key), strings.ToLower(b.key))
 	})
 
 	var buf bytes.Buffer

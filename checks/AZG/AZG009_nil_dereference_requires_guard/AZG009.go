@@ -35,7 +35,7 @@ var Analyzer = &analysis.Analyzer{
 	Name:     "AZG009",
 	Doc:      "check for nil pointer dereferences that need a hand-written nil guard",
 	URL:      "https://github.com/katbyte/azproviderlint/blob/main/checks/AZG/AZG009_nil_dereference_requires_guard/README.md",
-	Requires: []*analysis.Analyzer{inspect.Analyzer},
+	Requires: []*analysis.Analyzer{inspect.Analyzer, nilguard.ReturnsAnalyzer},
 	Run:      run,
 }
 
@@ -107,7 +107,7 @@ func checkExplicit(pass *analysis.Pass, parents map[ast.Node]ast.Node, params ma
 	if _, isPtr := tv.Type.Underlying().(*types.Pointer); !isPtr || !tv.IsValue() {
 		return // a type expression like *T, or not a pointer
 	}
-	if !nilguard.DerefNeedsPointer(parents, star) {
+	if !nilguard.DerefNeedsPointer(pass, parents, star) {
 		return
 	}
 	report(pass, parents, params, star, star.X,

@@ -1,3 +1,7 @@
+# NOTE: this config enables the azproviderlint module plugin - this repo's own AZG rules run on
+# its own code - which only exists in the custom-built binary produced by make
+# (.tools/bin/golangci-with-modules, config in .tools/.custom-gcl.yml). Run lints via
+# 'make lint', not stock golangci-lint.
 version: "2"
 
 run:
@@ -12,6 +16,7 @@ linters:
   enable:
     - asasalint # check for pass []any as any in variadic func(...any)
     - asciicheck # ensure code does not contain non-ASCII identifiers
+    - azproviderlint # this repo's own linter (module plugin); AZG general Go style rules only
     - bidichk # checks for dangerous unicode character sequences
     - bodyclose # checks whether HTTP response bodies are closed
     - canonicalheader # checks that net/http.Header keys use canonical form (e.g. Content-Type)
@@ -45,6 +50,7 @@ linters:
     - predeclared # find code that shadows one of Go's predeclared identifiers.
     - perfsprint # Checks that fmt.Sprintf can be replaced with a faster alternative.
     - paralleltest # detects missing usage of t.Parallel() method in your Go test.
+    - revive # configurable meta-linter; enable-all with specific rules opted out in settings
     - reassign # checks that package variables are not reassigned.
     - recvcheck # checks methods on a type don't mix pointer and value receivers
     - tagalign #  checks struct tags that do not align with the specified column in struct definitions.
@@ -70,17 +76,27 @@ linters:
         source: 'if .*err :='
         linters:
           - govet
-      # rule packages are deliberately named after their rule IDs (AZR001), following tfproviderlint convention
+      # rule packages are deliberately named after their rule IDs (AZR001) and imported under them,
+      # following tfproviderlint convention; the same goes for the category packages (AZR, AZS)
       - path: 'checks/'
         text: 'ST1003'
         linters:
           - staticcheck
+      - path: 'checks/'
+        text: 'package-directory-mismatch|import-alias-naming|package-naming'
+        linters:
+          - revive
       # table-driven tests repeat literals ("./...", flag names) by nature; constants would hurt readability
       - path: '_test\.go'
         linters:
           - goconst
 
   settings:
+    custom:
+      azproviderlint:
+        type: module
+        settings:
+          enable: [AZG] # general Go style rules only; AZR/AZD/AZS/AZT/AZV are azure-provider specific
     errcheck:
       check-type-assertions: true # unchecked x.(T) assertions panic on mismatch
       exclude-functions:
@@ -95,6 +111,23 @@ linters:
           sizeThreshold: 512
         hugeParam:
           sizeThreshold: 512
+    revive:
+      enable-all-rules: true
+      rules:
+        - {name: line-length-limit, disabled: true}        # no line length limit here, no matter how unwieldy
+        - {name: add-constant, disabled: true}             # goconst-on-steroids; repeated literals in tables and messages are by design
+        - {name: exported, disabled: true}                 # doc comments on every exported symbol is more ceremony than needed
+        - {name: cognitive-complexity, disabled: true}     # no complexity metric gates, matching the absence of gocyclo/funlen
+        - {name: cyclomatic, disabled: true}               # same as cognitive-complexity
+        - {name: function-result-limit, disabled: true}    # return-count cap; another metric gate
+        - {name: function-length, disabled: true}          # function-size cap; another metric gate
+        - {name: argument-limit, disabled: true}           # param-count cap; another metric gate
+        - {name: max-control-nesting, disabled: true}      # nesting-depth cap; another metric gate
+        - {name: max-public-structs, disabled: true}       # struct-count cap; another metric gate
+        - {name: enforce-switch-style, disabled: true}     # empty defaults would silence the stronger exhaustive check
+        - {name: flag-parameter, disabled: true}           # bool options plumbed from analyzer flags (tests, include-parameters) are the design
+        - {name: unhandled-error, disabled: true}          # errcheck covers this with sane defaults and nolint support
+        - {name: unchecked-type-assertion, arguments: [{accept-ignored-assertion-result: true}]} # `fn, _ := obj.(*types.Func)` is the idiom for "nil unless it is one"
     govet:
       enable-all: true # includes nilness and other checks off by default
       disable:
@@ -112,7 +145,7 @@ linters:
     tagalign:
       sort: true
     predeclared:
-      ignore: ["new","min","max"] # should we use newer, minimum, and maximum instead?
+      ignore: ["new", "min", "max"] # should we use newer, minimum, and maximum instead?
 
 formatters:
   enable:

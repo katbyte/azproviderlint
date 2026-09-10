@@ -12,7 +12,5 @@ func TestAZS005(t *testing.T) {
 	t.Parallel()
 
 	_, filename, _, _ := runtime.Caller(0)
-	dir := filepath.Join(filepath.Dir(filename), "testdata")
-
-	analysistest.Run(t, dir, Analyzer, "azs005")
+	analysistest.Run(t, filepath.Join(filepath.Dir(filename), "testdata"), Analyzer, "azs005")
 }

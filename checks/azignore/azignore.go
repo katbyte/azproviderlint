@@ -52,26 +52,22 @@ func ParseDirective(text string) (rules []string, reason string, ok bool) {
 // immediately preceding it. Multiple checks can be listed: '//azignore:AZG001,AZR001 - why'.
 func Wrap(analyzers []*analysis.Analyzer) []*analysis.Analyzer {
 	for _, a := range analyzers {
-		wrap(a)
+		run := a.Run
+		name := a.Name
+		a.Run = func(pass *analysis.Pass) (any, error) {
+			ignored := Lines(pass, name)
+			report := pass.Report
+			pass.Report = func(d analysis.Diagnostic) {
+				pos := pass.Fset.Position(d.Pos)
+				if lines, ok := ignored[pos.Filename]; ok && lines[pos.Line] {
+					return
+				}
+				report(d)
+			}
+			return run(pass)
+		}
 	}
 	return analyzers
-}
-
-func wrap(a *analysis.Analyzer) {
-	run := a.Run
-	name := a.Name
-	a.Run = func(pass *analysis.Pass) (any, error) {
-		ignored := Lines(pass, name)
-		report := pass.Report
-		pass.Report = func(d analysis.Diagnostic) {
-			pos := pass.Fset.Position(d.Pos)
-			if lines, ok := ignored[pos.Filename]; ok && lines[pos.Line] {
-				return
-			}
-			report(d)
-		}
-		return run(pass)
-	}
 }
 
 // Lines collects, per filename, the lines on which diagnostics from the named analyzer are
@@ -96,6 +92,33 @@ func Lines(pass *analysis.Pass, name string) map[string]map[int]bool {
 				}
 				ignored[pos.Filename][pos.Line] = true
 				ignored[pos.Filename][pos.Line+1] = true
+			}
+		}
+	}
+
+	return ignored
+}
+
+// ExactLines collects, per filename, only the lines carrying a matching directive for the
+// named analyzer — unlike Lines, it does not also mark the line below. Checks that scope a
+// suppression to an exact line (e.g. a directive on a composite literal's opening line) use
+// this so a trailing directive does not leak onto the following line.
+func ExactLines(pass *analysis.Pass, name string) map[string]map[int]bool {
+	ignored := map[string]map[int]bool{}
+
+	for _, file := range pass.Files {
+		for _, group := range file.Comments {
+			for _, comment := range group.List {
+				rules, _, ok := ParseDirective(comment.Text)
+				if !ok || !slices.Contains(rules, name) {
+					continue
+				}
+
+				pos := pass.Fset.Position(comment.Pos())
+				if ignored[pos.Filename] == nil {
+					ignored[pos.Filename] = map[int]bool{}
+				}
+				ignored[pos.Filename][pos.Line] = true
 			}
 		}
 	}

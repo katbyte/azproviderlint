@@ -5,3 +5,5 @@ dist/
 /azproviderlint
 *.test
 *.out
+.tools/bin/
+.tools/venv/
