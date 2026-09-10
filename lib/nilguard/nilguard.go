@@ -819,10 +819,9 @@ func terminates(block *ast.BlockStmt) bool {
 	return false
 }
 
-// isNonNilSource reports whether expr can never be nil: an address-of, new(...), a
-// pointer.To*(...) call (always allocates), a flag package constructor (returns a pointer
-// into the flag set; Lookup may return nil), an immediately-invoked func literal whose returns all qualify, or a
-// call to a function ReturnsAnalyzer proved never returns nil in that position.
+// isNonNilSource reports whether expr can never be nil: an address-of, new(...), an
+// immediately-invoked func literal whose returns all qualify, or a call to a function
+// ReturnsAnalyzer proved never returns nil in that position.
 func isNonNilSource(pass *analysis.Pass, expr ast.Expr) bool {
 	switch x := ast.Unparen(expr).(type) {
 	case *ast.UnaryExpr:
@@ -837,12 +836,10 @@ func isNonNilSource(pass *analysis.Pass, expr ast.Expr) bool {
 		if lit, ok := ast.Unparen(x.Fun).(*ast.FuncLit); ok {
 			return funcLitReturnsNonNil(pass, lit)
 		}
-		fn := astx.CalledFunc(pass, x)
-		if fn == nil || fn.Pkg() == nil {
-			return false
-		}
-		return (fn.Pkg().Path() == pointerpkg.PkgPath && strings.HasPrefix(fn.Name(), "To")) ||
-			(fn.Pkg().Path() == "flag" && fn.Name() != "Lookup") || nonNilResult(pass, fn, 0)
+		// any other call is trusted only on its own proof: pointer.To (`return &v`) and the
+		// flag constructors (`p := new(T); ...; return p`) earn their verdict like any
+		// other function
+		return nonNilResult(pass, astx.CalledFunc(pass, x), 0)
 	}
 	return false
 }
