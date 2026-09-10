@@ -161,6 +161,98 @@ func run(pass *analysis.Pass) (any, error) {
 		})
 }
 
+// Sinks returns the variables whose value reaches a write-body argument anywhere in body —
+// passed whole, by address, or through a field — so a value copied into one of them, or into
+// one of its fields, is on its way into a request.
+func Sinks(pass *analysis.Pass, body ast.Node) map[types.Object]bool {
+	sinks := map[types.Object]bool{}
+	ast.Inspect(body, func(n ast.Node) bool {
+		if call, ok := n.(*ast.CallExpr); ok {
+			for j, a := range call.Args {
+				if CallBodyArg(pass, call, j) {
+					if o := rootObj(pass, a); o != nil {
+						sinks[o] = true
+					}
+				}
+			}
+		}
+		return true
+	})
+	return sinks
+}
+
+// SentAsBody reports whether expr's value becomes a request body: climbing out through
+// parens, calls, composite literals, and address-of, it lands on a write-body argument or on
+// an assignment into a sink — whole, or one of its fields. Any call the value passes through
+// (a conversion, pointer.To, expandFoo) is assumed to carry it into its result; the
+// conservative reading only ever withholds a fix.
+func SentAsBody(pass *analysis.Pass, parents map[ast.Node]ast.Node, sinks map[types.Object]bool, expr ast.Expr) bool {
+	node := ast.Node(expr)
+	for {
+		switch p := parents[node].(type) {
+		case *ast.ParenExpr, *ast.CompositeLit, *ast.KeyValueExpr:
+			node = p
+		case *ast.UnaryExpr:
+			if p.Op != token.AND {
+				return false
+			}
+			node = p
+		case *ast.CallExpr:
+			isArg := false
+			for i, a := range p.Args {
+				if a == node {
+					isArg = true
+					if CallBodyArg(pass, p, i) {
+						return true
+					}
+				}
+			}
+			if !isArg {
+				return false
+			}
+			node = p
+		case *ast.AssignStmt:
+			if len(p.Lhs) == len(p.Rhs) {
+				for i, r := range p.Rhs {
+					if r == node && sinks[rootObj(pass, p.Lhs[i])] {
+						return true
+					}
+				}
+			}
+			return false
+		default:
+			return false
+		}
+	}
+}
+
+// rootObj returns the variable at the root of a chain like `m.F.G`, `&m`, `*m`, or `m[i]`;
+// nil for anything else.
+func rootObj(pass *analysis.Pass, e ast.Expr) types.Object {
+	for {
+		switch x := ast.Unparen(e).(type) {
+		case *ast.Ident:
+			if o := pass.TypesInfo.Uses[x]; o != nil {
+				return o
+			}
+			return pass.TypesInfo.Defs[x]
+		case *ast.SelectorExpr:
+			e = x.X
+		case *ast.StarExpr:
+			e = x.X
+		case *ast.IndexExpr:
+			e = x.X
+		case *ast.UnaryExpr:
+			if x.Op != token.AND {
+				return nil
+			}
+			e = x.X
+		default:
+			return nil
+		}
+	}
+}
+
 // isWriteMethodValue reports whether e is net/http's MethodPut/MethodPatch/MethodPost or the
 // equivalent string literal.
 func isWriteMethodValue(pass *analysis.Pass, e ast.Expr) bool {
