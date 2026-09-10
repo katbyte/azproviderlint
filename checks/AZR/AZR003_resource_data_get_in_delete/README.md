@@ -1,8 +1,10 @@
 # AZR003 - no d.Get in Delete functions
 
-The AZR003 analyzer reports `d.Get(...)` (untyped resources, in the function registered as `Delete:`) and `metadata.ResourceData.Get(...)` (typed resources, in the `Delete() sdk.ResourceFunc` method) being used inside a resource's Delete function.
+AZR003 reports schema reads inside a resource's Delete function: `d.Get(...)` in untyped resources, and `metadata.ResourceData.Get(...)` in typed resources.
 
-During deletion the state may be partial or the config unavailable, so schema reads do not work as expected in Delete. Everything a Delete function needs should come from parsing the Resource ID.
+When Terraform deletes a resource, the config may already be gone and the state may be partial, so `Get` can return empty or stale values. Everything Delete needs should come from parsing the resource ID.
+
+The Delete function is whatever is registered under `Delete:` for an untyped resource, or the `Delete() sdk.ResourceFunc` method for a typed one.
 
 ## Flagged Code
 
@@ -38,14 +40,10 @@ func resourceExampleDelete(d *pluginsdk.ResourceData, meta interface{}) error {
 
 ## Ignoring Reports
 
-When run via golangci-lint, reports can be ignored with a `//nolint:azproviderlint` Go code comment at the end of the offending line or on the line immediately preceding it:
-
-```go
-name := d.Get("name").(string) //nolint:azproviderlint
-```
-
-To ignore only this check on a line — leaving any other azproviderlint checks active — use a `//azignore:AZR003 - <reason>` comment instead, in the same positions:
+Put `//azignore:AZR003 - <reason>` at the end of the line, or on the line above it. The reason is required.
 
 ```go
 name := d.Get("name").(string) //azignore:AZR003 - <reason>
 ```
+
+Under golangci-lint, `//nolint:azproviderlint` in the same place also works, but it silences every azproviderlint check on that line.

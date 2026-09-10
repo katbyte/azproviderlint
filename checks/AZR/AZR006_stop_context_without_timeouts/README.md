@@ -1,8 +1,8 @@
 # AZR006 - use timeouts wrappers, not StopContext
 
-The AZR006 analyzer reports `ctx` being assigned directly from the provider meta object (`ctx := meta.(*clients.Client).StopContext`).
+AZR006 reports `ctx := meta.(*clients.Client).StopContext`.
 
-Custom Timeouts only work when the StopContext is wrapped with the appropriate timeouts helper (`timeouts.ForCreate`, `ForCreateUpdate`, `ForRead`, `ForUpdate` or `ForDelete`) and the resource configures `Timeouts` on its schema.
+Users can set custom timeouts on a resource, but they only take effect when the context is wrapped with the matching helper: `timeouts.ForCreate`, `ForCreateUpdate`, `ForRead`, `ForUpdate`, or `ForDelete`. The resource also needs a `Timeouts` block in its schema. Using `StopContext` directly means the user's timeout is ignored.
 
 ## Flagged Code
 
@@ -23,7 +23,7 @@ func resourceExampleCreate(d *pluginsdk.ResourceData, meta interface{}) error {
 }
 ```
 
-with the resource configuring Timeouts:
+with `Timeouts` set on the resource:
 
 ```go
 Timeouts: &pluginsdk.ResourceTimeout{
@@ -36,14 +36,10 @@ Timeouts: &pluginsdk.ResourceTimeout{
 
 ## Ignoring Reports
 
-When run via golangci-lint, reports can be ignored with a `//nolint:azproviderlint` Go code comment at the end of the offending line or on the line immediately preceding it:
-
-```go
-ctx := meta.(*clients.Client).StopContext //nolint:azproviderlint
-```
-
-To ignore only this check on a line — leaving any other azproviderlint checks active — use a `//azignore:AZR006 - <reason>` comment instead, in the same positions:
+Put `//azignore:AZR006 - <reason>` at the end of the line, or on the line above it. The reason is required.
 
 ```go
 ctx := meta.(*clients.Client).StopContext //azignore:AZR006 - <reason>
 ```
+
+Under golangci-lint, `//nolint:azproviderlint` in the same place also works, but it silences every azproviderlint check on that line.

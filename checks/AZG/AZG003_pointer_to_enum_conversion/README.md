@@ -1,12 +1,12 @@
 # AZG003 - use pointer.ToEnum for enum conversions
 
-The AZG003 analyzer reports `pointer.To` calls that wrap an explicit [go-azure-sdk](https://github.com/hashicorp/go-azure-sdk) enum type conversion — `pointer.To(sdk.SomeEnum(v))` — where the generic `pointer.ToEnum[sdk.SomeEnum](v)` helper from [go-azure-helpers](https://github.com/hashicorp/go-azure-helpers) should be used instead.
+AZG003 reports `pointer.To(sdk.SomeEnum(v))`, which should be `pointer.ToEnum[sdk.SomeEnum](v)`.
 
-`pointer.ToEnum` makes the intent explicit and keeps the enum type in one place, avoiding the redundant `sdk.SomeEnum(...)` conversion. The check only fires when the converted type is a go-azure-sdk enum: a named string type declared in a `github.com/hashicorp/go-azure-sdk` package that exposes the generated `PossibleValuesFor<Name>() []T` helper. Plain `pointer.To` calls on strings, ints, or non-SDK types are left alone.
+Both come from [go-azure-helpers](https://github.com/hashicorp/go-azure-helpers). `ToEnum` says what is happening and names the enum type once instead of wrapping a conversion in a call.
 
-`pointer.ToEnum` has the signature `func ToEnum[T ~string](input string) *T`, so the rewrite `pointer.ToEnum[sdk.SomeEnum](v)` only compiles when the converted value `v` is assignable to `string`. When `v` is itself a named string type (for example another enum), the report notes that the value must be wrapped in an explicit `string(...)` conversion — e.g. `pointer.ToEnum[sdk.SomeEnum](string(v))` — for the suggestion to compile.
+Only [go-azure-sdk](https://github.com/hashicorp/go-azure-sdk) enums are reported: a named string type from a go-azure-sdk package that has a generated `PossibleValuesFor<Name>()` helper. `pointer.To` on strings, numbers, and other types is left alone.
 
-The report carries a suggested fix, so `azproviderlint -AZG003 -fix` (or an editor applying the suggested fix) rewrites the call automatically — including the `string(...)` wrap when the converted value is not assignable to string.
+`ToEnum` takes a `string`. When `v` is some other named string type, such as another enum, the rewrite needs a `string(v)` wrap to compile, and the report says so.
 
 ## Flagged Code
 
@@ -21,21 +21,21 @@ return pointer.To(managedclusters.ArtifactSource(config["artifact_source"].(stri
 return pointer.ToEnum[virtualmachines.VirtualMachinePriorityTypes](priority)
 return pointer.ToEnum[managedclusters.ArtifactSource](config["artifact_source"].(string))
 
-// non-enum values are unaffected
+// not enums, not reported
 return pointer.To("regular string")
 return pointer.To(42)
 ```
 
+## The fix
+
+`-fix` rewrites the call, adding the `string(...)` wrap when it is needed.
+
 ## Ignoring Reports
 
-When run via golangci-lint, reports can be ignored with a `//nolint:azproviderlint` Go code comment at the end of the offending line or on the line immediately preceding it:
-
-```go
-return pointer.To(virtualmachines.OperatingSystemTypes("Linux")) //nolint:azproviderlint
-```
-
-To ignore only this check on a line — leaving any other azproviderlint checks active — use a `//azignore:AZG003 - <reason>` comment instead, in the same positions:
+Put `//azignore:AZG003 - <reason>` at the end of the line, or on the line above it. The reason is required.
 
 ```go
 return pointer.To(virtualmachines.OperatingSystemTypes("Linux")) //azignore:AZG003 - <reason>
 ```
+
+Under golangci-lint, `//nolint:azproviderlint` in the same place also works, but it silences every azproviderlint check on that line.

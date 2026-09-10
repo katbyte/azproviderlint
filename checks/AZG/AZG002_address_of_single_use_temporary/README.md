@@ -1,14 +1,10 @@
 # AZG002 - use new() instead of a single-use temporary's address
 
-The AZG002 analyzer reports single-use temporaries whose only use is taking their address: `v := <expr>` followed by `&v` in a later statement, where `v` has no other use in the function. The temporary exists only because `&` needs an addressable operand — Go 1.26's `new(<expr>)` says the same thing in one step at the use site. With `use: pointer.To` the rule suggests the go-azure-helpers `pointer.To(<expr>)` helper instead. `new(<expr>)` does not compile below Go 1.26, so on older packages new mode errors rather than guessing — set `use: pointer.To` explicitly there.
+AZG002 reports a variable that exists only so something can take its address: `v := <expr>` followed by `&v`, with no other use of `v` in the function.
 
-In new mode, existing `pointer.To(x)` calls are also reported — they should be `new(x)` — unless `allow: pointer.To` is set; when a rewrite leaves a file with no other reference to the pointer package, the fix deletes the then-unused import.
+Go needs something addressable to take a pointer to, and the temporary is the old way to get one. Since Go 1.26, `new(<expr>)` does the same thing in one step at the point of use. With `use: pointer.To` the rule suggests go-azure-helpers' `pointer.To(<expr>)` instead, which is what to set for packages below Go 1.26. In new mode the rule refuses to guess on those packages and reports an error.
 
-The `&v` may sit anywhere in a later statement of the same block — a call argument, a composite literal field, an assignment, a return — at most `max-gap` source lines below the declaration (default 100). The initializer must be single-line and free of calls and channel receives (type conversions are fine), so moving its evaluation to the address-of site cannot reorder observable effects. Nothing is reported when a statement between the declaration and the `&v` writes to, takes the address of, or shadows anything the initializer reads, or when the `&v` is captured by a nested function literal (the closure would defer the initializer's evaluation).
-
-The report carries a suggested fix, so `azproviderlint -AZG002 -fix` inlines the temporary automatically; in pointer.To mode the fix adds the pointer import when the file lacks it, and a conversion initializer fixes to `pointer.To(sdk.Enum(v))` — exactly the shape [AZG003](../AZG003_pointer_to_enum_conversion) then rewrites to `pointer.ToEnum`, so running both fixes converges.
-
-When the temporary copies a dereferenced pointer (`out := *p; return &out`), the message names both options and `fix-pointer-copy` picks the fix: `none` (default) offers no fix so a person chooses, `copy` keeps the copy-preserving `pointer.To(*p)`/`new(*p)`, and `share` substitutes `p` itself — an aliasing change the config opts into globally.
+In new mode existing `pointer.To(x)` calls are reported too, since they should now be `new(x)`. Set `allow: pointer.To` to keep them. When a rewrite leaves nothing else using the pointer package, the fix removes the import.
 
 ## Flagged Code
 
@@ -36,7 +32,7 @@ payload.Name = new("hello")
 
 ```go
 name := flattenName(input)
-payload.Name = &name // initializer calls a function
+payload.Name = &name // the initializer calls a function
 ```
 
 ```go
@@ -45,23 +41,39 @@ name = rename(name)
 payload.Name = &name // the variable has other uses
 ```
 
+## What counts
+
+The `&v` can be anywhere in a later statement of the same block: a call argument, a struct field, an assignment, a return. It must be within `max-gap` lines of the declaration.
+
+Not reported, because moving the initializer could change what the code does:
+
+- initializers that span lines, call a function, or receive from a channel (type conversions are fine)
+- something between the declaration and the `&v` writes to, takes the address of, or shadows anything the initializer reads
+- the `&v` is inside a closure, which would delay when the initializer runs
+
+## The fix
+
+`-fix` inlines the temporary. In pointer.To mode it adds the import if the file lacks it. A conversion like `v := sdk.Enum(x)` becomes `pointer.To(sdk.Enum(x))`, which is the exact shape [AZG003](../AZG003_pointer_to_enum_conversion) then turns into `pointer.ToEnum`, so running both fixes settles.
+
+When the temporary copies a dereferenced pointer (`out := *p; return &out`), there are two reasonable rewrites and they mean different things. `pointer.To(*p)` keeps the copy. Using `p` directly shares the pointer. The report names both. The `fix-pointer-copy` option says which one `-fix` applies, and the default `none` leaves the choice to a person.
+
 ## Options
 
 | Option | Default | Effect |
 |---|---|---|
-| `use` | `new` | suggested creation form: `new` or `pointer.To`; new mode errors on packages below go1.26 |
-| `allow` | | comma-separated forms to leave unreported where they already appear: `pointer.To` |
-| `max-gap` | 100 | maximum source lines between the declaration and the statement taking its address |
-| `fix-pointer-copy` | `none` | fix for a dereference-copy temporary (`out := *p; &out`): `none` reports without a fix, `copy` keeps the copy (`pointer.To(*p)`/`new(*p)`), `share` substitutes `p` — an aliasing change |
+| `use` | `new` | what to suggest: `new` or `pointer.To`. new mode errors on packages below go1.26 |
+| `allow` | | forms to leave alone where they already appear: `pointer.To` |
+| `max-gap` | 100 | most lines allowed between the declaration and the `&v` |
+| `fix-pointer-copy` | `none` | for `out := *p; &out`: `none` reports without a fix, `copy` uses `pointer.To(*p)` or `new(*p)`, `share` uses `p` |
 
-Set via `-AZG002.<option>` on the CLI or a rule-name key in the plugin's golangci settings.
+Set with `-AZG002.<option>` on the CLI or under the rule name in the golangci settings; see the [root README](../../../README.md#options).
 
 ## Ignoring Reports
 
-A named temporary can be deliberate documentation, so suppressions are expected where the name genuinely helps. When run via golangci-lint, reports can be ignored with a `//nolint:azproviderlint` Go code comment at the end of the offending line or on the line immediately preceding it.
-
-To ignore only this check on a line — leaving any other azproviderlint checks active — use a `//azignore:AZG002 - <reason>` comment instead, in the same positions:
+Sometimes the name is the point, because it documents an otherwise opaque value. Put `//azignore:AZG002 - <reason>` at the end of the declaration line, or on the line above it. The reason is required.
 
 ```go
 name := "hello" //azignore:AZG002 - <reason>
 ```
+
+Under golangci-lint, `//nolint:azproviderlint` in the same place also works, but it silences every azproviderlint check on that line.

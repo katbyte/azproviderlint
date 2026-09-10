@@ -1,10 +1,12 @@
-# AZS002 - schema defaults must match the declared type
+# AZS002 - schema Default values must match the declared Type
 
-The AZS002 analyzer reports `schema.Schema` declarations whose `Default` value's type does not match the declared `Type` — e.g. a `bool` default on a `schema.TypeInt` schema. The plugin SDK's `InternalValidate` does not type-check `Default`, so a mismatch only surfaces as an error at plan time.
+AZS002 reports a schema field whose `Default` does not match its `Type`, such as `Default: true` on a `TypeInt`.
 
-Constant values are resolved through the type checker, so named constants (`Default: SkuStandard`) are checked too, and azurerm's `pluginsdk` type aliases are recognised. Non-constant defaults are skipped, `TypeFloat` accepts both int and float constants, and list/set/map schema types (which cannot have literal defaults) are out of scope.
+The plugin SDK's own `InternalValidate` does not check this, so the mistake only shows up as an error when someone runs a plan.
 
-Ports [tfproviderlint PR #329 (S038)](https://github.com/bflad/tfproviderlint/pull/329) with direct constant-kind comparison.
+Named constants are resolved, so `Default: SkuStandard` is checked against the constant's type. `TypeFloat` accepts both int and float constants. Defaults that are not constants are skipped, as are list, set, and map types, which cannot have a literal default. The `pluginsdk` aliases used in azurerm are recognised.
+
+Ported from [tfproviderlint PR #329 (S038)](https://github.com/bflad/tfproviderlint/pull/329).
 
 ## Flagged Code
 
@@ -28,14 +30,10 @@ Ports [tfproviderlint PR #329 (S038)](https://github.com/bflad/tfproviderlint/pu
 
 ## Ignoring Reports
 
-When run via golangci-lint, reports can be ignored with a `//nolint:azproviderlint` Go code comment at the end of the offending line or on the line immediately preceding it:
-
-```go
-Default: true, //nolint:azproviderlint
-```
-
-To ignore only this check on a line — leaving any other azproviderlint checks active — use a `//azignore:AZS002 - <reason>` comment instead, in the same positions:
+Put `//azignore:AZS002 - <reason>` at the end of the line, or on the line above it. The reason is required.
 
 ```go
 Default: true, //azignore:AZS002 - <reason>
 ```
+
+Under golangci-lint, `//nolint:azproviderlint` in the same place also works, but it silences every azproviderlint check on that line.

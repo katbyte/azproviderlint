@@ -41,7 +41,7 @@ var (
 	narration = regexp.MustCompile(`(?i)^(preparing (the )?arguments|creating|updating|deleting|retrieving|reading|importing|import check|decoding( the)? state|checking for( the| an| a)? (presence|existence|existing)|created|updated|deleted|retrieved)\b`)
 	// keep matches messages that carry information beyond narration: ID rewrites (a state
 	// migration), state removal, polling, and a step being skipped.
-	keep = regexp.MustCompile(`(?i)\bid\b|not found|removing from state|does not exist|waiting|skipp`)
+	keep = regexp.MustCompile(`(?i)\bid\b|not found|removing from state|does not exist|waiting|skip`)
 )
 
 func run(pass *analysis.Pass) (any, error) {

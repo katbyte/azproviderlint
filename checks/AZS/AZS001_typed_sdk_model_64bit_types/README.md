@@ -1,8 +1,10 @@
-# AZS001 - typed sdk models must use explicit 64 bit
+# AZS001 - typed SDK model numeric fields must be 64-bit (int64/float64)
 
-The AZS001 analyzer reports typed SDK model fields (struct fields tagged `tfschema`) using non-64-bit numeric types: `int`, `int16` or `int32` instead of `int64`, and `float32` instead of `float64`.
+AZS001 reports number fields in typed SDK models (struct fields tagged `tfschema`) that are not 64-bit: `int`, `int16`, or `int32` instead of `int64`, and `float32` instead of `float64`.
 
-The typed SDK's `Encode`/`Decode` work with `int64` and `float64`; models using other widths fail at runtime. The check covers slices, maps and pointers of these types, and resolves named types and aliases through the type checker (matching what `reflect.Kind()` sees at runtime), so `type Capacity int` is also flagged.
+The typed SDK's `Encode` and `Decode` only handle `int64` and `float64`. Any other width compiles fine and then fails at runtime.
+
+Slices, maps, and pointers of these types are checked too. Named types are resolved to what they really are, so `type Capacity int` is also reported.
 
 ## Flagged Code
 
@@ -28,14 +30,10 @@ type ServerModel struct {
 
 ## Ignoring Reports
 
-When run via golangci-lint, reports can be ignored with a `//nolint:azproviderlint` Go code comment at the end of the offending line or on the line immediately preceding it:
-
-```go
-Capacity int `tfschema:"capacity"` //nolint:azproviderlint
-```
-
-To ignore only this check on a line — leaving any other azproviderlint checks active — use a `//azignore:AZS001 - <reason>` comment instead, in the same positions:
+Put `//azignore:AZS001 - <reason>` at the end of the line, or on the line above it. The reason is required.
 
 ```go
 Capacity int `tfschema:"capacity"` //azignore:AZS001 - <reason>
 ```
+
+Under golangci-lint, `//nolint:azproviderlint` in the same place also works, but it silences every azproviderlint check on that line.
