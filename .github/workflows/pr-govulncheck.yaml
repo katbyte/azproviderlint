@@ -1,5 +1,5 @@
 ---
-name: govulncheck
+name: Go Vulnerability Check
 on:
   push:
     branches: [ 'main' ]
@@ -10,7 +10,7 @@ on:
       - 'go.mod'
       - 'go.sum'
       - 'vendor/**'
-      - '.github/workflows/govulncheck.yaml'
+      - '.github/workflows/pr-govulncheck.yaml'
   schedule:
     - cron: '17 4 * * 1' # weekly, so new CVEs against unchanged code still get flagged
 
@@ -23,7 +23,4 @@ jobs:
     steps:
       - uses: golang/govulncheck-action@032d45514ae346b1db93c04b0c90b841c370344f # v1.1.0
         with:
-          # go-version-input defaults to 'stable', which overrides go-version-file entirely —
-          # blank it so the pinned .go-version is what actually gets scanned
-          go-version-input: ''
           go-version-file: ./.go-version

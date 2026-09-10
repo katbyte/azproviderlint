@@ -2,9 +2,9 @@
 
 [![GitHub release](https://img.shields.io/github/v/release/katbyte/azproviderlint?color=blueviolet)](https://github.com/katbyte/azproviderlint/releases/latest)
 ![build](https://github.com/katbyte/azproviderlint/actions/workflows/build.yaml/badge.svg)
-![test](https://github.com/katbyte/azproviderlint/actions/workflows/test.yaml/badge.svg)
-![lint](https://github.com/katbyte/azproviderlint/actions/workflows/lint.yaml/badge.svg)
-![govulncheck](https://github.com/katbyte/azproviderlint/actions/workflows/govulncheck.yaml/badge.svg)
+![test](https://github.com/katbyte/azproviderlint/actions/workflows/pr-tests.yaml/badge.svg)
+![lint](https://github.com/katbyte/azproviderlint/actions/workflows/pr-golangci-lint.yaml/badge.svg)
+![govulncheck](https://github.com/katbyte/azproviderlint/actions/workflows/pr-govulncheck.yaml/badge.svg)
 ![CodeQL](https://github.com/katbyte/azproviderlint/actions/workflows/codeql-analysis.yml/badge.svg)
 [![Go Version](https://img.shields.io/github/go-mod/go-version/katbyte/azproviderlint?color=00ADD8)](https://github.com/katbyte/azproviderlint/blob/main/go.mod)
 [![License](https://img.shields.io/github/license/katbyte/azproviderlint?color=blue)](https://github.com/katbyte/azproviderlint/blob/main/LICENSE)

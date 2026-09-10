@@ -52,26 +52,22 @@ func ParseDirective(text string) (rules []string, reason string, ok bool) {
 // immediately preceding it. Multiple checks can be listed: '//azignore:AZG001,AZR001 - why'.
 func Wrap(analyzers []*analysis.Analyzer) []*analysis.Analyzer {
 	for _, a := range analyzers {
-		wrap(a)
+		run := a.Run
+		name := a.Name
+		a.Run = func(pass *analysis.Pass) (any, error) {
+			ignored := Lines(pass, name)
+			report := pass.Report
+			pass.Report = func(d analysis.Diagnostic) {
+				pos := pass.Fset.Position(d.Pos)
+				if lines, ok := ignored[pos.Filename]; ok && lines[pos.Line] {
+					return
+				}
+				report(d)
+			}
+			return run(pass)
+		}
 	}
 	return analyzers
-}
-
-func wrap(a *analysis.Analyzer) {
-	run := a.Run
-	name := a.Name
-	a.Run = func(pass *analysis.Pass) (any, error) {
-		ignored := Lines(pass, name)
-		report := pass.Report
-		pass.Report = func(d analysis.Diagnostic) {
-			pos := pass.Fset.Position(d.Pos)
-			if lines, ok := ignored[pos.Filename]; ok && lines[pos.Line] {
-				return
-			}
-			report(d)
-		}
-		return run(pass)
-	}
 }
 
 // Lines collects, per filename, the lines on which diagnostics from the named analyzer are

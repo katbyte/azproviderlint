@@ -165,5 +165,5 @@ func findOptionalAndComputedPositions(pass *analysis.Pass, cl *ast.CompositeLit)
 		}
 	}
 
-	return
+	return optionalPos, computedPos, hasOptional, hasComputed
 }
