@@ -61,7 +61,7 @@ The rule reads the code around the dereference and accepts it when any of these 
 
 A check covers exactly what it names. `if m.Properties != nil` does not cover `*m.Properties.Name`. Reassigning the variable from an unknown source between the check and the dereference cancels the check.
 
-Bare pointer parameters (`func f(x *T) { *x }`) are trusted by default, since the nil check belongs at the call site. Turn on `include-parameters` to report them. Fields reached through a parameter, like `*props.Status`, are always checked.
+Bare pointer parameters (`func f(x *T) { *x }`, closures included) are trusted by default, since the nil check belongs at the call site. Turn on `include-parameters` to report them. Fields reached through a parameter, like `*props.Status`, are always checked.
 
 ## The fix
 

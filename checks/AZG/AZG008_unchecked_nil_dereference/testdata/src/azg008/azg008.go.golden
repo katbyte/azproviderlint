@@ -799,3 +799,23 @@ func invalidCompanionOverwrittenNested(d data, parse func(string) (*properties, 
 	}
 	d.Set("props", pointer.From(pr)) // want "dereference of possibly-nil `pr` may panic - add a nil check or use pointer.From"
 }
+
+// Should NOT be flagged: a closure's pointer parameter is trusted like any other parameter.
+func validClosureParam(d data) {
+	f := func(count *int) { d.Set("count", *count) }
+	f(nil)
+}
+
+// Should NOT be flagged: the ok companion is checked on the left of && in the same condition.
+func validOkInCondition(lookup func() (*int, bool)) bool {
+	if count, ok := lookup(); ok && *count > 0 {
+		return true
+	}
+	return false
+}
+
+// Should be flagged: `ok ||` runs the right operand when ok is false.
+func invalidOkOrInCondition(lookup func() (*int, bool)) bool {
+	count, ok := lookup()
+	return ok || pointer.From(count) > 0 // want "dereference of possibly-nil `count` may panic - add a nil check or use pointer.From"
+}
