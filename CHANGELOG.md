@@ -1,6 +1,6 @@
 ## Unreleased
 
-- **breaking**: move the provider-wide rules into the new `AZP` category — `AZS005`→`AZP002` (resource/data source parity), `AZS006`→`AZP003` (data source properties), `AZS008`→`AZP004` (sorted registration entries), `AZR005`→`AZP005` (case-insensitive segments flag); update `//azignore:` comments and settings references ([#PR](https://github.com/katbyte/azproviderlint/pull/PR))
+- **breaking**: move the provider-wide rules into the new `AZP` category — `AZS005`→`AZP002` (resource/data source parity), `AZS006`→`AZP003` (data source properties), `AZS008`→`AZP004` (sorted registration entries), `AZR005`→`AZP005` (case-insensitive segments flag); update `//azignore:` comments and settings references ([#48](https://github.com/katbyte/azproviderlint/pull/48))
 - add rule `AZP001`: Microsoft Learn/Docs URLs in comments and strings must not carry a locale segment (`/en-us/`), so readers get their own language; fixable with `-fix`; new `AZP` category for provider-wide conventions ([#47](https://github.com/katbyte/azproviderlint/pull/47))
 
 ## v0.8.0 (2026-09-09)
