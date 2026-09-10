@@ -1,6 +1,6 @@
 ## Unreleased
 
-- add rule `AZR010`: a `flatten*` call must not sit under a caller-side nil check on its pointer argument — the flatten function handles nil itself; callers of one that already does get a fix dropping the check (a per-function fact, so helpers in other packages count) ([#PR](https://github.com/katbyte/azproviderlint/pull/PR))
+- add rule `AZR010`: a `flatten*` call must not sit under a caller-side nil check on its pointer argument — the flatten function handles nil itself; callers of one that already does get a fix dropping the check (a per-function fact, so helpers in other packages count) ([#46](https://github.com/katbyte/azproviderlint/pull/46))
 - add rule `AZS009`: computed-only schema fields must not set input-only attributes (`ValidateFunc`, `MaxItems`, `Default`, `ConflictsWith`, ...) and fields nested in a computed-only block or a typed resource's `Attributes()` must not be `Optional`/`Required`; the plugin SDK misses the nested cases; fixable with `-fix`
 - `AZG008`: pointer parameters of nested closures are trusted like a function's own (`func(ctx context.Context, state *pluginsdk.InstanceState) { *state.ID }` no longer reports `state`); `include-parameters` covers them too ([#45](https://github.com/katbyte/azproviderlint/pull/45))
 - `AZG008`: an `err`/`ok` companion checked on the left of `&&`/`||` in the same condition as the dereference (`if x, ok := f(); ok && *x != ""`) now counts as a guard ([#45](https://github.com/katbyte/azproviderlint/pull/45))
