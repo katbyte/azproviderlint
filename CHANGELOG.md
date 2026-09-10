@@ -9,7 +9,6 @@
 - `AZG008`: no report or fix where the pointee must be addressable (`(*x).F = v`, `(*x)[k] = v`, `&(*x).F`, `(*x).M()` with a pointer receiver) ([#36](https://github.com/katbyte/azproviderlint/pull/36), [#37](https://github.com/katbyte/azproviderlint/pull/37))
 - `AZG002`: `fix-pointer-copy` picks the fix for `out := *p; &out` — `none` (default), `copy`, or `share` ([#35](https://github.com/katbyte/azproviderlint/pull/35))
 - release: binaries are signed with cosign, GitHub artifact attestations (`gh attestation verify <file> -R katbyte/azproviderlint`), and SLSA provenance ([#39](https://github.com/katbyte/azproviderlint/pull/39))
-- docs: READMEs rewritten in plain language, with a glossary in the root README ([#43](https://github.com/katbyte/azproviderlint/pull/43))
 
 ## v0.7.1 (2026-09-04)
 
