@@ -786,3 +786,16 @@ func invalidNestedRefetch(d data, get func() (resp, error), flag bool) {
 	}
 	d.Set("model", *existing.Model) // want "dereference of possibly-nil `existing.Model` may panic - add a nil check or use pointer.From"
 }
+
+// Should be flagged: the err checked after the call was overwritten in between, inside a
+// nested block, so it no longer speaks for the first result.
+func invalidCompanionOverwrittenNested(d data, parse func(string) (*properties, error), other func() error, flag bool) {
+	pr, err := parse("x")
+	if flag {
+		err = other()
+	}
+	if err != nil {
+		return
+	}
+	d.Set("props", *pr) // want "dereference of possibly-nil `pr` may panic - add a nil check or use pointer.From"
+}

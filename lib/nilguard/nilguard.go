@@ -253,6 +253,35 @@ func guardedKey(pass *analysis.Pass, parents map[ast.Node]ast.Node, at ast.Node,
 	return false
 }
 
+// touches reports whether a write to the path written covers key: the same path, or a prefix
+// of it (writing `x` replaces `x.F` too).
+func touches(written, key string) bool {
+	return written == key || strings.HasPrefix(key, written+".")
+}
+
+// indexOf returns child's position in stmts, or len(stmts) when child is nil or absent — the
+// point after all of them.
+func indexOf(stmts []ast.Stmt, child ast.Node) int {
+	for i, s := range stmts {
+		if s == child {
+			return i
+		}
+	}
+	return len(stmts)
+}
+
+// writesPath reports whether any write anywhere inside n touches key — the raw question, used
+// for identity: an alias or companion recorded before such a write no longer describes key.
+// assignsPath is the nil-safety variant that forgives writes proven non-nil.
+func writesPath(pass *analysis.Pass, n ast.Node, key string) bool {
+	for _, w := range nestedWrites(pass, n) {
+		if touches(w.key, key) {
+			return true
+		}
+	}
+	return false
+}
+
 // stmtList returns the statement list a block, case clause, or comm clause holds, nil for any
 // other node.
 func stmtList(n ast.Node) []ast.Stmt {
@@ -300,14 +329,7 @@ func precedingStmts(parents map[ast.Node]ast.Node, at ast.Node, visit func(ast.S
 			return
 		}
 		stmts := stmtList(node)
-		idx := -1
-		for i, s := range stmts {
-			if s == child {
-				idx = i
-				break
-			}
-		}
-		for i := idx - 1; i >= 0; i-- {
+		for i := indexOf(stmts, child) - 1; i >= 0; i-- {
 			if !visit(stmts[i]) {
 				return
 			}
@@ -320,31 +342,18 @@ func precedingStmts(parents map[ast.Node]ast.Node, at ast.Node, visit func(ast.S
 // enclosing if's init) and, once the walk reaches the assignment that defined key itself, the
 // chain it was copied from (`x := y.F` makes `x.G` equivalent to `y.F.G`). A prefix alias
 // carries the remaining path. The walk stops at key's own assignment — anything earlier
-// aliases a stale value — and an alias reassigned after its definition is dropped.
+// aliases a stale value — and a candidate written between its definition and at is dropped.
 func equivalentKeys(pass *analysis.Pass, parents map[ast.Node]ast.Node, at ast.Node, key string) []string {
 	keys := []string{key}
-	// chains assigned after the statement being examined (the walk runs backwards), so any
-	// alias involving them, or a path under them, is stale
-	var stale []string
-	isStale := func(k string) bool {
-		for _, sk := range stale {
-			if k == sk || strings.HasPrefix(k, sk+".") {
-				return true
-			}
-		}
-		return false
+	var seen []ast.Stmt // statements between the one being examined and at
+	stale := func(k string) bool {
+		return slices.ContainsFunc(seen, func(s ast.Stmt) bool { return writesPath(pass, s, k) })
 	}
 	precedingStmts(parents, at, func(s ast.Stmt) bool {
+		defer func() { seen = append(seen, s) }()
 		assign, ok := s.(*ast.AssignStmt)
 		if !ok {
-			// a compound statement: every write inside it is an unknown assignment
-			for _, w := range nestedWrites(pass, s) {
-				if w.key == key || strings.HasPrefix(key, w.key+".") {
-					return false
-				}
-				stale = append(stale, w.key)
-			}
-			return true
+			return !writesPath(pass, s, key) // a compound statement writing key ends the search
 		}
 		for i, lhs := range assign.Lhs {
 			lk, ok := PathKey(pass, lhs)
@@ -356,20 +365,15 @@ func equivalentKeys(pass *analysis.Pass, parents map[ast.Node]ast.Node, at ast.N
 			if len(assign.Lhs) == len(assign.Rhs) {
 				rk, rkOK = PathKey(pass, assign.Rhs[i])
 			}
-			if lk == key || strings.HasPrefix(key, lk+".") {
-				if k := rk + strings.TrimPrefix(key, lk); rkOK && !isStale(k) {
+			if touches(lk, key) {
+				if k := rk + strings.TrimPrefix(key, lk); rkOK && !stale(k) {
 					keys = append(keys, k)
 				}
 				return false
 			}
-			if rkOK {
-				if k := lk + strings.TrimPrefix(key, rk); rk == key || strings.HasPrefix(key, rk+".") {
-					if !isStale(k) {
-						keys = append(keys, k)
-					}
-				}
+			if k := lk + strings.TrimPrefix(key, rk); rkOK && touches(rk, key) && !stale(k) {
+				keys = append(keys, k)
 			}
-			stale = append(stale, lk)
 		}
 		return true
 	})
@@ -420,40 +424,35 @@ func nestedWrites(pass *analysis.Pass, n ast.Node) []nestedWrite {
 
 // companionOf returns the error and ok-bool keys returned alongside key by the nearest
 // preceding `key, err := f()` / `key, ok := f()`, or empty strings when key's latest
-// assignment is not such a call.
+// assignment is not such a call or the companion was written again before at.
 func companionOf(pass *analysis.Pass, parents map[ast.Node]ast.Node, at ast.Node, key string) (errKey, okKey string) {
-	reassigned := map[string]bool{} // companions overwritten after the call no longer speak for it
+	var seen []ast.Stmt
 	precedingStmts(parents, at, func(s ast.Stmt) bool {
+		defer func() { seen = append(seen, s) }()
 		assign, ok := s.(*ast.AssignStmt)
 		if !ok {
-			for _, w := range nestedWrites(pass, s) {
-				if w.key == key || strings.HasPrefix(key, w.key+".") {
-					return false
-				}
-				reassigned[w.key] = true
-			}
-			return true
+			return !writesPath(pass, s, key)
 		}
 		for _, lhs := range assign.Lhs {
 			lk, ok := PathKey(pass, lhs)
-			if !ok {
+			if !ok || !touches(lk, key) {
 				continue
 			}
-			if lk == key || strings.HasPrefix(key, lk+".") {
-				// only a call's extra results are companions: a type assertion's or map
-				// lookup's ok says nothing about the value being nil
-				if _, isCall := ast.Unparen(assign.Rhs[0]).(*ast.CallExpr); isCall && lk == key && len(assign.Lhs) > 1 && len(assign.Rhs) == 1 {
-					errKey, okKey = companionKeys(pass, assign)
-					if reassigned[errKey] {
-						errKey = ""
-					}
-					if reassigned[okKey] {
-						okKey = ""
-					}
+			// only a call's extra results are companions: a type assertion's or map
+			// lookup's ok says nothing about the value being nil
+			if _, isCall := ast.Unparen(assign.Rhs[0]).(*ast.CallExpr); isCall && lk == key && len(assign.Lhs) > 1 && len(assign.Rhs) == 1 {
+				errKey, okKey = companionKeys(pass, assign)
+				written := func(k string) bool {
+					return k != "" && slices.ContainsFunc(seen, func(s ast.Stmt) bool { return writesPath(pass, s, k) })
 				}
-				return false
+				if written(errKey) {
+					errKey = ""
+				}
+				if written(okKey) {
+					okKey = ""
+				}
 			}
-			reassigned[lk] = true
+			return false
 		}
 		return true
 	})
@@ -470,13 +469,7 @@ func companionOf(pass *analysis.Pass, parents map[ast.Node]ast.Node, at ast.Node
 // other assignment settles the value as unknown: settled tells the caller to stop — guards in
 // enclosing scopes predate the assignment and no longer hold.
 func precededByGuard(pass *analysis.Pass, parents map[ast.Node]ast.Node, stmts []ast.Stmt, child ast.Node, key string, depth int) (guarded bool, alias string, settled bool) {
-	idx := len(stmts) // a nil child asks about the value once all of stmts have run
-	for i, s := range stmts {
-		if s == child {
-			idx = i
-			break
-		}
-	}
+	idx := indexOf(stmts, child) // a nil child asks about the value once all of stmts have run
 	for i := idx - 1; i >= 0; i-- {
 		switch s := stmts[i].(type) {
 		case *ast.IfStmt:
@@ -526,7 +519,7 @@ func assignsPath(pass *analysis.Pass, parents map[ast.Node]ast.Node, n ast.Node,
 		return false
 	}
 	for _, w := range nestedWrites(pass, n) {
-		if w.key != key && !strings.HasPrefix(key, w.key+".") {
+		if !touches(w.key, key) {
 			continue
 		}
 		// judge the write where it happens: is key still proven non-nil at the end of the
@@ -583,10 +576,7 @@ func endsAssignedNonNil(pass *analysis.Pass, parents map[ast.Node]ast.Node, stmt
 func assignmentGuard(pass *analysis.Pass, assign *ast.AssignStmt, key string, following []ast.Stmt) (guarded bool, alias string, settled, matched bool) {
 	for j, lhs := range assign.Lhs {
 		lk, ok := PathKey(pass, lhs)
-		if !ok {
-			continue
-		}
-		if lk != key && !strings.HasPrefix(key, lk+".") {
+		if !ok || !touches(lk, key) {
 			continue
 		}
 		if len(assign.Lhs) == len(assign.Rhs) {
@@ -734,21 +724,16 @@ func companionCheckedBetween(pass *analysis.Pass, assign *ast.AssignStmt, betwee
 		if errKey == "" && okKey == "" {
 			return false
 		}
-		switch s := s.(type) {
-		case *ast.IfStmt:
-			if s.Else == nil && terminates(s.Body) && condProvesInvalid(pass, s.Cond, errKey, okKey) {
-				return true
-			}
-		case *ast.AssignStmt:
-			// a companion overwritten before the check no longer speaks for the call
-			for _, lhs := range s.Lhs {
-				switch k, _ := PathKey(pass, lhs); k {
-				case errKey:
-					errKey = ""
-				case okKey:
-					okKey = ""
-				}
-			}
+		if ifs, ok := s.(*ast.IfStmt); ok && ifs.Else == nil && terminates(ifs.Body) && condProvesInvalid(pass, ifs.Cond, errKey, okKey) {
+			return true
+		}
+		// a companion overwritten before the check, anywhere in the statement, no longer
+		// speaks for the call
+		if errKey != "" && writesPath(pass, s, errKey) {
+			errKey = ""
+		}
+		if okKey != "" && writesPath(pass, s, okKey) {
+			okKey = ""
 		}
 	}
 	return false
