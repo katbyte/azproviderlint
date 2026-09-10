@@ -229,3 +229,7 @@ require (
 	honnef.co/go/tools v0.8.1 // indirect
 	mvdan.cc/unparam v0.0.0-20260823230713-2fa3d841b0c8 // indirect
 )
+
+// actionlint v1.7.12 does not compile against yaml/v4 rc.6 (pulled in by gosec via golangci-lint);
+// pin to the rc actionlint targets until a release catches up, then drop this
+replace go.yaml.in/yaml/v4 => go.yaml.in/yaml/v4 v4.0.0-rc.3
