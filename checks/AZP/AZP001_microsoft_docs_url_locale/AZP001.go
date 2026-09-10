@@ -7,6 +7,7 @@ import (
 	"go/ast"
 	"go/token"
 	"regexp"
+	"strings"
 
 	"golang.org/x/tools/go/analysis"
 	"golang.org/x/tools/go/analysis/passes/inspect"
@@ -24,9 +25,12 @@ var Analyzer = &analysis.Analyzer{
 	Run:      run,
 }
 
-// localeURL captures the locale segment, trailing slash included, so deleting the capture
-// leaves `host/rest`.
-var localeURL = regexp.MustCompile(`https?://(?:learn|docs|msdn)\.microsoft\.com/([a-z]{2}-[a-z]{2}/)`)
+// hosts are the documentation hosts whose first path segment may be a locale; the scheme is
+// left to the text so the host cannot be part of a longer name.
+var hosts = []string{"://learn.microsoft.com/", "://docs.microsoft.com/", "://msdn.microsoft.com/"}
+
+// locale matches a locale segment, trailing slash included, at the start of a path.
+var locale = regexp.MustCompile(`^[a-z]{2}-[a-z]{2}/`)
 
 func run(pass *analysis.Pass) (any, error) {
 	insp, ok := pass.ResultOf[inspect.Analyzer].(*inspector.Inspector)
@@ -52,16 +56,26 @@ func run(pass *analysis.Pass) (any, error) {
 
 // check reports every locale segment in text, whose first byte sits at base in the source.
 func check(pass *analysis.Pass, base token.Pos, text string) {
-	for _, m := range localeURL.FindAllStringSubmatchIndex(text, -1) {
-		start, end := base+token.Pos(m[2]), base+token.Pos(m[3])
-		pass.Report(analysis.Diagnostic{
-			Pos:     base + token.Pos(m[0]),
-			End:     end,
-			Message: "Microsoft docs URL has a locale segment `" + text[m[2]:m[3]] + "` - drop it so readers get their own language",
-			SuggestedFixes: []analysis.SuggestedFix{{
-				Message:   "Drop the locale segment",
-				TextEdits: []analysis.TextEdit{{Pos: start, End: end}},
-			}},
-		})
+	for _, host := range hosts {
+		for from := 0; ; {
+			i := strings.Index(text[from:], host)
+			if i < 0 {
+				break
+			}
+			at := from + i + len(host)
+			if m := locale.FindStringIndex(text[at:]); m != nil {
+				start, end := base+token.Pos(at), base+token.Pos(at+m[1])
+				pass.Report(analysis.Diagnostic{
+					Pos:     base + token.Pos(from+i+len("://")),
+					End:     end,
+					Message: "Microsoft docs URL has a locale segment `" + text[at:at+m[1]] + "` - drop it so readers get their own language",
+					SuggestedFixes: []analysis.SuggestedFix{{
+						Message:   "Drop the locale segment",
+						TextEdits: []analysis.TextEdit{{Pos: start, End: end}},
+					}},
+				})
+			}
+			from = at
+		}
 	}
 }
