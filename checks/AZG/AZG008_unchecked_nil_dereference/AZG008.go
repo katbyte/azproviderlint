@@ -7,7 +7,6 @@ import (
 	"flag"
 	"fmt"
 	"go/ast"
-	"go/token"
 	"go/types"
 
 	"github.com/katbyte/azproviderlint/lib/astx"
@@ -93,9 +92,10 @@ func run(pass *analysis.Pass) (any, error) {
 	}
 
 	nilguard.ForEachFunc(pass, insp, checkTests, func(body *ast.BlockStmt, params map[types.Object]bool, parents map[ast.Node]ast.Node) {
+		sinks := requestbody.Sinks(pass, body)
 		ast.Inspect(body, func(x ast.Node) bool {
 			if star, ok := x.(*ast.StarExpr); ok {
-				checkDeref(pass, parents, params, star)
+				checkDeref(pass, parents, params, sinks, star)
 			}
 			return true
 		})
@@ -106,7 +106,7 @@ func run(pass *analysis.Pass) (any, error) {
 
 // checkDeref reports star when it dereferences a pointer-typed path in value context with no
 // reachable guard.
-func checkDeref(pass *analysis.Pass, parents map[ast.Node]ast.Node, params map[types.Object]bool, star *ast.StarExpr) {
+func checkDeref(pass *analysis.Pass, parents map[ast.Node]ast.Node, params, sinks map[types.Object]bool, star *ast.StarExpr) {
 	tv, ok := pass.TypesInfo.Types[star.X]
 	if !ok || tv.Type == nil {
 		return
@@ -139,93 +139,8 @@ func checkDeref(pass *analysis.Pass, parents map[ast.Node]ast.Node, params map[t
 
 	// a value sent as the body of a PUT/PATCH/POST must not be rewritten: pointer.From would
 	// turn the panic into an empty (or partly empty) write request. The report stands,
-	// without a fix, so the site gets a real guard. The dereferenced value counts when,
-	// climbing out through parens, conversions, composite literals, and address-of, it lands
-	// on a write-body argument (requestbody facts) or on an assignment into a local — whole,
-	// or one of its fields — that reaches such an argument anywhere in the function.
-	rootObj := func(e ast.Expr) types.Object {
-		for {
-			switch x := ast.Unparen(e).(type) {
-			case *ast.Ident:
-				if o := pass.TypesInfo.Uses[x]; o != nil {
-					return o
-				}
-				return pass.TypesInfo.Defs[x]
-			case *ast.SelectorExpr:
-				e = x.X
-			case *ast.StarExpr:
-				e = x.X
-			case *ast.IndexExpr:
-				e = x.X
-			case *ast.UnaryExpr:
-				if x.Op != token.AND {
-					return nil
-				}
-				e = x.X
-			default:
-				return nil
-			}
-		}
-	}
-	var body ast.Node = star
-	for parents[body] != nil {
-		body = parents[body]
-	}
-	sinks := map[types.Object]bool{}
-	ast.Inspect(body, func(n ast.Node) bool {
-		if call, ok := n.(*ast.CallExpr); ok {
-			for j, a := range call.Args {
-				if requestbody.CallBodyArg(pass, call, j) {
-					if o := rootObj(a); o != nil {
-						sinks[o] = true
-					}
-				}
-			}
-		}
-		return true
-	})
-	payload := false
-	node := ast.Node(star)
-climb:
-	for {
-		switch p := parents[node].(type) {
-		case *ast.ParenExpr, *ast.CompositeLit, *ast.KeyValueExpr:
-			node = p
-		case *ast.UnaryExpr:
-			if p.Op != token.AND {
-				break climb
-			}
-			node = p
-		case *ast.CallExpr:
-			isArg := false
-			for i, a := range p.Args {
-				if a == node {
-					isArg = true
-					if requestbody.CallBodyArg(pass, p, i) {
-						payload = true
-					}
-				}
-			}
-			if !isArg {
-				break climb
-			}
-			// any other call — a conversion, pointer.To(*x), expandFoo(*x) — is assumed to
-			// carry the value into its result, so keep climbing: the conservative outcome
-			// is only a withheld fix
-			node = p
-		case *ast.AssignStmt:
-			if len(p.Lhs) == len(p.Rhs) {
-				for i, r := range p.Rhs {
-					if r == node && sinks[rootObj(p.Lhs[i])] {
-						payload = true
-					}
-				}
-			}
-			break climb
-		default:
-			break climb
-		}
-	}
+	// without a fix, so the site gets a real guard.
+	payload := requestbody.SentAsBody(pass, parents, sinks, star)
 
 	if payload && !reportRequestBody {
 		return
