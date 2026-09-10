@@ -1,0 +1,17 @@
+package azr009
+
+import (
+	"fmt"
+)
+
+func resourceOther() *Resource {
+	return &Resource{
+		Delete: resourceOtherDelete,
+	}
+}
+
+// Should be flagged, and with nothing else in the file using log, the import goes too.
+func resourceOtherDelete(d *ResourceData, meta interface{}) error {
+	id := d.Id()
+	return fmt.Errorf("deleting %s", id)
+}

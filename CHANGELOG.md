@@ -1,5 +1,6 @@
 ## Unreleased
 
+- add rule `AZR009`: no lifecycle narration logging (`log.Printf("[DEBUG] Creating %s", id)`, `metadata.Logger.Info("Decoding state..")`) inside Create/Read/Update/Delete functions — hashicorp/terraform-provider-azurerm#32423 removed the pattern; ID-rewrite, not-found, and waiting messages are kept; fixable with `-fix`, which also drops a `log` import left unused; `lib/lifecycle` finds lifecycle functions for AZR003 and AZR009
 - ci: dev tools pinned in `.tools/go.mod` and built into `.tools/bin` by make (golangci-lint, actionlint, gofumpt; shellcheck and yamllint pinned in the makefile); `make lint` runs a custom golangci-lint with this repo's own AZG rules compiled in; revive enabled with justified opt-outs; new `actionlint`, `yamllint`, `shellcheck` targets and workflows; `check-all` runs everything
 - ci: GitHub-owned actions pinned by commit hash; CodeQL scoped to `contents: read`; release `contents: write` scoped to the goreleaser job; `pr-*` workflow names; depscheck also verifies `.tools` tidy and the golangci version match with `.custom-gcl.yml`
 - release: cosign keyless-signs `checksums.txt` into a sigstore bundle (`checksums.txt.sigstore.json`), GitHub artifact attestations (`gh attestation verify <file> -R katbyte/azproviderlint`), and SLSA Build L3 provenance from `slsa-github-generator`
