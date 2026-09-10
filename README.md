@@ -146,6 +146,7 @@ Rules are named `AZ<category letter><number>`, aligned with [tfproviderlint](htt
 | [AZS006](checks/AZS/AZS006_data_source_missing_properties) | data sources must expose their same-named resource's properties |
 | [AZS007](checks/AZS/AZS007_optional_computed_missing_comment) | optional+computed fields must have a Note: O+C comment |
 | [AZS008](checks/AZS/AZS008_registration_entries_sorted) | registration entries must be sorted alphabetically |
+| [AZS009](checks/AZS/AZS009_computed_only_field_input_attributes) | computed-only fields must not set input-only schema attributes |
 
 ### AZC — Clients & SDK Usage
 
