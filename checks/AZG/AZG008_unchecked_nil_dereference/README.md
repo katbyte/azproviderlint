@@ -20,7 +20,7 @@ The check is strict about what a guard covers. `if m.Properties != nil` does not
 
 Reports come with a suggested fix: `*x` becomes `pointer.From(x)`, and `string(*x)` on an enum pointer becomes `pointer.FromEnum(x)`. The import is added if missing. Both turn a panic into a zero value, which is what you want in flatten and read code. Review it elsewhere.
 
-**Values being sent to Azure are a separate, opt-in pass.** `pointer.From(existing.Model)` passed to a PUT would send an empty body instead of panicking, so those dereferences never get a fix and are only reported with `requestbody: true`. Run the default pass first and apply its fixes, then run with `requestbody` on and add the missing nil checks by hand. The analyzer works out which functions send a request body by reading their code, not their names: a function "writes" if it uses `http.MethodPut`/`Patch`/`Post` or a `"PUT"`/`"PATCH"`/`"POST"` string, or calls something that does; a parameter is "sent" if it reaches `json.Marshal` or `xml.Marshal`, including inside a closure or through another call. `CreateOrUpdate`, its `ThenPoll` wrappers, and autorest's `WithJSON` all qualify on their own. The dereference is caught whether it is passed directly, copied into a local, put in a struct field or literal, or passed by address. The report says why there is no fix.
+**No fix is offered when the value is being sent to Azure.** `pointer.From(existing.Model)` passed to a PUT would send an empty body instead of panicking, so those dereferences are reported without a fix and need a hand-written nil check. Set `requestbody: false` to leave them out of a pass you intend to apply with `-fix`. The analyzer works out which functions send a request body by reading their code, not their names: a function "writes" if it uses `http.MethodPut`/`Patch`/`Post` or a `"PUT"`/`"PATCH"`/`"POST"` string, or calls something that does; a parameter is "sent" if it reaches `json.Marshal` or `xml.Marshal`, including inside a closure or through another call. `CreateOrUpdate`, its `ThenPoll` wrappers, and autorest's `WithJSON` all qualify on their own. The dereference is caught whether it is passed directly, copied into a local, put in a struct field or literal, or passed by address. The report says why there is no fix.
 
 `fix-with: none` turns off fixes entirely. Dereferences that must stay addressable, `*x = v`, `(*x).F = v`, `&*x`, `(*x)++`, or calling a pointer-receiver method on `*x`, cannot take `pointer.From` and are AZG009's to report, as are implicit dereferences like `m.Properties.Name` with a nil `Properties`.
 
@@ -37,7 +37,7 @@ if model.Properties != nil {
 ```
 
 ```go
-// reported only with requestbody: true, and without a fix: the value is a PUT body
+// reported without a fix: the value is a PUT body
 client.CreateOrUpdate(ctx, id, *existing.Model)
 ```
 
@@ -71,7 +71,7 @@ d.Set("count", *out.Count)
 |---|---|---|
 | `include-parameters` | false | also report dereferences of bare pointer parameters |
 | `tests` | true | check `_test.go` files |
-| `requestbody` | false | also report dereferences whose value is sent as a PUT/PATCH/POST body; these never get a fix |
+| `requestbody` | true | report dereferences whose value is sent as a PUT/PATCH/POST body; these never get a fix |
 | `fix-with` | `pointer.From` | suggested-fix form: `pointer.From` or `none` |
 
 Set via `-AZG008.<option>` on the CLI or a rule-name key in the plugin's golangci settings.

@@ -88,3 +88,24 @@ func recursive(n int) *T {
 var errFail error
 
 func external() *T
+
+// no fact: a write nested in a block after the non-nil assignment
+func nestedNil(fail bool) *T {
+	out := &T{}
+	if fail {
+		out = nil
+	}
+	return out
+}
+
+// no fact: a loop body rewrites the local before a later iteration's return
+func loopNil(items []int) (out *T) {
+	out = &T{}
+	for _, i := range items {
+		if i == 0 {
+			return
+		}
+		out = nil
+	}
+	return out
+}

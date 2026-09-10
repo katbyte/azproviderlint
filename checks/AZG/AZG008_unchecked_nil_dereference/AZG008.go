@@ -61,9 +61,9 @@ var includeParameters bool
 // provider, but still fails the run.
 var checkTests bool
 
-// reportRequestBody also reports dereferences whose value is sent as a PUT/PATCH/POST body.
-// Those get no fix (pointer.From would send an empty request) and need a hand-written guard,
-// so they are opt-in: off by default, on for a dedicated pass over the write paths.
+// reportRequestBody reports dereferences whose value is sent as a PUT/PATCH/POST body. Those
+// get no fix (pointer.From would send an empty request) and need a hand-written guard; set it
+// to false to leave them out of a pass meant to be applied with -fix.
 var reportRequestBody bool
 
 // fixWith picks the suggested-fix form: pointer.From (string conversions of enum pointers
@@ -76,8 +76,8 @@ func init() {
 		"also report dereferences of bare pointer parameters (callers' nil-check contract is otherwise trusted)")
 	Analyzer.Flags.BoolVar(&checkTests, "tests", true,
 		"check _test.go files (false skips them)")
-	Analyzer.Flags.BoolVar(&reportRequestBody, "requestbody", false,
-		"also report dereferences sent as a PUT/PATCH/POST body (reported without a fix)")
+	Analyzer.Flags.BoolVar(&reportRequestBody, "requestbody", true,
+		"report dereferences sent as a PUT/PATCH/POST body (never fixed); false skips them")
 	Analyzer.Flags.StringVar(&fixWith, "fix-with", fixPointerFrom,
 		"suggested-fix form: pointer.From or none")
 }
@@ -197,17 +197,22 @@ climb:
 			}
 			node = p
 		case *ast.CallExpr:
+			isArg := false
 			for i, a := range p.Args {
-				if a == node && requestbody.CallBodyArg(pass, p, i) {
-					payload = true
+				if a == node {
+					isArg = true
+					if requestbody.CallBodyArg(pass, p, i) {
+						payload = true
+					}
 				}
 			}
-			// a conversion (T(*x)) is still building the value
-			if tv, ok := pass.TypesInfo.Types[p.Fun]; !payload && ok && tv.IsType() && len(p.Args) == 1 && p.Args[0] == node {
-				node = p
-				continue
+			if !isArg {
+				break climb
 			}
-			break climb
+			// any other call — a conversion, pointer.To(*x), expandFoo(*x) — is assumed to
+			// carry the value into its result, so keep climbing: the conservative outcome
+			// is only a withheld fix
+			node = p
 		case *ast.AssignStmt:
 			if len(p.Lhs) == len(p.Rhs) {
 				for i, r := range p.Rhs {

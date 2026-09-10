@@ -93,3 +93,15 @@ func encode(v Model) []byte { // want encode:"serialises\\(0\\)"
 
 // no fact at all: neither writes nor serialises
 func plain(v Model) string { return *v.Name }
+
+// serialises only: the method is a parameter, so on its own this neither writes nor is a body
+func do(c Client, ctx context.Context, method string, id string, input Model) error { // want do:"serialises\\(4\\)"
+	opts := client.RequestOptions{HttpMethod: method, Path: id}
+	req, _ := c.Client.NewRequest(ctx, opts)
+	return req.Marshal(input)
+}
+
+// body: it supplies PUT itself and hands the parameter to a serialising callee
+func viaDo(c Client, input Model) error { // want viaDo:"body\\(1\\)"
+	return do(c, context.Background(), http.MethodPut, "id", input)
+}
