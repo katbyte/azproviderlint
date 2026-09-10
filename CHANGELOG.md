@@ -1,6 +1,6 @@
 ## Unreleased
 
-- **breaking**: move the provider-wide rules into the new `AZP` category — `AZS005`→`AZP002` (resource/data source parity), `AZS006`→`AZP003` (data source properties), `AZS008`→`AZP004` (sorted registration entries), `AZR005`→`AZP005` (case-insensitive segments flag); update `//azignore:` comments and settings references ([#PR](https://github.com/katbyte/azproviderlint/pull/PR))
+- **breaking**: move the provider-wide rules into the new `AZP` category — `AZS005`→`AZP002` (resource/data source parity), `AZS006`→`AZP003` (data source properties), `AZS008`→`AZP004` (sorted registration entries), `AZR005`→`AZP005` (case-insensitive segments flag); update `//azignore:` comments and settings references ([#48](https://github.com/katbyte/azproviderlint/pull/48))
 
 ## v0.10.0 (2026-09-24)
 
