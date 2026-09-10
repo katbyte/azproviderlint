@@ -78,7 +78,7 @@ func ForEachFunc(pass *analysis.Pass, insp *inspector.Inspector, tests bool, vis
 			return
 		}
 
-		visit(body, params, parentMap(body))
+		visit(body, params, ParentMap(body))
 	})
 }
 
