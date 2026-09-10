@@ -758,7 +758,7 @@ func invalidNestedUncheckedReassign(d data, parse func(string) (*properties, err
 
 // Should NOT be flagged: the nested re-fetch of the whole struct is followed by a fresh nil
 // check on the field before the block ends.
-func validNestedRefetchReguarded(d data, get func() (resp, error), flag bool) {
+func validNestedRefetchGuardedAgain(d data, get func() (resp, error), flag bool) {
 	existing, err := get()
 	if err != nil || existing.Model == nil {
 		return
