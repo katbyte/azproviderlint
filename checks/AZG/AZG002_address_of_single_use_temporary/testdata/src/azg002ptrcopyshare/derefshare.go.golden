@@ -1,0 +1,8 @@
+package azg002ptrcopyshare
+
+type props struct{ Name *string }
+
+// fix-pointer-copy=share substitutes the original pointer, dropping the copy.
+func derefShare(p props) *string {
+	return p.Name
+}

@@ -21,4 +21,10 @@ func TestAZG002(t *testing.T) {
 	allow = usePointerTo
 	analysistest.Run(t, dir, Analyzer, "azg002allow")
 	allow = ""
+
+	fixPointerCopy = fixPointerCopyCopy
+	analysistest.RunWithSuggestedFixes(t, dir, Analyzer, "azg002ptrcopycopy")
+	fixPointerCopy = fixPointerCopyShare
+	analysistest.RunWithSuggestedFixes(t, dir, Analyzer, "azg002ptrcopyshare")
+	fixPointerCopy = fixPointerCopyNone
 }
