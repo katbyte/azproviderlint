@@ -21,7 +21,8 @@ import (
 // literals (var f = func() {...}) are reached through their own visit, nested literals through
 // their enclosing FuncDecl, keeping guards outside a closure visible to dereferences inside
 // it. Bodies in _test.go files are skipped when tests is false. visit receives the body, the
-// function's (and receiver's) parameter objects, and a child-to-parent map covering the body.
+// parameter objects of the function, its receiver, and every closure nested in it, and a
+// child-to-parent map covering the body.
 func ForEachFunc(pass *analysis.Pass, insp *inspector.Inspector, tests bool, visit func(body *ast.BlockStmt, params map[types.Object]bool, parents map[ast.Node]ast.Node)) {
 	var declRanges [][2]token.Pos
 	insp.Preorder([]ast.Node{(*ast.FuncDecl)(nil)}, func(n ast.Node) {
@@ -66,6 +67,12 @@ func ForEachFunc(pass *analysis.Pass, insp *inspector.Inspector, tests bool, vis
 		if body == nil {
 			return
 		}
+		ast.Inspect(body, func(x ast.Node) bool {
+			if lit, ok := x.(*ast.FuncLit); ok {
+				collectParams(lit.Type.Params)
+			}
+			return true
+		})
 
 		if !tests && strings.HasSuffix(pass.Fset.Position(body.Pos()).Filename, "_test.go") {
 			return
@@ -170,10 +177,18 @@ func guardedKey(pass *analysis.Pass, parents map[ast.Node]ast.Node, at ast.Node,
 		switch p := node.(type) {
 		case *ast.BinaryExpr:
 			// short-circuit: in `x != nil && *x...` / `x == nil || *x...` the right operand
-			// only evaluates once the left proved x non-nil
-			if p.Y == child && ((p.Op == token.LAND && impliesNonNil(pass, p.X, key)) ||
-				(p.Op == token.LOR && impliedByNil(pass, p.X, key))) {
-				return true
+			// only evaluates once the left proved x non-nil; likewise `ok && *x` / `err != nil
+			// || *x` for the companion of the call that produced x
+			if p.Y == child {
+				if (p.Op == token.LAND && impliesNonNil(pass, p.X, key)) ||
+					(p.Op == token.LOR && impliedByNil(pass, p.X, key)) {
+					return true
+				}
+				errKey, okKey := companionOf(pass, parents, at, key)
+				if (p.Op == token.LAND && condProvesValid(pass, p.X, errKey, okKey)) ||
+					(p.Op == token.LOR && condProvesInvalid(pass, p.X, errKey, okKey)) {
+					return true
+				}
 			}
 		case *ast.IfStmt:
 			if p.Body == child || p.Else == child {

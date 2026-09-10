@@ -116,3 +116,39 @@ func invalidReassignedInsideGuard(m model, next func() *properties) {
 		use(m.Properties.Count) // want "selecting `Count` implicitly dereferences possibly-nil `m.Properties` and may panic - add a nil check"
 	}
 }
+
+func lookup() (*properties, bool) { return nil, false }
+
+func fetch() (*properties, error) { return nil, nil }
+
+// Should NOT be flagged: the ok companion is checked on the left of && in the same condition.
+func validOkInCondition() bool {
+	if props, ok := lookup(); ok && props.Count != nil {
+		return true
+	}
+	return false
+}
+
+// Should NOT be flagged: `err != nil ||` proves the call succeeded for the right operand.
+func validErrInCondition() bool {
+	props, err := fetch()
+	return err != nil || props.Count == nil
+}
+
+// Should be flagged: `ok ||` runs the right operand when ok is false.
+func invalidOkOrInCondition() bool {
+	props, ok := lookup()
+	return ok || props.Count == nil // want "selecting `Count` implicitly dereferences possibly-nil `props` and may panic - add a nil check"
+}
+
+// Should NOT be flagged: a closure's pointer parameter is trusted like any other parameter.
+func validClosureParam() {
+	f := func(props *properties) { use(props.Count) }
+	f(nil)
+}
+
+// Should be flagged: deeper links through a closure parameter stay in scope.
+func invalidClosureParamField() {
+	f := func(props *properties) { use(props.Sku.Name) } // want "selecting `Name` implicitly dereferences possibly-nil `props.Sku` and may panic - add a nil check"
+	f(nil)
+}

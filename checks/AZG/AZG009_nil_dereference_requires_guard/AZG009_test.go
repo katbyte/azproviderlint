@@ -21,3 +21,13 @@ func TestAZG009SkipTests(t *testing.T) {
 
 	analysistest.Run(t, analysistest.TestData(), Analyzer, "azg009notests")
 }
+
+//nolint:paralleltest // mutates the package-level exclude-types flag; must finish before parallel tests resume
+func TestAZG009ExcludeTypes(t *testing.T) {
+	if err := Analyzer.Flags.Set("exclude-types", "*Client, azg009excludetypes.account"); err != nil {
+		t.Fatal(err)
+	}
+	defer func() { _ = Analyzer.Flags.Set("exclude-types", "") }()
+
+	analysistest.Run(t, analysistest.TestData(), Analyzer, "azg009excludetypes")
+}

@@ -799,3 +799,9 @@ func invalidCompanionOverwrittenNested(d data, parse func(string) (*properties, 
 	}
 	d.Set("props", pointer.From(pr)) // want "dereference of possibly-nil `pr` may panic - add a nil check or use pointer.From"
 }
+
+// Should NOT be flagged: a closure's pointer parameter is trusted like any other parameter.
+func validClosureParam(d data) {
+	f := func(count *int) { d.Set("count", *count) }
+	f(nil)
+}

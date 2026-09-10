@@ -9,6 +9,8 @@ A dereference counts as guarded under the same rules as AZG008: an enclosing `x 
 
 Dereferences of bare pointer parameters are trusted by default (the nil check belongs at the call sites); deeper links through a parameter are always in scope. Chains containing calls or index expressions are out of scope, as are dereferences of embedded pointer fields reached by promotion. `_test.go` files are checked by default; set `tests` to false to skip them.
 
+Pointers to types matching `exclude-types` are never reported. The patterns are globs (`*` matches anything, `/` included) over the pointee's qualified name, `github.com/x/y/clients.Client`. SDK clients are the main use: their methods have value receivers, so `client.Get(ctx, id)` dereferences `client` on every call, and the client is wired at startup rather than read from a response. On azurerm, `*Client,*Authorizers,*ResourceManagerAccount` removes about three quarters of the reports.
+
 ## Flagged Code
 
 ```go
@@ -46,6 +48,7 @@ if props.Count == nil {
 |---|---|---|
 | `include-parameters` | false | also report dereferences of bare pointer parameters |
 | `tests` | true | check `_test.go` files |
+| `exclude-types` | | comma-separated globs over the pointee's qualified type name; matching pointers are not reported (`*Client`, `*/clients.Client`) |
 
 Set via `-AZG009.<option>` on the CLI or a rule-name key in the plugin's golangci settings.
 
