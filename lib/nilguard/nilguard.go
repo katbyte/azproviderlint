@@ -8,6 +8,7 @@ import (
 	"go/constant"
 	"go/token"
 	"go/types"
+	"slices"
 	"strings"
 
 	"github.com/katbyte/azproviderlint/lib/astx"
@@ -117,7 +118,10 @@ func DerefNeedsPointer(pass *analysis.Pass, parents map[ast.Node]ast.Node, star 
 			}
 			outer = p
 		case *ast.IndexExpr:
-			if p.X != outer || !isArray(pass, p.X) {
+			// an array index needs the addressable array; a slice or map index is
+			// addressable on its own, but writing through it after pointer.From still
+			// panics on a nil map or empty slice, so the target contexts below apply to all
+			if p.X != outer {
 				return false
 			}
 			outer = p
@@ -172,32 +176,32 @@ func guardedKey(pass *analysis.Pass, parents map[ast.Node]ast.Node, at ast.Node,
 				return true
 			}
 		case *ast.IfStmt:
-			if p.Body != child && p.Else != child {
-				continue
-			}
-			// a nil check on an alias of the chain (`if v := x.F; v != nil { *x.F }`, or
-			// `v := x.F` earlier in the block) covers the chain itself
-			for _, k := range equivalentKeys(pass, parents, p, key) {
-				if p.Body == child && impliesNonNil(pass, p.Cond, k) {
+			if p.Body == child || p.Else == child {
+				// a nil check on an alias of the chain (`if v := x.F; v != nil { *x.F }`,
+				// or `v := x.F` earlier in the block) covers the chain itself
+				for _, k := range equivalentKeys(pass, parents, p, key) {
+					if p.Body == child && impliesNonNil(pass, p.Cond, k) {
+						return true
+					}
+					// the else branch runs when the condition is false; a pure-||
+					// condition with an `x == nil` disjunct being false proves x non-nil
+					if p.Else == child && impliedByNil(pass, p.Cond, k) {
+						return true
+					}
+				}
+				// `if x, ok := f(); ok { *x }`, `x, err := f(); if err == nil { *x }`, and
+				// the else branch of `if err != nil` / `if !ok`
+				errKey, okKey := companionOf(pass, parents, p, key)
+				if p.Body == child && condProvesValid(pass, p.Cond, errKey, okKey) {
 					return true
 				}
-				// the else branch runs when the condition is false; a pure-|| condition
-				// with an `x == nil` disjunct being false proves x non-nil
-				if p.Else == child && impliedByNil(pass, p.Cond, k) {
+				if p.Else == child && condProvesInvalid(pass, p.Cond, errKey, okKey) {
 					return true
 				}
 			}
-			// `if x, ok := f(); ok { *x }`, `x, err := f(); if err == nil { *x }`, and the
-			// else branch of `if err != nil` / `if !ok`
-			errKey, okKey := companionOf(pass, parents, p, key)
-			if p.Body == child && condProvesValid(pass, p.Cond, errKey, okKey) {
-				return true
-			}
-			if p.Else == child && condProvesInvalid(pass, p.Cond, errKey, okKey) {
-				return true
-			}
-			// an init that assigns key settles it like any other assignment
-			if init, ok := p.Init.(*ast.AssignStmt); ok {
+			// an init that assigns key settles it like any other assignment — for the
+			// condition too, which runs right after it
+			if init, ok := p.Init.(*ast.AssignStmt); ok && (p.Cond == child || p.Body == child || p.Else == child) {
 				switch guarded, alias, settled, matched := assignmentGuard(pass, init, key, nil); {
 				case !matched:
 				case guarded:
@@ -210,11 +214,20 @@ func guardedKey(pass *analysis.Pass, parents map[ast.Node]ast.Node, at ast.Node,
 			}
 		case *ast.ForStmt:
 			if p.Body == child && p.Cond != nil && impliesNonNil(pass, p.Cond, key) {
-				return true
+				return true // re-checked every iteration, so writes in the body are fine
+			}
+			// otherwise a write anywhere in the body reaches the dereference on the next
+			// iteration, before any guard outside the loop
+			if p.Body == child && assignsPath(pass, parents, p.Body, key, depth) {
+				return false
+			}
+		case *ast.RangeStmt:
+			if p.Body == child && assignsPath(pass, parents, p.Body, key, depth) {
+				return false
 			}
 		case *ast.CaseClause:
 			// the clause fires when any listed expression is true, so all must prove it
-			if len(p.List) > 0 && containsStmt(p.Body, child) {
+			if len(p.List) > 0 && slices.ContainsFunc(p.Body, func(s ast.Stmt) bool { return s == child }) {
 				all := true
 				for _, ce := range p.List {
 					all = all && impliesNonNil(pass, ce, key)
@@ -228,7 +241,7 @@ func guardedKey(pass *analysis.Pass, parents map[ast.Node]ast.Node, at ast.Node,
 		if stmts == nil {
 			continue
 		}
-		switch ok, alias, settled := precededByGuard(pass, parents, stmts, child, key); {
+		switch ok, alias, settled := precededByGuard(pass, parents, stmts, child, key, depth); {
 		case ok:
 			return true
 		case alias != "":
@@ -270,6 +283,14 @@ func precedingStmts(parents map[ast.Node]ast.Node, at ast.Node, visit func(ast.S
 			init = p.Init
 		case *ast.ForStmt:
 			init = p.Init
+			// the whole body ran before this iteration: its writes count as preceding
+			if p.Body == child && !visit(p.Body) {
+				return
+			}
+		case *ast.RangeStmt:
+			if p.Body == child && !visit(p.Body) {
+				return
+			}
 		case *ast.SwitchStmt:
 			init = p.Init
 		case *ast.TypeSwitchStmt:
@@ -316,6 +337,13 @@ func equivalentKeys(pass *analysis.Pass, parents map[ast.Node]ast.Node, at ast.N
 	precedingStmts(parents, at, func(s ast.Stmt) bool {
 		assign, ok := s.(*ast.AssignStmt)
 		if !ok {
+			// a compound statement: every write inside it is an unknown assignment
+			for _, w := range nestedWrites(pass, s) {
+				if w.key == key || strings.HasPrefix(key, w.key+".") {
+					return false
+				}
+				stale = append(stale, w.key)
+			}
 			return true
 		}
 		for i, lhs := range assign.Lhs {
@@ -329,16 +357,16 @@ func equivalentKeys(pass *analysis.Pass, parents map[ast.Node]ast.Node, at ast.N
 				rk, rkOK = PathKey(pass, assign.Rhs[i])
 			}
 			if lk == key || strings.HasPrefix(key, lk+".") {
-				if rkOK && !isStale(rk) {
-					keys = append(keys, rk+strings.TrimPrefix(key, lk))
+				if k := rk + strings.TrimPrefix(key, lk); rkOK && !isStale(k) {
+					keys = append(keys, k)
 				}
 				return false
 			}
-			if rkOK && !isStale(lk) {
-				if rk == key {
-					keys = append(keys, lk)
-				} else if strings.HasPrefix(key, rk+".") {
-					keys = append(keys, lk+strings.TrimPrefix(key, rk))
+			if rkOK {
+				if k := lk + strings.TrimPrefix(key, rk); rk == key || strings.HasPrefix(key, rk+".") {
+					if !isStale(k) {
+						keys = append(keys, k)
+					}
 				}
 			}
 			stale = append(stale, lk)
@@ -346,6 +374,48 @@ func equivalentKeys(pass *analysis.Pass, parents map[ast.Node]ast.Node, at ast.N
 		return true
 	})
 	return keys
+}
+
+// nestedWrite is one write found inside a statement: the path written and, for a one-to-one
+// assignment, the value; nil when the value is unknown (a range variable, inc/dec, a
+// multi-result call).
+type nestedWrite struct {
+	key   string
+	value ast.Expr
+	at    ast.Node // the writing statement, where value is judged
+}
+
+// nestedWrites returns every assignment, inc/dec, or range-variable target anywhere inside
+// n, in no particular order.
+func nestedWrites(pass *analysis.Pass, n ast.Node) []nestedWrite {
+	var writes []nestedWrite
+	add := func(e, value ast.Expr, at ast.Node) {
+		if e == nil {
+			return
+		}
+		if k, ok := PathKey(pass, e); ok {
+			writes = append(writes, nestedWrite{key: k, value: value, at: at})
+		}
+	}
+	ast.Inspect(n, func(x ast.Node) bool {
+		switch s := x.(type) {
+		case *ast.AssignStmt:
+			for i, lhs := range s.Lhs {
+				var value ast.Expr
+				if len(s.Lhs) == len(s.Rhs) {
+					value = s.Rhs[i]
+				}
+				add(lhs, value, s)
+			}
+		case *ast.IncDecStmt:
+			add(s.X, nil, s)
+		case *ast.RangeStmt:
+			add(s.Key, nil, s)
+			add(s.Value, nil, s)
+		}
+		return true
+	})
+	return writes
 }
 
 // companionOf returns the error and ok-bool keys returned alongside key by the nearest
@@ -356,6 +426,12 @@ func companionOf(pass *analysis.Pass, parents map[ast.Node]ast.Node, at ast.Node
 	precedingStmts(parents, at, func(s ast.Stmt) bool {
 		assign, ok := s.(*ast.AssignStmt)
 		if !ok {
+			for _, w := range nestedWrites(pass, s) {
+				if w.key == key || strings.HasPrefix(key, w.key+".") {
+					return false
+				}
+				reassigned[w.key] = true
+			}
 			return true
 		}
 		for _, lhs := range assign.Lhs {
@@ -384,16 +460,8 @@ func companionOf(pass *analysis.Pass, parents map[ast.Node]ast.Node, at ast.Node
 	return errKey, okKey
 }
 
-func containsStmt(stmts []ast.Stmt, n ast.Node) bool {
-	for _, s := range stmts {
-		if s == n {
-			return true
-		}
-	}
-	return false
-}
-
-// precededByGuard reports whether a statement before child in stmts proves key non-nil: an
+// precededByGuard reports whether a statement before child in stmts (all of them, when child
+// is nil) proves key non-nil: an
 // `if key == nil { <terminating> }` early exit, an `if key == nil { key = &T{} }` default
 // init, an assignment of a provably non-nil value, or a multi-result call whose companion
 // error/ok result was checked before child — as a following statement or as the if the call
@@ -401,8 +469,8 @@ func containsStmt(stmts []ast.Stmt, n ast.Node) bool {
 // source chain is returned as alias so the caller can restart the guard search with it. Any
 // other assignment settles the value as unknown: settled tells the caller to stop — guards in
 // enclosing scopes predate the assignment and no longer hold.
-func precededByGuard(pass *analysis.Pass, parents map[ast.Node]ast.Node, stmts []ast.Stmt, child ast.Node, key string) (guarded bool, alias string, settled bool) {
-	idx := -1
+func precededByGuard(pass *analysis.Pass, parents map[ast.Node]ast.Node, stmts []ast.Stmt, child ast.Node, key string, depth int) (guarded bool, alias string, settled bool) {
+	idx := len(stmts) // a nil child asks about the value once all of stmts have run
 	for i, s := range stmts {
 		if s == child {
 			idx = i
@@ -412,7 +480,7 @@ func precededByGuard(pass *analysis.Pass, parents map[ast.Node]ast.Node, stmts [
 	for i := idx - 1; i >= 0; i-- {
 		switch s := stmts[i].(type) {
 		case *ast.IfStmt:
-			if terminates(s.Body) && !assignsPath(pass, s.Else, key) {
+			if terminates(s.Body) && !assignsPath(pass, parents, s.Else, key, depth) {
 				// code after the if only runs when the condition was false (via a
 				// non-terminating else, provided it left key alone)
 				for _, k := range equivalentKeys(pass, parents, s, key) {
@@ -420,7 +488,7 @@ func precededByGuard(pass *analysis.Pass, parents map[ast.Node]ast.Node, stmts [
 						return true, "", false
 					}
 				}
-			} else if s.Else == nil && impliedByNil(pass, s.Cond, key) && assignsNonNil(pass, s.Body.List, key) {
+			} else if s.Else == nil && impliedByNil(pass, s.Cond, key) && endsAssignedNonNil(pass, parents, s.Body.List, key, depth) {
 				return true, "", false
 			}
 			if init, ok := s.Init.(*ast.AssignStmt); ok {
@@ -432,56 +500,79 @@ func precededByGuard(pass *analysis.Pass, parents map[ast.Node]ast.Node, stmts [
 			if guarded, alias, settled, matched := assignmentGuard(pass, s, key, stmts[i+1:idx]); matched {
 				// the alias only stands while its source chain is untouched afterwards
 				for _, between := range stmts[i+1 : idx] {
-					if alias != "" && assignsPath(pass, between, alias) {
+					if alias != "" && assignsPath(pass, parents, between, alias, depth) {
 						return false, "", true
 					}
 				}
 				return guarded, alias, settled
 			}
+			continue // an assignment to something else cannot hide a write to key
+		}
+		// any other write to key buried in the statement (`if c { x = nil }`, a loop, a
+		// switch) leaves the value unknown
+		if assignsPath(pass, parents, stmts[i], key, depth) {
+			return false, "", true
 		}
 	}
 	return false, "", false
 }
 
-// assignsPath reports whether any assignment or inc/dec anywhere inside n targets key or a
-// prefix of it; nil n never does.
-func assignsPath(pass *analysis.Pass, n ast.Node, key string) bool {
+// assignsPath reports whether any write anywhere inside n could leave key nil: a write to key
+// from anything but a value proven non-nil at that point, or a write to one of its prefixes.
+// nil n never does; depth is the guard engine's recursion budget, shared with it so the two
+// cannot bounce off each other indefinitely.
+func assignsPath(pass *analysis.Pass, parents map[ast.Node]ast.Node, n ast.Node, key string, depth int) bool {
 	if n == nil {
 		return false
 	}
-	found := false
-	ast.Inspect(n, func(x ast.Node) bool {
-		var lhs []ast.Expr
-		switch s := x.(type) {
-		case *ast.AssignStmt:
-			lhs = s.Lhs
-		case *ast.IncDecStmt:
-			lhs = []ast.Expr{s.X}
-		}
-		for _, e := range lhs {
-			if k, ok := PathKey(pass, e); ok && (k == key || strings.HasPrefix(key, k+".")) {
-				found = true
-			}
-		}
-		return !found
-	})
-	return found
-}
-
-// assignsNonNil reports whether one of stmts assigns key a provably non-nil value.
-func assignsNonNil(pass *analysis.Pass, stmts []ast.Stmt, key string) bool {
-	for _, s := range stmts {
-		assign, ok := s.(*ast.AssignStmt)
-		if !ok || len(assign.Lhs) != len(assign.Rhs) {
+	for _, w := range nestedWrites(pass, n) {
+		if w.key != key && !strings.HasPrefix(key, w.key+".") {
 			continue
 		}
-		for i, lhs := range assign.Lhs {
-			if lk, ok := PathKey(pass, lhs); ok && lk == key && isNonNilSource(pass, assign.Rhs[i]) {
-				return true
+		// judge the write where it happens: is key still proven non-nil at the end of the
+		// block it sits in? That applies the ordinary rules — non-nil source, checked
+		// companion, alias of a guarded chain, a fresh nil check after a re-fetch of a
+		// prefix — to the nested statement and what follows it in its block
+		if depth < 4 {
+			block := w.at
+			for parents[block] != nil && stmtList(parents[block]) == nil {
+				block = parents[block]
+			}
+			if stmts := stmtList(parents[block]); stmts != nil {
+				switch guarded, alias, _ := precededByGuard(pass, parents, stmts, nil, key, depth+1); {
+				case guarded:
+					continue
+				case alias != "" && guardedKey(pass, parents, stmts[len(stmts)-1], alias, depth+1):
+					continue
+				}
 			}
 		}
+		return true
 	}
 	return false
+}
+
+// endsAssignedNonNil reports whether the last write to key among stmts is a top-level
+// assignment of a provably non-nil value — so key is non-nil once they have run.
+func endsAssignedNonNil(pass *analysis.Pass, parents map[ast.Node]ast.Node, stmts []ast.Stmt, key string, depth int) bool {
+	nonNil := false
+	for _, s := range stmts {
+		if assign, ok := s.(*ast.AssignStmt); ok && len(assign.Lhs) == len(assign.Rhs) {
+			direct := false
+			for i, lhs := range assign.Lhs {
+				if lk, ok := PathKey(pass, lhs); ok && lk == key {
+					nonNil, direct = isNonNilSource(pass, assign.Rhs[i]), true
+				}
+			}
+			if direct {
+				continue
+			}
+		}
+		if assignsPath(pass, parents, s, key, depth) {
+			nonNil = false
+		}
+	}
+	return nonNil
 }
 
 // assignmentGuard classifies what assign does to key; matched is false when it does not touch
@@ -745,7 +836,7 @@ func terminates(block *ast.BlockStmt) bool {
 
 // isNonNilSource reports whether expr can never be nil: an address-of, new(...), a
 // pointer.To*(...) call (always allocates), a flag package constructor (returns a pointer
-// into the flag set), an immediately-invoked func literal whose returns all qualify, or a
+// into the flag set; Lookup may return nil), an immediately-invoked func literal whose returns all qualify, or a
 // call to a function ReturnsAnalyzer proved never returns nil in that position.
 func isNonNilSource(pass *analysis.Pass, expr ast.Expr) bool {
 	switch x := ast.Unparen(expr).(type) {
@@ -766,7 +857,7 @@ func isNonNilSource(pass *analysis.Pass, expr ast.Expr) bool {
 			return false
 		}
 		return (fn.Pkg().Path() == pointerpkg.PkgPath && strings.HasPrefix(fn.Name(), "To")) ||
-			fn.Pkg().Path() == "flag" || nonNilResult(pass, fn, 0)
+			(fn.Pkg().Path() == "flag" && fn.Name() != "Lookup") || nonNilResult(pass, fn, 0)
 	}
 	return false
 }
@@ -851,7 +942,6 @@ func isZeroConst(pass *analysis.Pass, e ast.Expr) bool {
 	case constant.Int, constant.Float:
 		return constant.Sign(tv.Value) == 0
 	case constant.Unknown, constant.Bool, constant.Complex:
-		return false
 	}
 	return false
 }

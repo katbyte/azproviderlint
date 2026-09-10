@@ -91,11 +91,41 @@ func (r *Result) Param(fn *types.Func, i int) bool {
 	return f.Writes && f.Serialised&(1<<i) != 0
 }
 
-// CallBodyArg reports whether call sends its arg-th argument as a write body, consulting the
-// result the pass has available.
+// CallBodyArg reports whether call sends its arg-th argument as a write body: the callee both
+// writes and serialises that parameter, or serialises it and is handed the write method at
+// this call site (`do(ctx, http.MethodPut, body)`).
 func CallBodyArg(pass *analysis.Pass, call *ast.CallExpr, arg int) bool {
 	r, ok := pass.ResultOf[Analyzer].(*Result)
-	return ok && r.Param(astx.CalledFunc(pass, call), arg)
+	if !ok || arg < 0 || arg > 63 {
+		return false
+	}
+	f := r.fact(astx.CalledFunc(pass, call))
+	if f.Serialised&(1<<arg) == 0 {
+		return false
+	}
+	if f.Writes {
+		return true
+	}
+	for _, a := range call.Args {
+		if isWriteMethodValue(pass, a) {
+			return true
+		}
+	}
+	return false
+}
+
+// isWriteMethodValue reports whether e is net/http's MethodPut/MethodPatch/MethodPost or the
+// equivalent string literal.
+func isWriteMethodValue(pass *analysis.Pass, e ast.Expr) bool {
+	switch x := ast.Unparen(e).(type) {
+	case *ast.BasicLit:
+		return x.Kind == token.STRING && (x.Value == `"PUT"` || x.Value == `"PATCH"` || x.Value == `"POST"`)
+	case *ast.Ident:
+		return isHTTPWriteMethod(pass, x)
+	case *ast.SelectorExpr:
+		return isHTTPWriteMethod(pass, x.Sel)
+	}
+	return false
 }
 
 func run(pass *analysis.Pass) (any, error) {

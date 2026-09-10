@@ -328,8 +328,14 @@ func validNeedsAddressable(h holder) {
 	use(&(*h.C).n)
 }
 
-// Should be flagged: a value-receiver method, a slice/map index, or a read through the
-// deref'd value copies fine.
+// Should NOT be flagged either: writing through a slice or map index after pointer.From
+// still panics (nil map, empty slice), so the rewrite would fix nothing.
+func validIndexWrite(b bag) {
+	(*b.M)["k"] = 1
+	(*b.S)[0] = 1
+}
+
+// Should be flagged: a value-receiver method or a read through the deref'd value copies fine.
 type bag struct {
 	M *map[string]int
 	S *[]int
@@ -339,8 +345,6 @@ func (c counter) get() int { return c.n }
 
 func invalidCopyable(h holder, b bag) {
 	use((*h.C).get()) // want "dereference of possibly-nil `h.C` may panic - add a nil check or use pointer.From"
-	(*b.M)["k"] = 1   // want "dereference of possibly-nil `b.M` may panic - add a nil check or use pointer.From"
-	(*b.S)[0] = 1     // want "dereference of possibly-nil `b.S` may panic - add a nil check or use pointer.From"
 	use((*h.Arr)[0])  // want "dereference of possibly-nil `h.Arr` may panic - add a nil check or use pointer.From"
 }
 
@@ -594,8 +598,191 @@ func invalidCopyNotSent(d data, h widgetHolder) {
 	d.Set("env", env)
 }
 
-// Not reported by default: the value is a PUT body, which only the requestbody option reports
-// (without a fix). See the azg008requestbody fixtures.
-func validPayloadOffByDefault(c widgets.WidgetsClient, ctx context.Context, h widgetHolder) {
-	_ = c.CreateOrUpdate(ctx, "id", *h.Model)
+// Should be flagged WITHOUT a fix: the value is marshalled as a PUT body by the callee (known
+// through requestbody facts, including via a delegating wrapper), passed directly or through
+// a local.
+func invalidPayloadDirect(c widgets.WidgetsClient, ctx context.Context, h widgetHolder) {
+	_ = c.CreateOrUpdate(ctx, "id", *h.Model) // want "may panic - add a nil check \\(no fix: the value is sent as a write request body"
+}
+
+func invalidPayloadWrapper(c widgets.WidgetsClient, ctx context.Context, h widgetHolder) {
+	_ = c.ForRegionCreateOrUpdateThenPoll(ctx, "id", *h.Model) // want "may panic - add a nil check \\(no fix: the value is sent as a write request body"
+}
+
+func invalidPayloadViaLocal(c widgets.WidgetsClient, ctx context.Context, h widgetHolder) {
+	m := *h.Model // want "may panic - add a nil check \\(no fix: the value is sent as a write request body"
+	m.Name = nil
+	_ = c.CreateOrUpdate(ctx, "id", m)
+}
+
+// Should be flagged WITHOUT a fix: the value is copied into a payload that is sent — through a
+// literal field, a field assignment, or by address.
+func invalidPayloadLiteralField(c widgets.WidgetsClient, ctx context.Context, h widgetHolder) {
+	env := widgets.Envelope{Widget: *h.Model} // want "may panic - add a nil check \\(no fix: the value is sent as a write request body"
+	_ = c.Put(ctx, "id", env)
+}
+
+func invalidPayloadFieldAssign(c widgets.WidgetsClient, ctx context.Context, h widgetHolder) {
+	env := widgets.Envelope{}
+	env.Widget = *h.Model // want "may panic - add a nil check \\(no fix: the value is sent as a write request body"
+	_ = c.Put(ctx, "id", env)
+}
+
+func invalidPayloadAddrOf(c widgets.WidgetsClient, ctx context.Context, h widgetHolder) {
+	m := *h.Model // want "may panic - add a nil check \\(no fix: the value is sent as a write request body"
+	_ = c.PutPtr(ctx, "id", &m)
+}
+
+// Should be flagged: a write nested in a block, a loop, or an if-init cancels the guard;
+// only the last write of a default-init counts; alias staleness follows the derived path.
+func invalidNestedReassign(d data, props properties, other *int, flag bool) {
+	if props.Count == nil {
+		return
+	}
+	if flag {
+		props.Count = other
+	}
+	d.Set("count", *props.Count) // want "dereference of possibly-nil `props.Count` may panic - add a nil check or use pointer.From"
+}
+
+func invalidLoopBackEdge(d data, props properties, next func() *int) {
+	if props.Count != nil {
+		for i := 0; i < 3; i++ {
+			d.Set("count", *props.Count) // want "dereference of possibly-nil `props.Count` may panic - add a nil check or use pointer.From"
+			props.Count = next()
+		}
+	}
+}
+
+func invalidInitInCond(d data, props properties, other *int) {
+	if props.Count != nil {
+		if props.Count = other; *props.Count > 0 { // want "dereference of possibly-nil `props.Count` may panic - add a nil check or use pointer.From"
+			d.Set("positive", true)
+		}
+	}
+}
+
+func invalidDefaultInitOverwritten(d data, props properties, other *int) {
+	if props.Count == nil {
+		props.Count = pointer.To(0)
+		props.Count = other
+	}
+	d.Set("count", *props.Count) // want "dereference of possibly-nil `props.Count` may panic - add a nil check or use pointer.From"
+}
+
+func invalidAliasFieldStale(d data, m model, other *properties) {
+	y := m
+	y.Properties = other
+	if y.Properties != nil {
+		d.Set("props", *m.Properties) // want "dereference of possibly-nil `m.Properties` may panic - add a nil check or use pointer.From"
+	}
+}
+
+// Should NOT be flagged: a for condition is re-checked every iteration, so a write in the
+// body is fine; a local reassigned then re-created is fine too.
+func validLoopCondRechecked(d data, n *node) {
+	for n != nil {
+		d.Set("n", *n)
+		n = (*n).next
+	}
+}
+
+// Should be flagged WITHOUT a fix: the value reaches a request body through another call —
+// pointer.To(pointer.From(x)) would be exactly the empty write the fix must not produce.
+func wrap(w widgets.Widget) *widgets.Widget { return &w }
+
+func invalidPayloadThroughCall(c widgets.WidgetsClient, ctx context.Context, h widgetHolder) {
+	_ = c.PutPtr(ctx, "id", pointer.To(*h.Model)) // want "may panic - add a nil check \\(no fix: the value is sent as a write request body"
+	_ = c.PutPtr(ctx, "id", wrap(*h.Model))       // want "may panic - add a nil check \\(no fix: the value is sent as a write request body"
+}
+
+// Should NOT be flagged: a nested write of a provably non-nil value (a literal, or a helper
+// proven never to return nil) cannot make the pointer nil again.
+func validNestedNonNilReassign(d data, flag bool) {
+	pr := expandLocal()
+	if flag {
+		pr = &properties{}
+	}
+	d.Set("props", *pr)
+	q := expandLocal()
+	if flag {
+		q = expandLocal()
+	}
+	d.Set("props", *q)
+}
+
+// Should NOT be flagged: the nested write copies a variable that is itself proven non-nil
+// where the write happens.
+func validNestedGuardedReassign(d data, parse func(string) (*properties, error), flag bool) {
+	pr, err := parse("x")
+	if err != nil {
+		return
+	}
+	if flag {
+		next, err := parse("y")
+		if err != nil {
+			return
+		}
+		pr = next
+	}
+	d.Set("props", *pr)
+}
+
+// Should NOT be flagged: a nested re-assignment from a call whose error is checked right
+// there keeps the value valid.
+func validNestedCompanionReassign(d data, parse func(string) (*properties, error), flag bool) {
+	pr, err := parse("x")
+	if err != nil {
+		return
+	}
+	if flag {
+		pr, err = parse("y")
+		if err != nil {
+			return
+		}
+	}
+	d.Set("props", *pr)
+}
+
+// Should be flagged: the nested re-assignment's error is not checked.
+func invalidNestedUncheckedReassign(d data, parse func(string) (*properties, error), flag bool) {
+	pr, err := parse("x")
+	if err != nil {
+		return
+	}
+	if flag {
+		pr, _ = parse("y")
+	}
+	d.Set("props", *pr) // want "dereference of possibly-nil `pr` may panic - add a nil check or use pointer.From"
+}
+
+// Should NOT be flagged: the nested re-fetch of the whole struct is followed by a fresh nil
+// check on the field before the block ends.
+func validNestedRefetchReguarded(d data, get func() (resp, error), flag bool) {
+	existing, err := get()
+	if err != nil || existing.Model == nil {
+		return
+	}
+	if flag {
+		existing, err = get()
+		if err != nil || existing.Model == nil {
+			return
+		}
+	}
+	d.Set("model", *existing.Model)
+}
+
+// Should be flagged: the nested re-fetch is not re-checked.
+func invalidNestedRefetch(d data, get func() (resp, error), flag bool) {
+	existing, err := get()
+	if err != nil || existing.Model == nil {
+		return
+	}
+	if flag {
+		existing, err = get()
+		if err != nil {
+			return
+		}
+	}
+	d.Set("model", *existing.Model) // want "dereference of possibly-nil `existing.Model` may panic - add a nil check or use pointer.From"
 }

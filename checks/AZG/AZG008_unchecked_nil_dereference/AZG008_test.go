@@ -33,11 +33,11 @@ func TestAZG008FixWithNone(t *testing.T) {
 }
 
 //nolint:paralleltest // mutates the package-level requestbody flag; must finish before parallel tests resume
-func TestAZG008RequestBody(t *testing.T) {
-	if err := Analyzer.Flags.Set("requestbody", "true"); err != nil {
+func TestAZG008RequestBodyOff(t *testing.T) {
+	if err := Analyzer.Flags.Set("requestbody", "false"); err != nil {
 		t.Fatal(err)
 	}
-	defer func() { _ = Analyzer.Flags.Set("requestbody", "false") }()
+	defer func() { _ = Analyzer.Flags.Set("requestbody", "true") }()
 
 	analysistest.Run(t, analysistest.TestData(), Analyzer, "azg008requestbody")
 }
