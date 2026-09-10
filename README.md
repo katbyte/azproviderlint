@@ -89,6 +89,12 @@ Rules are named `AZ`, a category letter, and a number. The letters follow [tfpro
 |------|-------------|
 | [AZC001](checks/AZC/AZC001_client_missing_resource_manager_endpoint) | clients must set an explicit resource manager endpoint |
 
+### AZP - Provider-Wide Conventions
+
+| Rule | Description |
+|------|-------------|
+| [AZP001](checks/AZP/AZP001_microsoft_docs_url_locale) | Microsoft docs URLs must not carry a locale segment like /en-us/ |
+
 ### AZT - Acceptance Testing
 
 | Rule | Description |
