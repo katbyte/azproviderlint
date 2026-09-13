@@ -50,6 +50,7 @@ Not reported:
 - write-only arguments (`WriteOnly: true`, or names ending in `_wo` / `_wo_version`), which can never be read back
 - pairs where either side has no readable properties
 - data sources with a non-constant schema key
+- registration entries whose type name is not a constant or package variable: they are skipped, as in AZS005
 
 ## Options
 

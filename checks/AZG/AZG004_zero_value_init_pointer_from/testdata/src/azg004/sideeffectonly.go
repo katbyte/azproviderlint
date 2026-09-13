@@ -1,0 +1,21 @@
+package azg004
+
+import (
+	"strings"
+
+	_ "github.com/hashicorp/go-azure-helpers/lang/response"
+)
+
+type sideEffectOnlyModel struct {
+	Name *string
+}
+
+// Should be flagged: with only standard-library and side-effect imports, the new import opens
+// a section of its own after the last one.
+func invalidSideEffectOnly(m *sideEffectOnlyModel) {
+	name := "" // want `pointer\.From`
+	if m.Name != nil {
+		name = *m.Name
+	}
+	_ = strings.TrimSpace(name)
+}

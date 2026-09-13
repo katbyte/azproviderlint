@@ -56,7 +56,7 @@ func run(pass *analysis.Pass) (any, error) {
 		call *ast.CallExpr
 	}
 	byFile := map[*ast.File][]finding{}
-	for fn := range lifecycle.Funcs(insp) {
+	for fn := range lifecycle.Funcs(pass, insp) {
 		file := enclosingFile(pass, fn.Pos())
 		ast.Inspect(fn.Body, func(n ast.Node) bool {
 			stmt, ok := n.(*ast.ExprStmt)

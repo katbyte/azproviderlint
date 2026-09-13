@@ -152,3 +152,121 @@ func invalidPassThrough(d data, props properties) {
 		d.Set("sku", flattenSkuPassThrough(props.Sku)) // want "`flattenSkuPassThrough\\(props.Sku\\)` is called under a nil check on `props.Sku` - handle nil inside the flatten function instead"
 	}
 }
+
+type holder struct{ Sku *sku }
+
+// flattenSkuParen compares the parenthesised parameter with nil, which still counts.
+func flattenSkuParen(input *sku) []interface{} {
+	if (input) == nil {
+		return []interface{}{}
+	}
+	return flattenSku(input)
+}
+
+// flattenSkuStored only stores its input, never dereferencing it.
+func flattenSkuStored(input *sku) holder {
+	h := holder{}
+	h.Sku = input
+	return h
+}
+
+// flattenSkuAlias guards an alias, not the parameter: the alias is not followed.
+func flattenSkuAlias(input *sku) []interface{} {
+	v := input
+	if v == nil {
+		return []interface{}{}
+	}
+	return []interface{}{*v.Name}
+}
+
+func getSku() *sku { return nil }
+
+// Should be flagged: the alias in the init is checked while the chain itself is passed.
+func invalidAliasInitChain(d data, props properties) {
+	if v := props.Sku; v != nil {
+		d.Set("sku", flattenSku(props.Sku)) // want "`flattenSku\\(props.Sku\\)` is called under a nil check on `props.Sku` - handle nil inside the flatten function instead"
+	}
+}
+
+// Should be flagged: nil on the left of the comparison.
+func invalidNilOnLeft(d data, props properties) {
+	if nil != props.Sku {
+		d.Set("sku", flattenSku(props.Sku)) // want "`flattenSku\\(props.Sku\\)` is called under a nil check on `props.Sku` - handle nil inside the flatten function instead"
+	}
+}
+
+// Should be flagged: the other conjunct is a comparison that is not a nil check.
+func invalidOtherComparison(d data, props properties, n int) {
+	if n > 0 && props.Sku != nil {
+		d.Set("sku", flattenSku(props.Sku)) // want "`flattenSku\\(props.Sku\\)` is called under a nil check on `props.Sku` - handle nil inside the flatten function instead"
+	}
+}
+
+// Should be flagged: a parenthesised argument is still the flatten argument itself.
+func invalidParenArg(d data, props properties) {
+	if props.Sku != nil {
+		d.Set("sku", flattenSku((props.Sku))) // want "`flattenSku\\(props.Sku\\)` is called under a nil check on `props.Sku` - handle nil inside the flatten function instead"
+	}
+}
+
+// Should NOT be flagged: comparing two chains is not a nil check.
+func validCompareChains(d data, props, other properties) {
+	if props.Sku != other.Sku {
+		d.Set("sku", flattenSku(props.Sku))
+	}
+}
+
+// Should NOT be flagged: a call result has no chain to guard.
+func validCallArg(d data, props properties) {
+	if props.Sku != nil {
+		d.Set("sku", flattenSku(getSku()))
+	}
+}
+
+// Should be flagged with a fix: a parenthesised nil comparison in the callee counts.
+func invalidRedundantParen(d data, props properties) {
+	if props.Sku != nil {
+		d.Set("sku", flattenSkuParen(props.Sku)) // want "`flattenSkuParen` already handles a nil `props.Sku` - drop the nil check"
+	}
+}
+
+// Should be flagged with a fix: storing the input handles nil.
+func invalidRedundantStored(d data, props properties) {
+	if props.Sku != nil {
+		_ = flattenSkuStored(props.Sku) // want "`flattenSkuStored` already handles a nil `props.Sku` - drop the nil check"
+	}
+}
+
+// Should be flagged without a fix: the callee guards an alias, which is not followed.
+func invalidAliasNotFollowed(d data, props properties) {
+	if props.Sku != nil {
+		d.Set("sku", flattenSkuAlias(props.Sku)) // want "`flattenSkuAlias\\(props.Sku\\)` is called under a nil check on `props.Sku` - handle nil inside the flatten function instead"
+	}
+}
+
+// Should be flagged without a fix: a single-line if cannot be unwrapped cleanly.
+func invalidRedundantSingleLine(d data, props properties) {
+	if props.Sku != nil { d.Set("sku", flattenSkuSafe(props.Sku)) } // want "`flattenSkuSafe` already handles a nil `props.Sku` - drop the nil check"
+}
+
+// Should be flagged with a fix: continuation lines lose one level of indentation.
+func invalidRedundantMultiLine(d data, props properties) {
+	if props.Sku != nil {
+		d.Set(
+			"sku",
+			flattenSkuSafe(props.Sku), // want "`flattenSkuSafe` already handles a nil `props.Sku` - drop the nil check"
+		)
+	}
+}
+
+// flattenSkuBoxed places its input in a literal without dereferencing it.
+func flattenSkuBoxed(input *sku) []interface{} {
+	return []interface{}{input}
+}
+
+// Should be flagged with a fix: boxing the input into a literal handles nil.
+func invalidRedundantBoxed(d data, props properties) {
+	if props.Sku != nil {
+		d.Set("sku", flattenSkuBoxed(props.Sku)) // want "`flattenSkuBoxed` already handles a nil `props.Sku` - drop the nil check"
+	}
+}

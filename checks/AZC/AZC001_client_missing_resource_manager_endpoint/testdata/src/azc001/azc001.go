@@ -27,3 +27,31 @@ func goodClient(o Options) FoosClient {
 func goodOtherCall(subscriptionId string) FoosClient {
 	return NewFoosClient(subscriptionId)
 }
+
+var sdk = struct {
+	NewFoosClient func(subscriptionId string) FoosClient
+}{}
+
+var ctors = []func(subscriptionId string) FoosClient{NewFoosClient}
+
+// Should be flagged: the constructor is reached through a package-style selector
+func badSelectorClient(o Options) FoosClient {
+	return sdk.NewFoosClient(o.SubscriptionId) // want `Azure SDK clients should be created with NewFoosClientWithBaseURI and the resource manager endpoint explicitly specified`
+}
+
+// Should NOT be flagged: the callee does not name a client
+func goodNotAClient(o Options) string {
+	return describe(o.SubscriptionId)
+}
+
+func describe(subscriptionId string) string { return subscriptionId }
+
+// Should NOT be flagged: the subscription id is read from something other than o
+func goodOtherReceiver(opts Options) FoosClient {
+	return NewFoosClient(opts.SubscriptionId)
+}
+
+// Should NOT be flagged: the callee is an indexed value, not a named constructor
+func goodIndexedCallee(o Options) FoosClient {
+	return ctors[0](o.SubscriptionId)
+}

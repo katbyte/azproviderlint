@@ -161,3 +161,50 @@ func validInterveningShadow(in input, out *output) {
 		out.Format = format
 	}
 }
+
+// Should NOT be flagged: an intervening `var` declaration shadows an operand, just as `:=`
+// does.
+func validInterveningVarShadow(in input, out *output) {
+	if out != nil {
+		format := from(in.Format)
+		var in input
+		_ = in
+		out.Format = format
+	}
+}
+
+// Should NOT be flagged: an intervening range statement assigns (rather than declares) an
+// operand of the initializer.
+func validInterveningRangeAssign(names []string, out *output) {
+	var name string
+	for _, name = range names {
+		_ = name
+	}
+	first := name
+	for _, name = range names {
+		_ = name
+	}
+	out.Format = first
+}
+
+// Should NOT be flagged: a write through a slice expression reaches the slice the
+// initializer reads.
+func validInterveningSliceWrite(column []string, y int, out *output) {
+	oldKey := column[y]
+	column[y:][0] = "overwritten"
+	out.Format = oldKey
+}
+
+// Should NOT be flagged: a write through a parenthesised dereference reaches an operand.
+func validInterveningParenWrite(p *input, out *output) {
+	format := *p.Format
+	(*p).Format = nil
+	out.Format = format
+}
+
+// Should be flagged: a write through a call's result is not a write to any operand.
+func invalidInterveningCallResultWrite(get func() *output, in input, out *output) {
+	format := from(in.Format) // want `"format" is only used by the statement on line \d+ and should be inlined`
+	get().Format = "x"
+	out.Format = format
+}

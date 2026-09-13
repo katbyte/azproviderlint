@@ -6,6 +6,7 @@
 ![build](https://github.com/katbyte/azproviderlint/actions/workflows/build.yaml/badge.svg)
 ![lint](https://github.com/katbyte/azproviderlint/actions/workflows/pr-golangci-lint.yaml/badge.svg)
 ![CodeQL](https://github.com/katbyte/azproviderlint/actions/workflows/codeql-analysis.yml/badge.svg)
+[![coverage](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/katbyte/azproviderlint/badges/coverage.json)](https://github.com/katbyte/azproviderlint/actions/workflows/coverage.yaml)
 
 Lint rules for the [Terraform AzureRM provider](https://github.com/hashicorp/terraform-provider-azurerm). Each rule catches one mistake that comes up in provider code, from schema fields that break at plan time to pointer dereferences that panic when Azure leaves a field out. Most rules can fix what they find.
 
@@ -112,7 +113,7 @@ No rules yet. Reserved for property naming rules, such as percentages using a `_
 |------|-------------|
 | [AZV001](checks/AZV/AZV001_error_should_describe_expected_format) | 'invalid format' error messages must describe the expected format |
 
-## Terms the rule docs use
+## Glossary
 
 If you are new to the provider, these come up a lot:
 
@@ -210,5 +211,6 @@ Building a custom binary is a one-time cost, and on a codebase the size of azure
 - **Loading the provider once, not twice.** Type-checking azurerm and its vendor tree takes minutes. A separate binary does it all over again. Inside golangci-lint it is shared, and the result cache makes warm re-runs fast.
 - **One config, one output.** The path exclusions already in the provider's `.golangci.yml` (generated files, `/sdk/`, `third_party`) apply for free. So do SARIF, annotations, and `--new-from-rev`, which lets a rule be enforced on new code while a decade of existing findings is left alone.
 - **`//nolint` works** alongside `//azignore`.
+- **One pass for every provider linter.** [tfproviderlint-golangci](https://github.com/katbyte/tfproviderlint-golangci) wraps tfproviderlint as a module plugin too, so a custom binary can carry golangci-lint, tfproviderlint, and azproviderlint together: three tools doing three passes become one.
 
 The standalone binary is still the right tool for a quick one-rule run, for editors that expect a plain `analysis` vet tool, and for developing new rules.

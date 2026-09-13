@@ -123,7 +123,7 @@ func check(pass *analysis.Pass, cl *ast.CompositeLit, visited map[*ast.Composite
 			SuggestedFixes: []analysis.SuggestedFix{{Message: "Remove " + name, TextEdits: []analysis.TextEdit{astx.DeleteLine(pass, kv)}}},
 		})
 	}
-	if kv := kvs["ConfigMode"]; kv != nil && selectorName(kv.Value) == "SchemaConfigModeBlock" {
+	if kv := kvs["ConfigMode"]; kv != nil && isConfigModeBlock(pass, kv.Value) {
 		pass.Report(analysis.Diagnostic{
 			Pos:            kv.Key.Pos(),
 			Message:        fmt.Sprintf("ConfigMode: SchemaConfigModeBlock has no effect %s - remove it", where),
@@ -156,12 +156,13 @@ func check(pass *analysis.Pass, cl *ast.CompositeLit, visited map[*ast.Composite
 }
 
 // flagFix turns a nested field's Optional/Required into Computed: the key is renamed when the
-// literal has no Computed yet, and the line goes when it already does.
+// literal has no Computed yet and the value is a constant true, and the line goes when it
+// already says Computed.
 func flagFix(pass *analysis.Pass, kvs map[string]*ast.KeyValueExpr, kv *ast.KeyValueExpr) (analysis.TextEdit, bool) {
 	if kvs["Computed"] != nil {
 		return astx.DeleteLine(pass, kv), true
 	}
-	if id, ok := kv.Value.(*ast.Ident); !ok || id.Name != "true" {
+	if tv := pass.TypesInfo.Types[kv.Value]; tv.Value == nil || tv.Value.Kind() != constant.Bool || !constant.BoolVal(tv.Value) {
 		return analysis.TextEdit{}, false
 	}
 	return analysis.TextEdit{Pos: kv.Key.Pos(), End: kv.Key.End(), NewText: []byte("Computed")}, true
@@ -240,12 +241,17 @@ func stripAddr(e ast.Expr) ast.Expr {
 	return e
 }
 
-func selectorName(e ast.Expr) string {
-	switch v := e.(type) {
-	case *ast.SelectorExpr:
-		return v.Sel.Name
-	case *ast.Ident:
-		return v.Name
+// isConfigModeBlock reports whether e is schema.SchemaConfigModeBlock, by value, so a cast or
+// a renamed constant counts too.
+func isConfigModeBlock(pass *analysis.Pass, e ast.Expr) bool {
+	tv := pass.TypesInfo.Types[e]
+	if tv.Value == nil || tv.Value.Kind() != constant.Int {
+		return false
 	}
-	return ""
+	named, ok := types.Unalias(tv.Type).(*types.Named)
+	if !ok || named.Obj().Name() != "SchemaConfigMode" {
+		return false
+	}
+	v, _ := constant.Int64Val(tv.Value)
+	return v == 2 // SchemaConfigModeBlock
 }

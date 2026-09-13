@@ -27,10 +27,10 @@ func flaggedTopLevel() {
 	_ = &schema.Schema{
 		Type:             schema.TypeString,
 		Computed:         true,
-		Default:          "x",             // want `Default has no effect on a computed-only field - remove it`
-		DiffSuppressFunc: suppress,        // want `DiffSuppressFunc has no effect on a computed-only field - remove it`
+		Default:          "x",               // want `Default has no effect on a computed-only field - remove it`
+		DiffSuppressFunc: suppress,          // want `DiffSuppressFunc has no effect on a computed-only field - remove it`
 		ConflictsWith:    []string{"other"}, // want `ConflictsWith has no effect on a computed-only field - remove it`
-		WriteOnly:        true,            // want `WriteOnly has no effect on a computed-only field - remove it`
+		WriteOnly:        true,              // want `WriteOnly has no effect on a computed-only field - remove it`
 	}
 
 	_ = &schema.Schema{
@@ -173,5 +173,76 @@ func passing(dynamic bool) {
 		Computed:    true,
 		Sensitive:   true,
 		Description: "set by the API",
+	}
+}
+
+// yes is a true constant that is not the literal `true`: reported and fixed like the literal
+const yes = true
+
+// SchemaConfigModeBlock as a bare identifier is recognised like the qualified name
+const SchemaConfigModeBlock = schema.SchemaConfigModeBlock
+
+func sharedProps() map[string]*schema.Schema {
+	return map[string]*schema.Schema{}
+}
+
+func flaggedEdgeCases() {
+	_ = &schema.Schema{
+		Type:       schema.TypeList,
+		Computed:   true,
+		ConfigMode: SchemaConfigModeBlock, // want `ConfigMode: SchemaConfigModeBlock has no effect on a computed-only field - remove it`
+		Default:    1i,                    // want `Default has no effect on a computed-only field - remove it`
+		Elem:       &schema.Resource{Schema: sharedProps()},
+	}
+
+	_ = &schema.Schema{
+		Type:     schema.TypeList,
+		Computed: true,
+		Elem: &schema.Resource{
+			Schema: map[string]*schema.Schema{
+				"name": {
+					Type:     schema.TypeString,
+					Optional: yes, // want `Optional has no effect inside a computed-only block - use Computed`
+				},
+			},
+		},
+	}
+}
+
+// a schema literal outside any function is never inside Attributes()
+var packageLevel = &schema.Schema{
+	Type:         schema.TypeString,
+	ValidateFunc: validateString,
+}
+
+// lookalike Attributes() methods that do not return the typed SDK's schema map are not
+// treated as all-computed
+type lookalikeSlice struct{}
+
+func (lookalikeSlice) Attributes() []*schema.Schema {
+	return []*schema.Schema{{
+		Type:         schema.TypeString,
+		ValidateFunc: validateString,
+	}}
+}
+
+type lookalikeValues struct{}
+
+func (lookalikeValues) Attributes() map[string]schema.Schema {
+	return map[string]schema.Schema{
+		"name": {
+			Type:         schema.TypeString,
+			ValidateFunc: validateString,
+		},
+	}
+}
+
+func passingEdgeCases() {
+	// the block config mode is matched by value, so a cast is reported like the constant
+	_ = &schema.Schema{
+		Type:       schema.TypeList,
+		Computed:   true,
+		ConfigMode: schema.SchemaConfigMode(2), // want `ConfigMode: SchemaConfigModeBlock has no effect on a computed-only field - remove it`
+		Elem:       &schema.Resource{Schema: map[string]*schema.Schema{}},
 	}
 }
