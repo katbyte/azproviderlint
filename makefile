@@ -79,9 +79,9 @@ tools: $(ACTIONLINT) $(GOFUMPT) $(GOLANGCI_LINT) $(GOLANGCI_LINT_MODULES) $(SHEL
 ##@ Formatting
 fmt: $(GOFUMPT) $(GOLANGCI_LINT) ## Fix Go formatting (gofmt, gofumpt, goimports)
 	@echo "==> Fixing source code with gofmt..."
-	find . -name '*.go' | grep -v vendor | xargs gofmt -s -w
+	find . -name '*.go' | grep -vE 'vendor|testdata' | xargs gofmt -s -w
 	@echo "==> Fixing source code with gofumpt..."
-	find . -name '*.go' | grep -v vendor | xargs $(GOFUMPT) -w
+	find . -name '*.go' | grep -vE 'vendor|testdata' | xargs $(GOFUMPT) -w
 	@echo "==> Fixing imports with golangci-lint (goimports)..."
 	$(GOLANGCI_LINT) fmt -E goimports ./...
 
@@ -141,6 +141,15 @@ depscheck: ## Check that go.mod/go.sum and vendor/ are in sync
 ##@ Testing
 test: build ## Run the unit tests (with -race)
 	go test -race ./... -timeout ${TEST_TIMEOUT}
+
+COVERDIR?=.coverage
+cover: ## Run the unit tests with coverage across every package and report the total
+	@rm -rf $(COVERDIR) && mkdir -p $(COVERDIR)
+	@go test -count=1 -coverpkg=./... -coverprofile=$(COVERDIR)/coverage.out ./... -timeout ${TEST_TIMEOUT} >/dev/null
+	@go tool cover -func=$(COVERDIR)/coverage.out | tail -1
+
+cover-html: cover ## Run the unit tests with coverage and open the HTML report
+	@go tool cover -html=$(COVERDIR)/coverage.out
 
 check-all: build test lint actionlint yamllint shellcheck typos depscheck ## Run build + test + all linters + depscheck
 

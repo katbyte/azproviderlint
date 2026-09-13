@@ -1,0 +1,22 @@
+package azg004
+
+import (
+	"strings"
+
+	_ "github.com/hashicorp/go-azure-helpers/lang/response"
+
+	"github.com/example/first" // nolint: depguard
+	"github.com/hashicorp/go-azure-helpers/lang/pointer"
+)
+
+type sideEffectModel struct {
+	Name *string
+}
+
+// Should be flagged: a side-effect import is its own section and never the insertion point;
+// the external import that sorts before pointer carries a trailing comment, so the new import
+// goes after the comment rather than between the path and its comment.
+func invalidSideEffectSection(m *sideEffectModel) {
+	name := pointer.From(m.Name)
+	_ = strings.TrimSpace(name) + first.Value()
+}

@@ -188,7 +188,7 @@ func run(pass *analysis.Pass) (any, error) {
 				if ifs == nil || otherUse(pass, parents, ifs, keys) {
 					continue
 				}
-				src := types.ExprString(arg)
+				src := types.ExprString(ast.Unparen(arg))
 				msg := "`" + fn.Name() + "(" + src + ")` is called under a nil check on `" + src + "` - handle nil inside the flatten function instead"
 				var fixes []analysis.SuggestedFix
 				if handled.Get(fn).Mask&(1<<i) != 0 {
@@ -281,19 +281,11 @@ func otherUse(pass *analysis.Pass, parents map[ast.Node]ast.Node, ifs *ast.IfStm
 			if !slices.Contains(keys, k) {
 				return true
 			}
-			p := parents[x]
-			for {
-				paren, ok := p.(*ast.ParenExpr)
-				if !ok {
-					break
-				}
-				p = parents[paren]
-			}
-			if call, ok := p.(*ast.CallExpr); ok {
+			if call, ok := parents[x].(*ast.CallExpr); ok {
 				if fn := astx.CalledFunc(pass, call); fn != nil && isFlatten(fn.Name()) {
 					for _, a := range call.Args {
-						if ast.Unparen(a) == x {
-							return false // the flatten argument itself
+						if a == x {
+							return false // the flatten argument itself, parentheses included
 						}
 					}
 				}

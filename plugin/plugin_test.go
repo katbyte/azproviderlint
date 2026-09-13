@@ -5,6 +5,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/golangci/plugin-module-register/register"
+
 	"github.com/katbyte/azproviderlint/checks"
 )
 
@@ -205,5 +207,28 @@ func TestBuildAnalyzersLowercasedSettings(t *testing.T) {
 	}
 	if slices.Contains(names, "AZR002") {
 		t.Fatal("expected lowercase disable entry to disable AZR002")
+	}
+}
+
+func TestNewSettingsErrors(t *testing.T) {
+	t.Parallel()
+
+	if _, err := New(make(chan int)); err == nil {
+		t.Fatal("expected an error for settings that cannot be encoded")
+	}
+	if _, err := New(map[string]any{"enable": "AZG"}); err == nil {
+		t.Fatal("expected an error for a non-list enable value")
+	}
+}
+
+func TestGetLoadMode(t *testing.T) {
+	t.Parallel()
+
+	p, err := New(nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if mode := p.GetLoadMode(); mode != register.LoadModeTypesInfo {
+		t.Fatalf("expected %q, got %q", register.LoadModeTypesInfo, mode)
 	}
 }

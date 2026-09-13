@@ -507,20 +507,7 @@ func (c *collector) declOfCall(expr ast.Expr) *ast.FuncDecl {
 		return nil
 	}
 
-	if fn := c.decls[obj]; fn != nil {
-		return fn
-	}
-	// methods are declared under their receiver in Defs too, but fall back to the index
-	if recv := obj.Signature().Recv(); recv != nil {
-		t := types.Unalias(recv.Type())
-		if ptr, ok := t.(*types.Pointer); ok {
-			t = types.Unalias(ptr.Elem())
-		}
-		if named, ok := t.(*types.Named); ok {
-			return c.methods[named.Obj().Name()][obj.Name()]
-		}
-	}
-	return nil
+	return c.decls[obj] // methods are in Defs under their name too
 }
 
 // delegatesToRegistrationMethod reports whether expr is a call to another registration method

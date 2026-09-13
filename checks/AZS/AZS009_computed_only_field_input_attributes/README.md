@@ -101,7 +101,7 @@ Not reported:
 
 ## The fix
 
-`-fix` deletes the attribute's line. For a nested `Optional` or `Required` it renames the key to `Computed`, or deletes the line when the field already says `Computed`. An `Optional` inside `Attributes()` gets no fix, because the right move is usually to the `Arguments()` map, and that is a person's call.
+`-fix` deletes the attribute's line. For a nested `Optional` or `Required` set to a constant `true` it renames the key to `Computed`, or deletes the line when the field already says `Computed`; a non-constant value is reported without a fix. An `Optional` inside `Attributes()` gets no fix, because the right move is usually to the `Arguments()` map, and that is a person's call.
 
 ## Ignoring Reports
 

@@ -1,5 +1,13 @@
 ## Unreleased
 
+- `AZR010`: a parenthesised flatten argument (`flattenSku((props.Sku))`) is reported like a bare one
+- `AZR003`: typed Delete reads through a local alias of `metadata.ResourceData` (`d := metadata.ResourceData; d.Get(...)`) are reported
+- `AZR003`/`AZR009`: registered lifecycle functions are resolved through type information, so a same-named function in another package is no longer mistaken for the handler
+- `AZG008`: a write method held in a local variable (`m := http.MethodPut; do(ctx, m, body)`) marks the call as a request body, so no `pointer.From` fix is offered; any string constant equal to PUT/PATCH/POST counts, not only net/http's
+- `AZS009`: `ConfigMode: SchemaConfigModeBlock` is matched by value, so a cast or renamed constant is reported too; a nested `Optional`/`Required` set from a named `true` constant is now fixed
+- coverage: `make cover` reports merged statement coverage; CI publishes the badge from `main`
+- `make fmt` leaves `testdata/` fixtures alone, as `golangci-lint fmt` already did
+- README: glossary section renamed; note that a custom golangci-lint binary can carry tfproviderlint too
 - add rule `AZP001`: Microsoft Learn/Docs URLs in comments and strings must not carry a locale segment (`/en-us/`), so readers get their own language; fixable with `-fix`; new `AZP` category for provider-wide conventions ([#47](https://github.com/katbyte/azproviderlint/pull/47))
 
 ## v0.8.0 (2026-09-09)

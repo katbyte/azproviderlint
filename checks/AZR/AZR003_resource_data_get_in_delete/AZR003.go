@@ -4,6 +4,7 @@ package AZR003
 
 import (
 	"go/ast"
+	"go/types"
 
 	"github.com/katbyte/azproviderlint/lib/lifecycle"
 	"golang.org/x/tools/go/analysis"
@@ -29,12 +30,12 @@ func run(pass *analysis.Pass) (any, error) {
 		return nil, nil
 	}
 
-	for fn, step := range lifecycle.Funcs(insp) {
+	for fn, step := range lifecycle.Funcs(pass, insp) {
 		if step != lifecycle.Delete {
 			continue
 		}
-		if fn.Recv == nil {
-			// untyped resources: the function registered via `Delete: resourceFooDelete,`
+		if fn.Type.Params.NumFields() > 0 {
+			// untyped resources: the function (or method) registered via `Delete: resourceFooDelete,`
 			checkUntypedDelete(pass, fn)
 		} else {
 			// typed resources: the `Delete() sdk.ResourceFunc` method
@@ -74,8 +75,41 @@ func checkUntypedDelete(pass *analysis.Pass, fn *ast.FuncDecl) {
 	})
 }
 
-// checkTypedDelete reports `metadata.ResourceData.Get(...)` calls.
+// checkTypedDelete reports `metadata.ResourceData.Get(...)` calls, directly or through a local
+// alias (`d := metadata.ResourceData`).
 func checkTypedDelete(pass *analysis.Pass, fn *ast.FuncDecl) {
+	aliases := map[types.Object]bool{}
+	ast.Inspect(fn.Body, func(n ast.Node) bool {
+		var names []ast.Expr
+		var values []ast.Expr
+		switch x := n.(type) {
+		case *ast.AssignStmt:
+			names, values = x.Lhs, x.Rhs
+		case *ast.ValueSpec:
+			for _, id := range x.Names {
+				names = append(names, id)
+			}
+			values = x.Values
+		default:
+			return true
+		}
+		if len(names) != len(values) {
+			return true
+		}
+		for i, v := range values {
+			sel, ok := ast.Unparen(v).(*ast.SelectorExpr)
+			if !ok || sel.Sel.Name != "ResourceData" {
+				continue
+			}
+			if id, ok := names[i].(*ast.Ident); ok {
+				if obj := pass.TypesInfo.ObjectOf(id); obj != nil {
+					aliases[obj] = true
+				}
+			}
+		}
+		return true
+	})
+
 	ast.Inspect(fn.Body, func(n ast.Node) bool {
 		call, ok := n.(*ast.CallExpr)
 		if !ok {
@@ -87,13 +121,20 @@ func checkTypedDelete(pass *analysis.Pass, fn *ast.FuncDecl) {
 			return true
 		}
 
-		inner, ok := sel.X.(*ast.SelectorExpr)
-		if !ok || inner.Sel.Name != "ResourceData" {
-			return true
+		switch x := sel.X.(type) {
+		case *ast.SelectorExpr:
+			if x.Sel.Name != "ResourceData" {
+				return true
+			}
+			pass.Reportf(call.Pos(),
+				"ResourceData.Get should not be used within a Delete function as it does not work as expected during deletion")
+		case *ast.Ident:
+			if !aliases[pass.TypesInfo.ObjectOf(x)] {
+				return true
+			}
+			pass.Reportf(call.Pos(),
+				"%s.Get should not be used within a Delete function as it does not work as expected during deletion", x.Name)
 		}
-
-		pass.Reportf(call.Pos(),
-			"ResourceData.Get should not be used within a Delete function as it does not work as expected during deletion")
 		return true
 	})
 }
