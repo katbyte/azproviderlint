@@ -83,7 +83,9 @@ func dataSourceIncomplete() *pluginsdk.Resource {
 }
 
 // azurerm_via_helper: both schemas are built through a shared helper function, which the
-// recursive collection follows.
+// recursive collection follows. Properties assigned onto the map carry their own markers:
+// WriteOnly and //azignore:AZS006 exempt them, Sensitive does not by default, and a
+// non-constant key on the resource side is simply not collected.
 
 func sharedNameSchema() map[string]*pluginsdk.Schema {
 	return map[string]*pluginsdk.Schema{
@@ -99,8 +101,15 @@ func resourceViaHelper() *pluginsdk.Resource {
 }
 
 func resourceViaHelperSchema() map[string]*pluginsdk.Schema {
+	labels := map[string]string{"kind": "helper"} // a string map is not a schema map
+	labels["shared"] = "yes"
+
 	s := sharedNameSchema()
 	s["tier"] = &pluginsdk.Schema{Type: pluginsdk.TypeString, Optional: true}
+	s["api_key"] = &pluginsdk.Schema{Type: pluginsdk.TypeString, Optional: true, WriteOnly: true}
+	s["password"] = &pluginsdk.Schema{Type: pluginsdk.TypeString, Optional: true, Sensitive: true}
+	s["internal_id"] = &pluginsdk.Schema{Type: pluginsdk.TypeString, Optional: true} // azignore:AZS006
+	s[dynamicKey()] = &pluginsdk.Schema{Type: pluginsdk.TypeString, Optional: true}
 	return s
 }
 

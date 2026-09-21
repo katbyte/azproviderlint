@@ -8,6 +8,7 @@ import (
 	"github.com/katbyte/azproviderlint/checks/AZD"
 	"github.com/katbyte/azproviderlint/checks/AZG"
 	AZG000 "github.com/katbyte/azproviderlint/checks/AZG/AZG000_azignore_missing_reason"
+	"github.com/katbyte/azproviderlint/checks/AZP"
 	"github.com/katbyte/azproviderlint/checks/AZR"
 	"github.com/katbyte/azproviderlint/checks/AZS"
 	"github.com/katbyte/azproviderlint/checks/AZT"
@@ -23,6 +24,7 @@ var All = append(azignore.Wrap(slices.Concat(
 	AZC.Checks,
 	AZD.Checks,
 	AZG.Checks,
+	AZP.Checks,
 	AZR.Checks,
 	AZS.Checks,
 	AZT.Checks,

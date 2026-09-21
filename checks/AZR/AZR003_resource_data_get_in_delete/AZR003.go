@@ -4,7 +4,9 @@ package AZR003
 
 import (
 	"go/ast"
+	"go/types"
 
+	"github.com/katbyte/azproviderlint/lib/lifecycle"
 	"golang.org/x/tools/go/analysis"
 	"golang.org/x/tools/go/analysis/passes/inspect"
 	"golang.org/x/tools/go/ast/inspector"
@@ -28,44 +30,18 @@ func run(pass *analysis.Pass) (any, error) {
 		return nil, nil
 	}
 
-	// collect the functions registered as `Delete:` in resource definitions
-	deleteFuncs := map[string]bool{}
-	insp.Preorder([]ast.Node{(*ast.KeyValueExpr)(nil)}, func(n ast.Node) {
-		kv, ok := n.(*ast.KeyValueExpr)
-		if !ok {
-			return
+	for fn, step := range lifecycle.Funcs(pass, insp) {
+		if step != lifecycle.Delete {
+			continue
 		}
-
-		key, ok := kv.Key.(*ast.Ident)
-		if !ok || key.Name != "Delete" {
-			return
-		}
-
-		switch v := kv.Value.(type) {
-		case *ast.Ident:
-			deleteFuncs[v.Name] = true
-		case *ast.SelectorExpr:
-			deleteFuncs[v.Sel.Name] = true
-		}
-	})
-
-	insp.Preorder([]ast.Node{(*ast.FuncDecl)(nil)}, func(n ast.Node) {
-		fn, ok := n.(*ast.FuncDecl)
-		if !ok || fn.Body == nil {
-			return
-		}
-
-		// untyped resources: the function registered via `Delete: resourceFooDelete,`
-		if fn.Recv == nil && deleteFuncs[fn.Name.Name] {
+		if fn.Type.Params.NumFields() > 0 {
+			// untyped resources: the function (or method) registered via `Delete: resourceFooDelete,`
 			checkUntypedDelete(pass, fn)
-			return
-		}
-
-		// typed resources: the `Delete() sdk.ResourceFunc` method
-		if fn.Recv != nil && fn.Name.Name == "Delete" && returnsResourceFunc(fn) {
+		} else {
+			// typed resources: the `Delete() sdk.ResourceFunc` method
 			checkTypedDelete(pass, fn)
 		}
-	})
+	}
 
 	return nil, nil
 }
@@ -99,8 +75,41 @@ func checkUntypedDelete(pass *analysis.Pass, fn *ast.FuncDecl) {
 	})
 }
 
-// checkTypedDelete reports `metadata.ResourceData.Get(...)` calls.
+// checkTypedDelete reports `metadata.ResourceData.Get(...)` calls, directly or through a local
+// alias (`d := metadata.ResourceData`).
 func checkTypedDelete(pass *analysis.Pass, fn *ast.FuncDecl) {
+	aliases := map[types.Object]bool{}
+	ast.Inspect(fn.Body, func(n ast.Node) bool {
+		var names []ast.Expr
+		var values []ast.Expr
+		switch x := n.(type) {
+		case *ast.AssignStmt:
+			names, values = x.Lhs, x.Rhs
+		case *ast.ValueSpec:
+			for _, id := range x.Names {
+				names = append(names, id)
+			}
+			values = x.Values
+		default:
+			return true
+		}
+		if len(names) != len(values) {
+			return true
+		}
+		for i, v := range values {
+			sel, ok := ast.Unparen(v).(*ast.SelectorExpr)
+			if !ok || sel.Sel.Name != "ResourceData" {
+				continue
+			}
+			if id, ok := names[i].(*ast.Ident); ok {
+				if obj := pass.TypesInfo.ObjectOf(id); obj != nil {
+					aliases[obj] = true
+				}
+			}
+		}
+		return true
+	})
+
 	ast.Inspect(fn.Body, func(n ast.Node) bool {
 		call, ok := n.(*ast.CallExpr)
 		if !ok {
@@ -112,30 +121,22 @@ func checkTypedDelete(pass *analysis.Pass, fn *ast.FuncDecl) {
 			return true
 		}
 
-		inner, ok := sel.X.(*ast.SelectorExpr)
-		if !ok || inner.Sel.Name != "ResourceData" {
-			return true
+		switch x := sel.X.(type) {
+		case *ast.SelectorExpr:
+			if x.Sel.Name != "ResourceData" {
+				return true
+			}
+			pass.Reportf(call.Pos(),
+				"ResourceData.Get should not be used within a Delete function as it does not work as expected during deletion")
+		case *ast.Ident:
+			if !aliases[pass.TypesInfo.ObjectOf(x)] {
+				return true
+			}
+			pass.Reportf(call.Pos(),
+				"%s.Get should not be used within a Delete function as it does not work as expected during deletion", x.Name)
 		}
-
-		pass.Reportf(call.Pos(),
-			"ResourceData.Get should not be used within a Delete function as it does not work as expected during deletion")
 		return true
 	})
-}
-
-// returnsResourceFunc reports whether the function's single result type is (sdk.)ResourceFunc.
-func returnsResourceFunc(fn *ast.FuncDecl) bool {
-	if fn.Type.Results == nil || len(fn.Type.Results.List) != 1 {
-		return false
-	}
-
-	switch t := fn.Type.Results.List[0].Type.(type) {
-	case *ast.Ident:
-		return t.Name == "ResourceFunc"
-	case *ast.SelectorExpr:
-		return t.Sel.Name == "ResourceFunc"
-	}
-	return false
 }
 
 func firstParamName(fn *ast.FuncDecl) string {

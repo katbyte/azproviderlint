@@ -35,3 +35,35 @@ func resourceGoodThingCreate() error { return nil }
 func resourceGoodThingRead() error   { return nil }
 func resourceGoodThingUpdate() error { return nil }
 func resourceGoodThingDelete() error { return nil }
+
+var handlers = struct {
+	ThingCreateUpdate func() error
+	ThingCreate       func() error
+}{}
+
+// Should be flagged: the combined method is referenced through a selector
+func resourceSelectorThing() *Resource {
+	return &Resource{
+		Create: handlers.ThingCreateUpdate, // want `new resources should use separate Create and Update methods instead of a combined CreateUpdate method`
+		Update: handlers.ThingCreateUpdate,
+	}
+}
+
+// Should NOT be flagged: a selector to a plain Create method
+func resourceSelectorGood() *Resource {
+	return &Resource{
+		Create: handlers.ThingCreate,
+	}
+}
+
+// Should NOT be flagged: a function literal has no name to match
+func resourceLiteralCreate() *Resource {
+	return &Resource{
+		Create: func() error { return nil },
+	}
+}
+
+// Should NOT be flagged: a string key is not the Create field
+var byName = map[string]func() error{
+	"Create": resourceBadThingCreateUpdate,
+}

@@ -38,3 +38,34 @@ func goodOtherName(meta interface{}) {
 	stopCtx := meta.(*Client).StopContext
 	_ = stopCtx
 }
+
+// Should be flagged: parentheses around the meta assertion do not hide it
+func badParenRead(meta interface{}) {
+	ctx := (meta.(*Client)).StopContext // want `use a timeouts-wrapped StopContext`
+	_ = ctx
+}
+
+// Should be flagged: indexing into an asserted slice still roots at meta
+func badIndexRead(meta interface{}) {
+	ctx := meta.([]*Client)[0].StopContext // want `use a timeouts-wrapped StopContext`
+	_ = ctx
+}
+
+// Should NOT be flagged: the chain roots at a composite literal, not an identifier
+func goodLiteralRoot() {
+	ctx := Client{}.StopContext
+	_ = ctx
+}
+
+// Should NOT be flagged: a plain assignment, not a short declaration
+func goodAssign(meta interface{}) {
+	var ctx context.Context
+	ctx = meta.(*Client).StopContext
+	_ = ctx
+}
+
+// Should NOT be flagged: two values on the left
+func goodTwoValues(meta interface{}) {
+	ctx, ok := meta.(*Client).StopContext, true
+	_, _ = ctx, ok
+}

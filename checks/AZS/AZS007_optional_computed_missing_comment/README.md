@@ -1,10 +1,10 @@
 # AZS007 - optional+computed fields must have a Note: O+C comment
 
-The AZS007 analyzer reports `schema.Schema` fields that have both `Optional: true` and `Computed: true` (O+C) without a `// Note: O+C because ...` comment between the two field declarations.
+AZS007 reports a schema field that is both `Optional: true` and `Computed: true` with no `// Note: O+C because ...` comment between the two lines.
 
-Failing to document *why* a field is O+C makes it hard to review and maintain. The required comment forces authors to explain the API behaviour driving the decision.
+Optional plus Computed (O+C) means "the user may set this, and if they do not, Azure picks a value". It is the right choice sometimes, but it also hides drift: if Azure changes the value behind the user's back, Terraform will not notice. So each use needs a written reason explaining the API behaviour that made it necessary. The comment makes that easy to review and easy to revisit.
 
-azurerm's `pluginsdk` type aliases and the typed SDK resource pattern (`Arguments()` / `Attributes()` methods) are both recognised.
+The comment must match `// Note: O+C` (any casing) and sit on a line between `Optional:` and `Computed:`. Only the first line of a multi-line comment has to match. Both the untyped schema and the typed SDK's `Arguments()` / `Attributes()` methods are checked, and the `pluginsdk` aliases used in azurerm are recognised.
 
 ## Flagged Code
 
@@ -47,26 +47,20 @@ azurerm's `pluginsdk` type aliases and the typed SDK resource pattern (`Argument
 },
 ```
 
-The comment must match `// Note: O+C` (case-insensitive) and appear on a line strictly between `Optional:` and `Computed:` in the source. Multi-line O+C comments are supported, only the first line must match the pattern.
-
 ## Options
 
 | Option | Default | Effect |
 |---|---|---|
-| `exclude-packages` | (empty) | comma-separated package names to skip entirely (e.g. state-migration snapshot packages) |
+| `exclude-packages` | (empty) | comma-separated package names to skip, such as state-migration snapshot packages |
 
-Set via `-AZS007.<option>` on the CLI or a rule-name key in the plugin's golangci settings.
+Set with `-AZS007.<option>` on the CLI or under the rule name in the golangci settings; see the [root README](../../../README.md#options).
 
 ## Ignoring Reports
 
-When run via golangci-lint, reports can be ignored with a `//nolint:azproviderlint` Go code comment at the end of the offending line or on the line immediately preceding it:
-
-```go
-Computed: true, //nolint:azproviderlint
-```
-
-To ignore only this check — leaving any other azproviderlint checks active — use a `//azignore:AZS007 - <reason>` comment instead:
+Put `//azignore:AZS007 - <reason>` at the end of the `Computed:` line, or on the line above it. The reason is required.
 
 ```go
 Computed: true, //azignore:AZS007 - <reason>
 ```
+
+Under golangci-lint, `//nolint:azproviderlint` in the same place also works, but it silences every azproviderlint check on that line.

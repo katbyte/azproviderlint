@@ -1,12 +1,8 @@
-# AZS005 - resources should have a matching data source
+# AZS005 - registered resources must have a same-named data source
 
-The AZS005 analyzer reports registered resources that have no data source of the same terraform type name registered in the service package. Every registration flavour contributes to both sides of the comparison, so a resource registered one way is covered by a data source registered any other way:
+AZS005 reports a registered resource with no data source of the same Terraform type name in the service package.
 
-- untyped plugin SDK: `SupportedResources()` / `SupportedDataSources()` map keys
-- typed SDK: `Resources()` / `DataSources()` elements, correlated via their `ResourceType()` methods
-- framework: `FrameworkResources()` / `FrameworkDataSources()` elements, correlated via their `ResourceType()` methods
-
-Conditionally registered entries (`resources["azurerm_x"] = ...` assignments and `append(out, FooResource{})` calls behind feature flags) are collected too, and generated auto-registration delegation (`append(out, r.autoRegistration.Resources()...)`) is followed — the delegated-to methods' own literal entries are collected when their declarations are visited. Type names declared as package-level vars (`var FooResourceName = "azurerm_foo"`, common for sharing with locks helpers) resolve through their initializer. Invoke-style "action" resources — ones that perform an operation or mint a credential rather than manage a durable object, currently recognised by the name suffixes `_run_command` and `_sas_token` — have no meaningful data source form and are never reported. Registration methods are recognised by name plus return shape (`map[string]*Resource`, `[]Resource`, `[]DataSource`, `[]FrameworkWrappedResource`, `[]FrameworkWrappedDataSource`), and terraform type names are resolved through the type checker, so named constants work. If any data source entry's name cannot be resolved statically the package is skipped entirely, so an unresolvable data source can never produce a false "missing data source" report; unresolvable resource entries are skipped individually.
+Most resources should have a data source so other configs can look them up. Not every resource needs one, and suppressions are expected. The point of the check is that skipping the data source is a decision someone made and wrote down, not something that was forgotten.
 
 ## Flagged Code
 
@@ -34,16 +30,30 @@ func (r Registration) SupportedDataSources() map[string]*pluginsdk.Resource {
 }
 ```
 
+## What counts
+
+All three registration styles are read, and a resource registered one way is matched by a data source registered any other way:
+
+- untyped plugin SDK: keys of the `SupportedResources()` / `SupportedDataSources()` maps
+- typed SDK: elements of `Resources()` / `DataSources()`, named by their `ResourceType()` methods
+- framework: elements of `FrameworkResources()` / `FrameworkDataSources()`, named the same way
+
+Also handled:
+
+- entries added conditionally (`resources["azurerm_x"] = ...` or `append(out, FooResource{})` behind a feature flag)
+- generated auto-registration (`append(out, r.autoRegistration.Resources()...)`), whose entries are picked up from the generated methods
+- type names held in package variables (`var FooResourceName = "azurerm_foo"`) and named constants
+
+Never reported: action-style resources that run an operation or mint a credential rather than manage something durable, recognised today by the `_run_command` and `_sas_token` suffixes.
+
+If any data source name in the package cannot be resolved, the whole package is skipped, so an unreadable data source can never cause a false "missing" report. An unresolvable resource entry is skipped on its own.
+
 ## Ignoring Reports
 
-Not every resource needs a data source, so suppressions are expected — the check exists to make the gap a deliberate decision rather than an accident. When run via golangci-lint, reports can be ignored with a `//nolint:azproviderlint` Go code comment at the end of the offending line or on the line immediately preceding it:
-
-```go
-"azurerm_example": resourceExample(), //nolint:azproviderlint
-```
-
-To ignore only this check on a line — leaving any other azproviderlint checks active — use a `//azignore:AZS005 - <reason>` comment instead, in the same positions:
+Put `//azignore:AZS005 - <reason>` at the end of the line, or on the line above it. The reason is required.
 
 ```go
 "azurerm_example": resourceExample(), //azignore:AZS005 - <reason>
 ```
+
+Under golangci-lint, `//nolint:azproviderlint` in the same place also works, but it silences every azproviderlint check on that line.

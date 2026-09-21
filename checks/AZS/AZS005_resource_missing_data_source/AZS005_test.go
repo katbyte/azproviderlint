@@ -12,5 +12,5 @@ func TestAZS005(t *testing.T) {
 	t.Parallel()
 
 	_, filename, _, _ := runtime.Caller(0)
-	analysistest.Run(t, filepath.Join(filepath.Dir(filename), "testdata"), Analyzer, "azs005")
+	analysistest.Run(t, filepath.Join(filepath.Dir(filename), "testdata"), Analyzer, "azs005", "azs005unresolved")
 }

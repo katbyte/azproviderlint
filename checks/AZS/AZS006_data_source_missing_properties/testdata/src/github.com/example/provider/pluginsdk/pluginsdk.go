@@ -22,3 +22,8 @@ const (
 	TypeString = iota
 	TypeList
 )
+
+// EmptyResource stands in for a resource built outside the analysed package.
+func EmptyResource() *Resource {
+	return &Resource{}
+}

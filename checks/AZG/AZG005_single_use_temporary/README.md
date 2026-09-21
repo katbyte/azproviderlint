@@ -1,10 +1,8 @@
 # AZG005 - inline single-use variable only used in a later assignment or return
 
-The AZG005 analyzer reports single-use temporaries immediately consumed by the next statement: `x := <expr>` followed by `y = x` or `return x`, where `x` has no other use in the function. Such a temporary adds a name without adding information — the inlined form reads just as well in one statement.
+AZG005 reports `x := <expr>` where the only thing that ever happens to `x` is `y = x` or `return x` a little further down. Inline it.
 
-The consuming statement must be a plain single assignment (`y = x`) or a single-value `return x`, in the same block as the declaration and at most `max-gap` source lines below it (default 100, settable via `-AZG005.max-gap` or the plugin settings) — inlining across a short gap reads fine, while teleporting an initializer hundreds of lines down its function is a readability loss. Call arguments are deliberately out of scope, since naming an argument is usually intentional documentation. Assignments whose left-hand side contains a function call are skipped, because inlining would move the temporary's initializer after the left-hand side's operands in evaluation order. Nothing is reported when a statement between the declaration and the consumer writes to, takes the address of, or shadows anything the initializer reads (`oldKey := column[y]` followed by `column[y] = ...` — the temporary preserves the old value, so inlining would change behavior). Multi-value declarations, blank-identifier discards and temporaries captured by closures are all ignored.
-
-The report carries a suggested fix, so `azproviderlint -AZG005 -fix` (or an editor applying the suggested fix) inlines the temporary automatically — the initializer is spliced as raw source text, so multi-line initializers keep their exact original formatting.
+A name that is used once and adds no information is just a line to read. `output.Format = pointer.From(input.Format)` says everything `format := pointer.From(input.Format); output.Format = format` does.
 
 ## Flagged Code
 
@@ -31,27 +29,37 @@ return buildName(input)
 ```go
 oldKey := column[y]
 column[y] = minimumOf3(column[y]+1, column[y-1]+1, lastKey+incr)
-lastKey = oldKey // column[y] was overwritten above — the temporary is load-bearing
+lastKey = oldKey // column[y] changed in between, so the temporary is doing real work
 ```
+
+## What counts
+
+The consumer must be a plain single assignment or a single-value `return`, in the same block, within `max-gap` lines. Call arguments are left to [AZG006](../AZG006_single_use_call_argument), since naming an argument is often deliberate.
+
+Not reported, because inlining could change what the code does:
+
+- something between the declaration and the consumer writes to, takes the address of, or shadows anything the initializer reads, as in the `oldKey` example above
+- the assignment's left side contains a call, which would run before the initializer once inlined
+- multi-value declarations, `_` discards, and variables captured by closures
+
+## The fix
+
+`-fix` splices the initializer's source text into the consumer, so multi-line initializers keep their formatting.
 
 ## Options
 
 | Option | Default | Effect |
 |---|---|---|
-| `max-gap` | 100 | maximum source lines between the declaration and its consumer |
+| `max-gap` | 100 | most lines allowed between the declaration and its consumer |
 
-Set via `-AZG005.<option>` on the CLI or a rule-name key in the plugin's golangci settings.
+Set with `-AZG005.<option>` on the CLI or under the rule name in the golangci settings; see the [root README](../../../README.md#options).
 
 ## Ignoring Reports
 
-A named temporary can be deliberate documentation of an otherwise opaque expression, so suppressions are expected where the name genuinely helps. When run via golangci-lint, reports can be ignored with a `//nolint:azproviderlint` Go code comment at the end of the offending line or on the line immediately preceding it:
-
-```go
-format := pointer.From(input.Format) //nolint:azproviderlint
-```
-
-To ignore only this check on a line — leaving any other azproviderlint checks active — use a `//azignore:AZG005 - <reason>` comment instead, in the same positions:
+Sometimes the name is the point, because it explains an otherwise opaque expression. Put `//azignore:AZG005 - <reason>` at the end of the declaration line, or on the line above it. The reason is required.
 
 ```go
 format := pointer.From(input.Format) //azignore:AZG005 - <reason>
 ```
+
+Under golangci-lint, `//nolint:azproviderlint` in the same place also works, but it silences every azproviderlint check on that line.

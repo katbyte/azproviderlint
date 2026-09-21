@@ -12,6 +12,8 @@ import (
 	AZR006 "github.com/katbyte/azproviderlint/checks/AZR/AZR006_stop_context_without_timeouts"
 	AZR007 "github.com/katbyte/azproviderlint/checks/AZR/AZR007_state_change_conf_custom_poller"
 	AZR008 "github.com/katbyte/azproviderlint/checks/AZR/AZR008_flatten_returns_nil_slice"
+	AZR009 "github.com/katbyte/azproviderlint/checks/AZR/AZR009_lifecycle_logging"
+	AZR010 "github.com/katbyte/azproviderlint/checks/AZR/AZR010_flatten_handles_nil_input"
 )
 
 // Checks contains all AZR (resource implementation) analyzers.
@@ -24,4 +26,6 @@ var Checks = []*analysis.Analyzer{
 	AZR006.Analyzer,
 	AZR007.Analyzer,
 	AZR008.Analyzer,
+	AZR009.Analyzer,
+	AZR010.Analyzer,
 }

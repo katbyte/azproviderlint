@@ -4,14 +4,18 @@ go 1.26.6
 
 tool (
 	github.com/golangci/golangci-lint/v2/cmd/golangci-lint
-	github.com/rhysd/actionlint/cmd/actionlint
+	github.com/katbyte/actionlint/cmd/actionlint
 	mvdan.cc/gofumpt
 )
 
 require (
 	github.com/golangci/golangci-lint/v2 v2.13.2
-	github.com/rhysd/actionlint v1.7.12
-	mvdan.cc/gofumpt v0.11.0
+	// Fork of rhysd/actionlint, dormant upstream since April 2026. This is v1.7.12 plus two open
+	// upstream PRs: #732 (`$/` self-repository `uses:` syntax) and #735 (go.yaml.in/yaml/v4 rc.6,
+	// so actionlint and golangci-lint can share it without a replace directive). Switch back to
+	// rhysd/actionlint if it starts releasing again.
+	github.com/katbyte/actionlint v1.7.13
+	mvdan.cc/gofumpt v0.12.0
 )
 
 require (
@@ -229,7 +233,3 @@ require (
 	honnef.co/go/tools v0.8.1 // indirect
 	mvdan.cc/unparam v0.0.0-20260823230713-2fa3d841b0c8 // indirect
 )
-
-// actionlint v1.7.12 does not compile against yaml/v4 rc.6 (pulled in by gosec via golangci-lint);
-// pin to the rc actionlint targets until a release includes rhysd/actionlint#735, then drop this
-replace go.yaml.in/yaml/v4 => go.yaml.in/yaml/v4 v4.0.0-rc.3

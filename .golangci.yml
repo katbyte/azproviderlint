@@ -96,7 +96,7 @@ linters:
       azproviderlint:
         type: module
         settings:
-          enable: [AZG] # general Go style rules only; AZR/AZD/AZS/AZT/AZV are azure-provider specific
+          enable: [AZG] # general Go style rules only; AZR/AZD/AZS/AZT/AZV/AZP are azure-provider specific
     errcheck:
       check-type-assertions: true # unchecked x.(T) assertions panic on mismatch
       exclude-functions:

@@ -32,6 +32,23 @@ func (r MissingTypedResource) ResourceType() string {
 	return missingTypedResourceName
 }
 
+// MissingMultiVarResource takes its name from the second name of a multi-name var spec.
+var multiVarUnusedName, multiVarResourceName = "azurerm_multi_unused", "azurerm_multi_var"
+
+type MissingMultiVarResource struct{}
+
+func (r MissingMultiVarResource) ResourceType() string {
+	return multiVarResourceName
+}
+
+// MissingPointerResource is registered as a pointer and declares ResourceType on a pointer
+// receiver.
+type MissingPointerResource struct{}
+
+func (r *MissingPointerResource) ResourceType() string {
+	return "azurerm_missing_pointer"
+}
+
 // RunCommandResource is an invoke-style resource; its name matches the action-style suffix
 // list, so it is never reported despite having no data source.
 type RunCommandResource struct{}

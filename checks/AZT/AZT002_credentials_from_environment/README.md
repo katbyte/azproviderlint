@@ -1,10 +1,10 @@
-# AZT002 - acctests must not read credentials from the environment
+# AZT002 - acceptance tests must not read credentials from the environment
 
-The AZT002 analyzer reports tests reading the provider's credentials from the environment via `os.Getenv("ARM_CLIENT_ID")`, `os.Getenv("ARM_CLIENT_SECRET")` or `os.Getenv("ARM_CLIENT_SECRET_ALT")`.
+AZT002 reports tests that read the provider's own credentials with `os.Getenv("ARM_CLIENT_ID")`, `os.Getenv("ARM_CLIENT_SECRET")`, or `os.Getenv("ARM_CLIENT_SECRET_ALT")`.
 
-Test configurations should not reuse the credentials the test framework runs with. Instead, create a User Assigned Identity as part of the test configuration - with as minimal permissions as possible - which is then cleaned up with the rest of the test resources.
+Those are the credentials the test framework itself runs with, and they have broad permissions. A test config should not reuse them. Instead, create a User Assigned Identity in the test config with the smallest role that works. It gets cleaned up with the rest of the test resources.
 
-Only `_test.go` files are checked: the provider runtime and the acceptance test framework legitimately read the credentials they authenticate with.
+Only `_test.go` files are checked. The provider runtime and the test framework have to read these variables.
 
 ## Flagged Code
 
@@ -31,14 +31,10 @@ resource "azurerm_role_assignment" "test" {
 
 ## Ignoring Reports
 
-When run via golangci-lint, reports can be ignored with a `//nolint:azproviderlint` Go code comment at the end of the offending line or on the line immediately preceding it:
-
-```go
-clientId := os.Getenv("ARM_CLIENT_ID") //nolint:azproviderlint
-```
-
-To ignore only this check on a line — leaving any other azproviderlint checks active — use a `//azignore:AZT002 - <reason>` comment instead, in the same positions:
+Put `//azignore:AZT002 - <reason>` at the end of the line, or on the line above it. The reason is required.
 
 ```go
 clientId := os.Getenv("ARM_CLIENT_ID") //azignore:AZT002 - <reason>
 ```
+
+Under golangci-lint, `//nolint:azproviderlint` in the same place also works, but it silences every azproviderlint check on that line.

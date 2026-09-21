@@ -1,8 +1,10 @@
 # AZG001 - combine err assignment and check into one if
 
-The AZG001 analyzer reports `err := SomeFunc()` and `_, err := SomeFunc()` assignments immediately followed by `if err != nil`, which should be combined into a single `if` init statement to keep the error scoped to its check and the happy path unindented.
+AZG001 reports `err := f()` or `_, err := f()` followed straight away by `if err != nil`. The two should be one `if` with an init statement.
 
-Assignments are only reported when combining is safe: any non-`err` values must be blank identifiers (`_`), and an `err` declared with `:=` must not be used again after the `if` statement (combining would move it into the `if` statement's scope).
+The combined form keeps `err` scoped to its check and keeps the happy path at the outer indent, which is how the rest of the provider reads.
+
+Only safe cases are reported: every other value on the left side must be `_`, and an `err` declared with `:=` must not be used again after the `if`, since combining moves it into the `if`'s scope.
 
 ## Flagged Code
 
@@ -36,16 +38,7 @@ if err := resourceGroupClient.WaitForDeletion(ctx, id); err != nil {
 
 ## Ignoring Reports
 
-When run via golangci-lint, reports can be ignored with a `//nolint:azproviderlint` Go code comment at the end of the offending line or on the line immediately preceding it:
-
-```go
-_, err := client.Delete(ctx, id) //nolint:azproviderlint
-if err != nil {
-	return err
-}
-```
-
-To ignore only this check on a line — leaving any other azproviderlint checks active — use a `//azignore:AZG001 - <reason>` comment instead, in the same positions:
+Put `//azignore:AZG001 - <reason>` at the end of the assignment line, or on the line above it. The reason is required.
 
 ```go
 _, err := client.Delete(ctx, id) //azignore:AZG001 - <reason>
@@ -53,3 +46,5 @@ if err != nil {
 	return err
 }
 ```
+
+Under golangci-lint, `//nolint:azproviderlint` in the same place also works, but it silences every azproviderlint check on that line.

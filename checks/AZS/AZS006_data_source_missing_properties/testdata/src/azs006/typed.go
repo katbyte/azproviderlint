@@ -44,6 +44,60 @@ func (r TypedThingDataSource) Attributes() map[string]*pluginsdk.Schema {
 	}
 }
 
+// auto-registered pair: both sides come from the generated registration's methods.
+
+type AutoThingResource struct{}
+
+func (r AutoThingResource) ResourceType() string {
+	return "azurerm_auto_thing"
+}
+
+func (r AutoThingResource) Arguments() map[string]*pluginsdk.Schema {
+	return map[string]*pluginsdk.Schema{
+		"name": {Type: pluginsdk.TypeString, Required: true},
+		"tier": {Type: pluginsdk.TypeString, Required: true},
+	}
+}
+
+type AutoThingDataSource struct{}
+
+func (r AutoThingDataSource) ResourceType() string {
+	return "azurerm_auto_thing"
+}
+
+func (r AutoThingDataSource) Arguments() map[string]*pluginsdk.Schema {
+	return map[string]*pluginsdk.Schema{
+		"name": {Type: pluginsdk.TypeString, Required: true},
+	}
+}
+
+// pointer pair: registered as pointers, with pointer-receiver methods.
+
+type PointerThingResource struct{}
+
+func (r *PointerThingResource) ResourceType() string {
+	return "azurerm_pointer_thing"
+}
+
+func (r *PointerThingResource) Arguments() map[string]*pluginsdk.Schema {
+	return map[string]*pluginsdk.Schema{
+		"name": {Type: pluginsdk.TypeString, Required: true},
+		"sku":  {Type: pluginsdk.TypeString, Required: true},
+	}
+}
+
+type PointerThingDataSource struct{}
+
+func (r *PointerThingDataSource) ResourceType() string {
+	return "azurerm_pointer_thing"
+}
+
+func (r *PointerThingDataSource) Arguments() map[string]*pluginsdk.Schema {
+	return map[string]*pluginsdk.Schema{
+		"name": {Type: pluginsdk.TypeString, Required: true},
+	}
+}
+
 // FrameworkishResourceViaTyped exists so the typed slice has a second entry whose data source
 // is absent; AZS006 must ignore it (AZS005's job).
 

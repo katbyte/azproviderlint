@@ -1,10 +1,10 @@
 # AZD002 - data sources must error when not found, not MarkAsGone
 
-The AZD002 analyzer reports data sources calling `metadata.MarkAsGone(...)`.
+AZD002 reports data sources that call `metadata.MarkAsGone(...)`.
 
-`MarkAsGone` is for resources, where a deleted remote object should be removed from state. A data source that cannot find what the user asked for should return an error instead, so the user learns why their configuration cannot be applied.
+`MarkAsGone` is for resources: it removes something from state after it was deleted outside of Terraform. A data source is different: the user asked for something by name, and if it is not there they need to be told why their config cannot be applied. Return an error.
 
-This check only applies to files whose name contains `data_source`.
+Only files with `data_source` in their name are checked.
 
 ## Flagged Code
 
@@ -24,14 +24,10 @@ if response.WasNotFound(resp.HttpResponse) {
 
 ## Ignoring Reports
 
-When run via golangci-lint, reports can be ignored with a `//nolint:azproviderlint` Go code comment at the end of the offending line or on the line immediately preceding it:
-
-```go
-return metadata.MarkAsGone(id) //nolint:azproviderlint
-```
-
-To ignore only this check on a line — leaving any other azproviderlint checks active — use a `//azignore:AZD002 - <reason>` comment instead, in the same positions:
+Put `//azignore:AZD002 - <reason>` at the end of the line, or on the line above it. The reason is required.
 
 ```go
 return metadata.MarkAsGone(id) //azignore:AZD002 - <reason>
 ```
+
+Under golangci-lint, `//nolint:azproviderlint` in the same place also works, but it silences every azproviderlint check on that line.

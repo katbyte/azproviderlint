@@ -1,8 +1,8 @@
 # AZR002 - separate Create and Update methods
 
-The AZR002 analyzer reports resources registering a combined `CreateUpdate` method as their `Create` function.
+AZR002 reports resources that register one `CreateUpdate` function as both `Create` and `Update`.
 
-New resources should define separate `Create` and `Update` methods: combined methods hide which properties are actually updatable, make ignore-changes behaviour harder to reason about, and complicate the eventual migration to the typed SDK. Existing resources with combined `CreateUpdate` methods are being split gradually over time.
+A combined function hides which properties can actually change after creation, makes `ignore_changes` behaviour hard to reason about, and gets in the way of moving the resource to the typed SDK later. New resources should have a separate `Create` and `Update`. Older resources with a combined function are being split over time.
 
 ## Flagged Code
 
@@ -28,14 +28,10 @@ return &pluginsdk.Resource{
 
 ## Ignoring Reports
 
-When run via golangci-lint, reports can be ignored with a `//nolint:azproviderlint` Go code comment at the end of the offending line or on the line immediately preceding it:
-
-```go
-Create: resourceExampleCreateUpdate, //nolint:azproviderlint
-```
-
-To ignore only this check on a line — leaving any other azproviderlint checks active — use a `//azignore:AZR002 - <reason>` comment instead, in the same positions:
+Put `//azignore:AZR002 - <reason>` at the end of the line, or on the line above it. The reason is required.
 
 ```go
 Create: resourceExampleCreateUpdate, //azignore:AZR002 - <reason>
 ```
+
+Under golangci-lint, `//nolint:azproviderlint` in the same place also works, but it silences every azproviderlint check on that line.

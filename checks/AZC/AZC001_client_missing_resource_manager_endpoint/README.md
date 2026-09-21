@@ -1,8 +1,8 @@
 # AZC001 - clients must set an explicit resource manager endpoint
 
-The AZC001 analyzer reports Azure SDK (track1 & kermit) clients being created with `NewFoosClient(o.SubscriptionId)`.
+AZC001 reports Azure SDK clients (track1 and kermit) created with `NewFoosClient(o.SubscriptionId)`.
 
-Clients must be created with `NewFoosClientWithBaseURI(...)` so the resource manager endpoint is explicitly specified - without it the client silently defaults to Azure Public, breaking sovereign and non-public clouds (Azure China, US Government, etc.).
+Without an endpoint the client quietly talks to Azure Public. That breaks the provider in Azure China, Azure US Government, and any other non-public cloud. Use the `WithBaseURI` constructor and pass in the resource manager endpoint so the right cloud is always used.
 
 ## Flagged Code
 
@@ -20,14 +20,10 @@ o.ConfigureClient(&client.Client, o.ResourceManagerAuthorizer)
 
 ## Ignoring Reports
 
-When run via golangci-lint, reports can be ignored with a `//nolint:azproviderlint` Go code comment at the end of the offending line or on the line immediately preceding it:
-
-```go
-client := servers.NewServersClient(o.SubscriptionId) //nolint:azproviderlint
-```
-
-To ignore only this check on a line — leaving any other azproviderlint checks active — use a `//azignore:AZC001 - <reason>` comment instead, in the same positions:
+Put `//azignore:AZC001 - <reason>` at the end of the line, or on the line above it. The reason is required.
 
 ```go
 client := servers.NewServersClient(o.SubscriptionId) //azignore:AZC001 - <reason>
 ```
+
+Under golangci-lint, `//nolint:azproviderlint` in the same place also works, but it silences every azproviderlint check on that line.
