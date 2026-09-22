@@ -1,5 +1,6 @@
-## Unreleased
+## v0.8.1 (2026-09-22)
 
+- bump golang.org/x/mod to v0.41.0 for CVE-2026-56864 and CVE-2026-56865, checksum database forgery via a malicious proxy; azproviderlint never resolves modules, but the released binary now scans clean ([#50](https://github.com/katbyte/azproviderlint/pull/50))
 - `AZR010`: a parenthesised flatten argument (`flattenSku((props.Sku))`) is reported like a bare one
 - `AZR003`: typed Delete reads through a local alias of `metadata.ResourceData` (`d := metadata.ResourceData; d.Get(...)`) are reported
 - `AZR003`/`AZR009`: registered lifecycle functions are resolved through type information, so a same-named function in another package is no longer mistaken for the handler
