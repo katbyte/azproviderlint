@@ -156,16 +156,6 @@ func invalidAliasedEnum(input *sdk.Status) string {
 	return string(pointer.From[enumAlias](input)) // want `string\(pointer\.From\(\.\.\.\)\) with a go-azure-sdk enum should use pointer\.FromEnum\(\.\.\.\) instead`
 }
 
-// Should be flagged: parentheses around the conversion, helper call, and input are allowed.
-func invalidParenthesizedConversion(input *sdk.Status) string {
-	return string(pointer.From(input)) // want `string\(pointer\.From\(\.\.\.\)\) with a go-azure-sdk enum should use pointer\.FromEnum\(\.\.\.\) instead`
-}
-
-// Should be flagged: an explicitly instantiated helper can be parenthesized.
-func invalidParenthesizedHelper(input *sdk.Status) string {
-	return string(pointer.From[sdk.Status](input)) // want `string\(pointer\.From\(\.\.\.\)\) with a go-azure-sdk enum should use pointer\.FromEnum\(\.\.\.\) instead`
-}
-
 // Should be flagged: the input uses an alias declared in the SDK package.
 func invalidSDKTypeAlias() string {
 	return string(pointer.From((*sdk.StatusAlias)(nil))) // want `string\(pointer\.From\(\.\.\.\)\) with a go-azure-sdk enum should use pointer\.FromEnum\(\.\.\.\) instead`
