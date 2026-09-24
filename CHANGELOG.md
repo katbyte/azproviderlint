@@ -1,3 +1,7 @@
+## v0.10.0 (2026-09-24)
+
+- add rule `AZG009`: `string(pointer.From(x))` on a go-azure-sdk enum should be `pointer.FromEnum(x)`; fixable with `-fix` ([#60](https://github.com/katbyte/azproviderlint/pull/60))
+
 ## v0.9.0 (2026-09-22)
 
 - bump golang.org/x/mod to v0.41.0 for CVE-2026-56864 and CVE-2026-56865 azproviderlint never resolves modules, but the released binary now scans clean ([#50](https://github.com/katbyte/azproviderlint/pull/50))

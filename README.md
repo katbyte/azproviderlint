@@ -47,7 +47,7 @@ Rules are named `AZ`, a category letter, and a number. The letters follow [tfpro
 | [AZG006](checks/AZG/AZG006_single_use_call_argument) | inline single-use variable only used in a later function call |
 | [AZG007](checks/AZG/AZG007_redundant_zero_value_field) | omit struct literal fields explicitly set to their zero value |
 | [AZG008](checks/AZG/AZG008_unchecked_nil_dereference) | pointer dereferences must have a nil guard or use pointer.From |
-| [AZG009](checks/AZG/AZG009_pointer_from_enum_conversion) | use pointer.FromEnum instead of string(pointer.From(...)) for enum conversion |
+| [AZG009](checks/AZG/AZG009_pointer_from_enum_conversion) | use pointer.FromEnum for enum conversions |
 
 ### AZR - Resource Implementation
 
