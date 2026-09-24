@@ -10,8 +10,8 @@ import (
 	"go/printer"
 	"go/token"
 	"go/types"
-	"strings"
 
+	"github.com/katbyte/azproviderlint/lib/azuresdk"
 	"golang.org/x/tools/go/analysis"
 	"golang.org/x/tools/go/analysis/passes/inspect"
 	"golang.org/x/tools/go/ast/inspector"
@@ -20,8 +20,6 @@ import (
 const (
 	// pointerPkgPath is the import path of the go-azure-helpers pointer package.
 	pointerPkgPath = "github.com/hashicorp/go-azure-helpers/lang/pointer"
-	// goAzureSDKPath is a fragment of the go-azure-sdk import path used to identify SDK enum types.
-	goAzureSDKPath = "github.com/hashicorp/go-azure-sdk"
 )
 
 // Analyzer checks for `pointer.To(sdk.SomeEnum(v))` calls that convert a go-azure-sdk enum
@@ -74,7 +72,7 @@ func run(pass *analysis.Pass) (any, error) {
 		// Unalias before the *types.Named assertion so SDK enums referenced through a `=` alias
 		// (whose type is *types.Alias, not *types.Named) are still matched.
 		named, ok := types.Unalias(pass.TypesInfo.TypeOf(argCall.Fun)).(*types.Named)
-		if !ok || !isAzureSDKEnumType(named) {
+		if !ok || !azuresdk.IsEnumType(named) {
 			return
 		}
 
@@ -137,43 +135,4 @@ func convertedValueIsString(pass *analysis.Pass, expr ast.Expr) bool {
 	}
 
 	return types.AssignableTo(types.Default(pass.TypesInfo.TypeOf(expr)), types.Typ[types.String])
-}
-
-// isAzureSDKEnumType reports whether named is a go-azure-sdk enum type: a named type with a
-// string underlying type, declared in a go-azure-sdk package, that exposes the generated
-// `PossibleValuesFor<Name>() []T` helper.
-func isAzureSDKEnumType(named *types.Named) bool {
-	basic, ok := named.Underlying().(*types.Basic)
-	if !ok {
-		return false
-	}
-
-	if basic.Info()&types.IsString == 0 {
-		return false
-	}
-
-	obj := named.Obj()
-	pkg := obj.Pkg()
-	if pkg == nil || !strings.Contains(pkg.Path(), goAzureSDKPath) {
-		return false
-	}
-
-	// The generated SDK emits a PossibleValuesFor<TypeName>() []T helper for each enum.
-	fn, ok := pkg.Scope().Lookup("PossibleValuesFor" + obj.Name()).(*types.Func)
-	if !ok {
-		return false
-	}
-
-	sig, ok := fn.Type().(*types.Signature)
-	if !ok || sig.Params().Len() != 0 || sig.Results().Len() != 1 {
-		return false
-	}
-
-	slice, ok := sig.Results().At(0).Type().(*types.Slice)
-	if !ok {
-		return false
-	}
-
-	elem, ok := slice.Elem().(*types.Basic)
-	return ok && elem.Kind() == basic.Kind()
 }
