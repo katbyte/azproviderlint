@@ -1,0 +1,206 @@
+package azg009
+
+import (
+	"strings"
+
+	"github.com/hashicorp/go-azure-helpers/lang/pointer"
+	sdk "github.com/hashicorp/go-azure-sdk/resource-manager/example"
+)
+
+// Should NOT be flagged: uses the generic pointer.FromEnum helper.
+func validFromEnum(input *sdk.Status) string {
+	return pointer.FromEnum(input)
+}
+
+// Should NOT be flagged: there is no explicit string conversion to rewrite.
+func validNoConversion(input *sdk.Status) sdk.Status {
+	return pointer.From(input)
+}
+
+// Should NOT be flagged: a plain string is not an SDK enum. (Even though this is redundant)
+func validPlainString(input *string) string {
+	return string(pointer.From(input))
+}
+
+// Should NOT be flagged: Count is an integer-underlying enum. pointer.FromEnum is
+// constrained to ~string, so recommending it here would not compile.
+func validIntegerEnum(input *sdk.Count) string {
+	return string(pointer.From(input))
+}
+
+// Should NOT be flagged: converting a byte slice to string is not an enum conversion.
+func validByteSlice(input *[]byte) string {
+	return string(pointer.From(input))
+}
+
+// Should NOT be flagged: converting a rune slice to string is not an enum conversion.
+func validRuneSlice(input *[]rune) string {
+	return string(pointer.From(input))
+}
+
+// localStatus is a string enum declared in this package, not in go-azure-sdk.
+type localStatus string
+
+// Should NOT be flagged: the converted type is local, not from go-azure-sdk.
+func validLocalStringEnum(input *localStatus) string {
+	return string(pointer.From(input))
+}
+
+// Should NOT be flagged: ResourceIdentifier is an SDK string type without a generated
+// PossibleValuesFor helper, so it must not be treated as an enum.
+func validSDKNonEnumString(input *sdk.ResourceIdentifier) string {
+	return string(pointer.From(input))
+}
+
+type namedString string
+
+// Should NOT be flagged: the target is a named string type, not the built-in string type.
+func validNamedStringConversion(input *sdk.Status) namedString {
+	return namedString(pointer.From(input))
+}
+
+// Should NOT be flagged: the possible-values helper takes an argument.
+func validHelperWithParameters(input *sdk.WrongParams) string {
+	return string(pointer.From(input))
+}
+
+// Should NOT be flagged: the possible-values helper returns a scalar, not a slice.
+func validHelperWithScalarResult(input *sdk.WrongResult) string {
+	return string(pointer.From(input))
+}
+
+// Should NOT be flagged: the possible-values helper returns integers, not strings.
+func validHelperWithWrongElement(input *sdk.WrongElement) string {
+	return string(pointer.From(input))
+}
+
+// Should NOT be flagged: PossibleValuesForNotFunction is a variable, not a helper function.
+func validHelperNotFunction(input *sdk.NotFunction) string {
+	return string(pointer.From(input))
+}
+
+// Should NOT be flagged: string is a local function, not the built-in type conversion.
+func validShadowedString(input *sdk.Status) string {
+	string := func(value sdk.Status) string {
+		return "different semantics"
+	}
+	return string(pointer.From(input))
+}
+
+// Should NOT be flagged: pointer is a local variable, not the go-azure-helpers package.
+func validShadowedPointer(input *sdk.Status) string {
+	pointer := struct {
+		From func(*sdk.Status) sdk.Status
+	}{
+		From: func(*sdk.Status) sdk.Status {
+			return "Enabled"
+		},
+	}
+	return string(pointer.From(input))
+}
+
+type model struct {
+	Status *sdk.Status
+}
+
+type state struct {
+	Status string
+}
+
+// Should be flagged: a provider state assignment converts an SDK enum to string.
+func invalidStateAssignment(input model) state {
+	var output state
+	output.Status = pointer.FromEnum(input.Status) // want `string\(pointer\.From\(\.\.\.\)\) with a go-azure-sdk enum should use pointer\.FromEnum\(\.\.\.\) instead`
+	return output
+}
+
+// Should be flagged: a d.Set-style call receives an explicitly converted SDK enum.
+func invalidSetArgument(input model, set func(string, any)) {
+	set("status", pointer.FromEnum(input.Status)) // want `string\(pointer\.From\(\.\.\.\)\) with a go-azure-sdk enum should use pointer\.FromEnum\(\.\.\.\) instead`
+}
+
+// Should be flagged: the conversion appears in a struct literal.
+func invalidStructLiteral(input model) state {
+	return state{
+		Status: pointer.FromEnum(input.Status), // want `string\(pointer\.From\(\.\.\.\)\) with a go-azure-sdk enum should use pointer\.FromEnum\(\.\.\.\) instead`
+	}
+}
+
+// Should be flagged: the conversion appears in a map literal.
+func invalidMapLiteral(input model) map[string]any {
+	return map[string]any{
+		"status": pointer.FromEnum(input.Status), // want `string\(pointer\.From\(\.\.\.\)\) with a go-azure-sdk enum should use pointer\.FromEnum\(\.\.\.\) instead`
+	}
+}
+
+// Should be flagged: the conversion is nested inside a string comparison.
+func invalidNestedCall(input *sdk.Status) bool {
+	return strings.EqualFold(pointer.FromEnum(input), "Enabled") // want `string\(pointer\.From\(\.\.\.\)\) with a go-azure-sdk enum should use pointer\.FromEnum\(\.\.\.\) instead`
+}
+
+// Should be flagged: the converted enum is compared with an empty string.
+func invalidEmptyComparison(input *sdk.Status) bool {
+	return pointer.FromEnum(input) == "" // want `string\(pointer\.From\(\.\.\.\)\) with a go-azure-sdk enum should use pointer\.FromEnum\(\.\.\.\) instead`
+}
+
+// Should be flagged: explicit type arguments allow a nil input and must be preserved.
+func invalidNilInput() string {
+	return pointer.FromEnum[sdk.Status](nil) // want `string\(pointer\.From\(\.\.\.\)\) with a go-azure-sdk enum should use pointer\.FromEnum\(\.\.\.\) instead`
+}
+
+// enumAlias is a local type alias to an SDK enum.
+type enumAlias = sdk.Status
+
+// Should be flagged: the explicit type argument references the enum through a local alias.
+func invalidAliasedEnum(input *sdk.Status) string {
+	return pointer.FromEnum[enumAlias](input) // want `string\(pointer\.From\(\.\.\.\)\) with a go-azure-sdk enum should use pointer\.FromEnum\(\.\.\.\) instead`
+}
+
+// Should be flagged: parentheses around the conversion, helper call, and input are allowed.
+func invalidParenthesizedConversion(input *sdk.Status) string {
+	return pointer.FromEnum((input)) // want `string\(pointer\.From\(\.\.\.\)\) with a go-azure-sdk enum should use pointer\.FromEnum\(\.\.\.\) instead`
+}
+
+// Should be flagged: an explicitly instantiated helper can be parenthesized.
+func invalidParenthesizedHelper(input *sdk.Status) string {
+	return (pointer.FromEnum[sdk.Status])(input) // want `string\(pointer\.From\(\.\.\.\)\) with a go-azure-sdk enum should use pointer\.FromEnum\(\.\.\.\) instead`
+}
+
+// Should be flagged: the input uses an alias declared in the SDK package.
+func invalidSDKTypeAlias() string {
+	return pointer.FromEnum((*sdk.StatusAlias)(nil)) // want `string\(pointer\.From\(\.\.\.\)\) with a go-azure-sdk enum should use pointer\.FromEnum\(\.\.\.\) instead`
+}
+
+// Should be flagged: the fix must preserve a function-call argument without duplicating it.
+func invalidCallArgument(next func() *sdk.Status) string {
+	return pointer.FromEnum(next()) // want `string\(pointer\.From\(\.\.\.\)\) with a go-azure-sdk enum should use pointer\.FromEnum\(\.\.\.\) instead`
+}
+
+// Should be flagged and fixed: comments inside pointer.From are preserved.
+func invalidInputComment(input *sdk.Status) string {
+	return pointer.FromEnum(/* input */ input) // want `string\(pointer\.From\(\.\.\.\)\) with a go-azure-sdk enum should use pointer\.FromEnum\(\.\.\.\) instead`
+}
+
+// Should be flagged without a fix: comments in the outer conversion must not be discarded.
+func invalidOuterComments(input *sdk.Status) string {
+	return string( /* before */ pointer.From(/* input */ input) /* after, comment */) // want `string\(pointer\.From\(\.\.\.\)\) with a go-azure-sdk enum should use pointer\.FromEnum\(\.\.\.\) instead`
+}
+
+// Should be flagged without a fix: a comment follows the conversion's trailing comma.
+func invalidTrailingComment(input *sdk.Status) string {
+	return /* want `string\(pointer\.From\(\.\.\.\)\) with a go-azure-sdk enum should use pointer\.FromEnum\(\.\.\.\) instead` */ string(
+		pointer.From(input), // trailing comma
+	)
+}
+
+// Should be flagged without a fix: a comment precedes the conversion's trailing comma.
+func invalidCommentBeforeComma(input *sdk.Status) string {
+	return /* want `string\(pointer\.From\(\.\.\.\)\) with a go-azure-sdk enum should use pointer\.FromEnum\(\.\.\.\) instead` */ string(
+		pointer.From(input) /* comment, before comma */,
+	)
+}
+
+// Should be flagged and fixed: a multiline conversion's trailing comma must be removed.
+func invalidMultilineConversion(input *sdk.Status, set func(string, any)) {
+	set("status", /* want `string\(pointer\.From\(\.\.\.\)\) with a go-azure-sdk enum should use pointer\.FromEnum\(\.\.\.\) instead` */ pointer.FromEnum(input))
+}
