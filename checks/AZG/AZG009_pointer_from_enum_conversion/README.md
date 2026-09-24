@@ -4,7 +4,7 @@ AZG009 reports `string(pointer.From(input))`, which should be `pointer.FromEnum(
 
 Both helpers come from [go-azure-helpers](https://github.com/hashicorp/go-azure-helpers). `FromEnum` expresses the conversion directly and still returns an empty string for a nil pointer.
 
-Only [go-azure-sdk](https://github.com/hashicorp/go-azure-sdk) enums are reported: a named string type from a go-azure-sdk package that has a generated `PossibleValuesFor<Name>()` helper. `pointer.To` on strings, numbers, and other types is left alone.
+Only [go-azure-sdk](https://github.com/hashicorp/go-azure-sdk) enums are reported: a named string type from a go-azure-sdk package that has a generated `PossibleValuesFor<Name>()` helper. Plain strings, byte slices, and other named string types are left alone.
 
 ## Flagged Code
 
@@ -24,7 +24,7 @@ strings.ToLower(pointer.FromEnum(input.EndpointType))
 
 ## The fix
 
-`-fix` removes the outer string conversion and changes `From` to `FromEnum`.
+`-fix` removes the outer string conversion and changes `From` to `FromEnum`. No fix is offered when a comment sits inside `string(...)` but outside `pointer.From(...)`, since the rewrite would drop it.
 
 ## Ignoring Reports
 

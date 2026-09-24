@@ -5,13 +5,12 @@ import (
 	"go/ast"
 	"go/types"
 
-	"golang.org/x/tools/go/analysis"
-	"golang.org/x/tools/go/analysis/passes/inspect"
-	"golang.org/x/tools/go/ast/inspector"
-
 	"github.com/katbyte/azproviderlint/lib/astx"
 	"github.com/katbyte/azproviderlint/lib/azuresdk"
 	"github.com/katbyte/azproviderlint/lib/pointerpkg"
+	"golang.org/x/tools/go/analysis"
+	"golang.org/x/tools/go/analysis/passes/inspect"
+	"golang.org/x/tools/go/ast/inspector"
 )
 
 var Analyzer = &analysis.Analyzer{
@@ -68,7 +67,8 @@ func run(pass *analysis.Pass) (any, error) {
 	return nil, nil
 }
 
-// suggestedFixes rewrites `string(pointer.From(v)` into `pointer.FromEnum(v)` while attempting to preserve comments
+// suggestedFixes rewrites `string(pointer.From(v))` into `pointer.FromEnum(v)`, or returns no
+// fix when a comment inside the conversion but outside pointer.From would be lost.
 func suggestedFixes(pass *analysis.Pass, call, from *ast.CallExpr, sel *ast.SelectorExpr) []analysis.SuggestedFix {
 	for _, file := range pass.Files {
 		if call.Pos() < file.Pos() || call.End() > file.End() {
