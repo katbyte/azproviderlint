@@ -1,8 +1,0 @@
-// Package framework is a minimal stand-in for azurerm's plugin framework registration types
-// used only by the AZS008 analysistest fixtures.
-package framework
-
-// Resource is a minimal stand-in for the framework resource interface.
-type Resource interface {
-	Metadata()
-}

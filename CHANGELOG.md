@@ -1,3 +1,7 @@
+## Unreleased
+
+- **breaking**: move the provider-wide rules into the new `AZP` category — `AZS005`→`AZP002` (resource/data source parity), `AZS006`→`AZP003` (data source properties), `AZS008`→`AZP004` (sorted registration entries), `AZR005`→`AZP005` (case-insensitive segments flag); update `//azignore:` comments and settings references ([#48](https://github.com/katbyte/azproviderlint/pull/48))
+
 ## v0.10.0 (2026-09-24)
 
 - add rule `AZG009`: `string(pointer.From(x))` on a go-azure-sdk enum should be `pointer.FromEnum(x)`; fixable with `-fix` ([#60](https://github.com/katbyte/azproviderlint/pull/60))
