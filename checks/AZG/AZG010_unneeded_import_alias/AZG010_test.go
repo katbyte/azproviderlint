@@ -46,9 +46,9 @@ func TestAZG010(t *testing.T) {
 	analysistest.RunWithSuggestedFixes(t, dir, Analyzer, "azg010ownpackage")
 	ownPackage = false
 
-	mismatched = true
-	analysistest.RunWithSuggestedFixes(t, dir, Analyzer, "azg010mismatched")
 	mismatched = false
+	analysistest.RunWithSuggestedFixes(t, dir, Analyzer, "azg010nomismatched")
+	mismatched = true
 
 	if err := Analyzer.Flags.Set("ignore", "("); err == nil {
 		t.Fatal("expected an error for an invalid ignore pattern")

@@ -1,6 +1,6 @@
-package azg010mismatched
+package azg010nomismatched
 
-// the fix removes the alias outright rather than writing the package's name in its place
+// the fix writes the package's name in place of the alias, as goimports would
 import iothub "example.com/iothub" // want `import alias "iothub" is not needed, the package name "devices" does not clash`
 
 func madeUp() {

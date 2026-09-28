@@ -4,9 +4,6 @@ import (
 	. "example.com/dot"
 	_ "example.com/tags"
 
-	// devices is the package's real name, which its path does not show; goimports writes it
-	devices "example.com/iothub"
-
 	// both share the package name validate, so dropping either alias is only safe while the other stays
 	computeValidate "example.com/compute/validate"
 	networkValidate "example.com/network/validate"
@@ -31,7 +28,6 @@ var tags = []string{}
 
 func notReported() {
 	_ = Value
-	devices.New()
 	computeValidate.VirtualMachineName()
 	networkValidate.SubnetID()
 	helperTags.Expand()

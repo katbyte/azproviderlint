@@ -29,10 +29,10 @@ import (
 // the package without its tests does not carry them.
 //
 // A package whose name differs from what its import path suggests (`devices` imported from
-// `.../iothub`) keeps an explicit name, as goimports writes it: that name is not reported,
-// and the fix replaces a made-up alias with it rather than removing the alias. The
-// mismatched flag reports that name too and has the fix remove every alias, for consumers
-// who would rather call the mismatch out with an azignore on the import.
+// `.../iothub`) is reported like any other, although goimports writes that name itself: the
+// mismatch is the package's mistake, and an azignore on the import is what calls it out.
+// With the mismatched flag off that name is left alone, and the fix replaces a made-up alias
+// with it rather than removing the alias.
 // Two imports with the same package name are both left alone, even when both are aliased,
 // since dropping either alias is only safe while the other one stays. So is an import named
 // like the file's own package, unless the own-package flag is set: Go allows the name, but
@@ -54,8 +54,8 @@ var allow []string
 // ownPackage also reports an alias that avoids the name of the file's own package.
 var ownPackage bool
 
-// mismatched also reports an alias that is the package's real name where the import path
-// does not show it.
+// mismatched reports an alias that is the package's real name where the import path does
+// not show it; off, that name is left alone and the fix writes it.
 var mismatched bool
 
 // checkGenerated also checks generated files, where a report means the generator needs
@@ -71,8 +71,8 @@ func init() {
 		"also check generated files")
 	Analyzer.Flags.BoolVar(&ownPackage, "own-package", false,
 		"also report an alias that avoids the name of the file's own package")
-	Analyzer.Flags.BoolVar(&mismatched, "mismatched", false,
-		"also report an alias that is the package's real name where the import path does not show it")
+	Analyzer.Flags.BoolVar(&mismatched, "mismatched", true,
+		"report an alias that is the package's real name where the import path does not show it (false leaves it alone)")
 	Analyzer.Flags.Func("ignore", "skip imports whose package name matches this regular expression; repeat for several",
 		func(s string) error {
 			pattern, err := regexp.Compile(s)
