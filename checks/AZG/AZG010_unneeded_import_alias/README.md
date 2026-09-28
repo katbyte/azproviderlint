@@ -36,8 +36,8 @@ Not reported:
 - the name is declared at package level in the package's own test files, which would break the test build
 - the name is declared anywhere in the file, even in another function, so the rename would shadow or be shadowed
 - two imports share a package name, even if both are aliased, since dropping either alias only works while the other stays
-- an alias that is the package name when the path suggests something else (`devices "…/iothub"`); goimports writes those
-- generated files
+- the alias is the package's real name and the import path does not show it (`devices "…/iothub"`); goimports adds that name itself, so removing it would be undone by the formatter
+- the main package `go test` writes to run a package's tests, which lives in the build cache
 
 ## The fix
 
@@ -45,14 +45,17 @@ Not reported:
 
 Removing one alias can free a name another alias was avoiding, so a second `-fix` run can find more.
 
+Files with the standard `// Code generated ... DO NOT EDIT.` header are reported, but `-fix` leaves them as they are. An unneeded alias there means the generator or its template needs fixing, not the output.
+
 ## Options
 
 | Option | Default | Effect |
 |---|---|---|
 | `ignore` | | regular expressions; an import is skipped when its package name matches any of them |
 | `allow` | | aliases that are never reported |
+| `generated` | true | also check generated files: those with the standard `// Code generated ... DO NOT EDIT.` header, and the provider's `_gen.go` files |
 
-Both take several values: a list in the golangci settings, or the flag repeated on the command line.
+`ignore` and `allow` take several values: a list in the golangci settings, or the flag repeated on the command line.
 
 ```yaml
           AZG010:
@@ -69,6 +72,8 @@ azproviderlint -AZG010 '-AZG010.ignore=^v\d{4}_\d{2}_\d{2}' '-AZG010.ignore=^v\d
 `ignore` is matched against the package's name, not the alias or the import path. A pattern matches anywhere in the name unless it is anchored with `^` and `$`. Give each pattern its own entry; they are not split on commas, since a pattern can contain one (`\d{2,4}`).
 
 `allow` entries are whole alias names. They can also be comma-separated in one entry (`log,azValidate`).
+
+Under golangci-lint, reports in generated files are also subject to its own `linters.exclusions.generated` setting, which hides them by default.
 
 See the [root README](../../../README.md#options) for where the settings go.
 

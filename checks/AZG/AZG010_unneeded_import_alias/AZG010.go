@@ -47,10 +47,17 @@ var ignore []*regexp.Regexp
 // allow lists aliases that are never reported, whatever package they name.
 var allow []string
 
+// checkGenerated includes generated files, where a report means the generator needs fixing:
+// those with the standard `// Code generated ... DO NOT EDIT.` header, and the provider's
+// _gen.go files, which carry a header of their own.
+var checkGenerated bool
+
 // both flags add to their list each time they are set, since a regular expression cannot be
 // split on a separator that it may itself contain
 func init() {
 	Analyzer.Flags.Init("AZG010", flag.ContinueOnError)
+	Analyzer.Flags.BoolVar(&checkGenerated, "generated", true,
+		"check generated files (false skips them)")
 	Analyzer.Flags.Func("ignore", "skip imports whose package name matches this regular expression; repeat for several",
 		func(s string) error {
 			pattern, err := regexp.Compile(s)
@@ -70,13 +77,17 @@ func init() {
 }
 
 func run(pass *analysis.Pass) (any, error) {
+	// the main package go test writes to drive a package's tests imports it as _test and
+	// _xtest; it lives in the build cache, not the source tree
+	if pass.Pkg.Name() == "main" && strings.HasSuffix(pass.Pkg.Path(), ".test") {
+		return nil, nil
+	}
+
 	// package-level names declared by the package's own test files, built on first need
 	var testDeclared map[string]bool
 
 	for _, file := range pass.Files {
-		// generated code, such as the _test/_xtest imports of go test's main, is rewritten by
-		// its generator
-		if ast.IsGenerated(file) {
+		if !checkGenerated && (ast.IsGenerated(file) || strings.HasSuffix(pass.Fset.Position(file.Pos()).Filename, "_gen.go")) {
 			continue
 		}
 

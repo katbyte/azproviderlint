@@ -16,6 +16,8 @@ func TestAZG010(t *testing.T) {
 
 	analysistest.RunWithSuggestedFixes(t, dir, Analyzer, "azg010")
 	analysistest.Run(t, dir, Analyzer, "azg010testfile")
+	analysistest.Run(t, dir, Analyzer, "azg010generated")
+	analysistest.Run(t, dir, Analyzer, "azg010.test")
 
 	// the flags are package state read during run, so flag fixtures must run sequentially
 	// within the same test rather than as parallel siblings
@@ -34,6 +36,10 @@ func TestAZG010(t *testing.T) {
 	}
 	analysistest.Run(t, dir, Analyzer, "azg010allow")
 	allow = nil
+
+	checkGenerated = false
+	analysistest.Run(t, dir, Analyzer, "azg010nogenerated")
+	checkGenerated = true
 
 	if err := Analyzer.Flags.Set("ignore", "("); err == nil {
 		t.Fatal("expected an error for an invalid ignore pattern")
