@@ -23,6 +23,7 @@ extend-ignore-re = [
 
 [default.extend-words]
 # words typos would otherwise "correct" - keep this list short and explain each entry
-decorder = "decorder" # golangci linter name
-importas = "importas" # golangci linter name
-intoto = "intoto"     # in-toto attestation files published by goreleaser
+decorder = "decorder"   # golangci linter name
+Implicits = "Implicits" # go/types Info field
+importas = "importas"   # golangci linter name
+intoto = "intoto"       # in-toto attestation files published by goreleaser

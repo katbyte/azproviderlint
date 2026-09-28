@@ -1,0 +1,3 @@
+package validate
+
+func SubnetID() {}

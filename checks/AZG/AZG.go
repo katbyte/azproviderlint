@@ -13,6 +13,7 @@ import (
 	AZG007 "github.com/katbyte/azproviderlint/checks/AZG/AZG007_redundant_zero_value_field"
 	AZG008 "github.com/katbyte/azproviderlint/checks/AZG/AZG008_unchecked_nil_dereference"
 	AZG009 "github.com/katbyte/azproviderlint/checks/AZG/AZG009_pointer_from_enum_conversion"
+	AZG010 "github.com/katbyte/azproviderlint/checks/AZG/AZG010_unneeded_import_alias"
 )
 
 // Checks contains all AZG (general Go style & readability) analyzers.
@@ -26,4 +27,5 @@ var Checks = []*analysis.Analyzer{
 	AZG007.Analyzer,
 	AZG008.Analyzer,
 	AZG009.Analyzer,
+	AZG010.Analyzer,
 }
