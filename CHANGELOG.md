@@ -2,6 +2,7 @@
 
 - add rule `AZG010`: import aliases that are not needed because the package's own name does not clash; fixable with `-fix`; `ignore` skips packages whose name matches a pattern, `allow` keeps the listed aliases, `generated: true` also checks generated files ([#62](https://github.com/katbyte/azproviderlint/pull/62))
 - golangci settings: a rule option given as a list is set once per entry, for options that take several values ([#62](https://github.com/katbyte/azproviderlint/pull/62))
+- `AZG010`: an alias that avoids the name of the file's own package is left alone unless `own-package: true` is set; `mismatched: false` leaves alone an alias that is the package's real name where its path does not show it, and has the fix write that name in place of a made-up alias ([#63](https://github.com/katbyte/azproviderlint/pull/63))
 - **breaking**: move the provider-wide rules into the new `AZP` category — `AZS005`→`AZP002` (resource/data source parity), `AZS006`→`AZP003` (data source properties), `AZS008`→`AZP004` (sorted registration entries), `AZR005`→`AZP005` (case-insensitive segments flag); update `//azignore:` comments and settings references ([#48](https://github.com/katbyte/azproviderlint/pull/48))
 
 ## v0.10.0 (2026-09-24)
