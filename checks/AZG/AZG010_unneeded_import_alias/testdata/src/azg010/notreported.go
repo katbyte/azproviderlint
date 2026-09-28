@@ -21,9 +21,6 @@ import (
 
 	// a type switch in this file names its variable accounts
 	storageAccounts "example.com/storage/accounts"
-
-	// the file's own package is named azg010
-	sdk "example.com/sdk/azg010"
 )
 
 var tags = []string{}
@@ -34,7 +31,6 @@ func notReported() {
 	networkValidate.SubnetID()
 	helperTags.Expand()
 	_ = limits.Items
-	sdk.New()
 
 	client := keyVaultClient.Client{}
 	_ = client

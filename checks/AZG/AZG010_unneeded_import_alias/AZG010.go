@@ -32,9 +32,7 @@ import (
 // `.../iothub`) keeps an explicit name, as goimports writes it; the fix replaces the alias
 // with the package name rather than removing it, and such an explicit name is not reported.
 // Two imports with the same package name are both left alone, even when both are aliased,
-// since dropping either alias is only safe while the other one stays. So is an import named
-// like the file's own package: Go allows it, but `keyvault.BaseClient` inside package
-// keyvault reads as a reference to the package itself.
+// since dropping either alias is only safe while the other one stays.
 var Analyzer = &analysis.Analyzer{
 	Name: "AZG010",
 	Doc:  "check for import aliases that are not needed because the package name does not clash",
@@ -123,10 +121,6 @@ func run(pass *analysis.Pass) (any, error) {
 			if types.Universe.Lookup(name) != nil || pass.Pkg.Scope().Lookup(name) != nil {
 				continue
 			}
-			// the file's own package, or the one an external test file tests
-			if name == strings.TrimSuffix(file.Name.Name, "_test") {
-				continue
-			}
 
 			clash := false
 			for _, other := range file.Imports {
@@ -164,8 +158,8 @@ func run(pass *analysis.Pass) (any, error) {
 						declared[id.Name] = true
 					case nil:
 						// the variable of a type switch (`switch x := v.(type)`) has no object
-						// of its own
-						declared[id.Name] = declared[id.Name] || defines
+						// of its own, and neither does the package clause, which is not a clash
+						declared[id.Name] = declared[id.Name] || (defines && id != file.Name)
 					}
 					return true
 				})
