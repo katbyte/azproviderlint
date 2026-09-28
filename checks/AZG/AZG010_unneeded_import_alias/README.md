@@ -36,6 +36,7 @@ Not reported:
 - the name is declared at package level in the package's own test files, which would break the test build
 - the name is declared anywhere in the file, even in another function, so the rename would shadow or be shadowed
 - two imports share a package name, even if both are aliased, since dropping either alias only works while the other stays
+- the name is the file's own package name, or the package an external test file tests; `keyvault.BaseClient` inside package `keyvault` reads as a reference to itself
 - an alias that is the package name when the path suggests something else (`devices "…/iothub"`); goimports writes those
 - generated files
 

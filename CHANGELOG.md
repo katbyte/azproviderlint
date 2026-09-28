@@ -1,6 +1,6 @@
 ## Unreleased
 
-- add rule `AZG010`: import aliases that are not needed because the package's own name does not clash; fixable with `-fix`; `allow-renames` keeps descriptive renames, `ignore` skips packages by name
+- add rule `AZG010`: import aliases that are not needed because the package's own name does not clash; fixable with `-fix`; `allow-renames` keeps descriptive renames, `ignore` skips packages by name ([#62](https://github.com/katbyte/azproviderlint/pull/62))
 - **breaking**: move the provider-wide rules into the new `AZP` category — `AZS005`→`AZP002` (resource/data source parity), `AZS006`→`AZP003` (data source properties), `AZS008`→`AZP004` (sorted registration entries), `AZR005`→`AZP005` (case-insensitive segments flag); update `//azignore:` comments and settings references ([#48](https://github.com/katbyte/azproviderlint/pull/48))
 
 ## v0.10.0 (2026-09-24)
