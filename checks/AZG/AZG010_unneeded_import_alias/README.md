@@ -36,12 +36,14 @@ Not reported:
 - the name is declared at package level in the package's own test files, which would break the test build
 - the name is declared anywhere in the file, even in another function, so the rename would shadow or be shadowed
 - two imports share a package name, even if both are aliased, since dropping either alias only works while the other stays
+- the name is the file's own package name, or the package an external test file tests, unless `own-package` is set; Go allows it, but `keyvault.BaseClient` inside package `keyvault` reads as a reference to itself
+- the alias is the package's real name and the import path does not show it (`devices "…/iothub"`), unless `mismatched` is set
 - generated files, unless `generated` is set
 - the main package `go test` writes to run a package's tests, which lives in the build cache
 
 ## The fix
 
-`-fix` removes the alias and renames every use in the file.
+`-fix` removes the alias and renames every use in the file. Where the package's name differs from what its path suggests (`v2021_03_01` from `…/2021-03-01`), the fix writes the package's name in place of the alias, as goimports would. With `mismatched` set it removes the alias there too.
 
 Removing one alias can free a name another alias was avoiding, so a second `-fix` run can find more.
 
@@ -53,9 +55,9 @@ With `generated` set, files with the standard `// Code generated ... DO NOT EDIT
 devices "github.com/jackofallops/kermit/sdk/iothub/2022-04-30-preview/iothub"
 ```
 
-This is reported even though `devices` is the package's real name: the folder is `iothub`, but its files say `package devices`. goimports writes the real name into the import because the path does not show it, so it will put the name back after `-fix` removes it.
+Here `devices` is the package's real name: the folder is `iothub`, but its files say `package devices`. goimports writes the real name into the import because the path does not show it. By default the rule leaves that name alone.
 
-The mismatch is the package's to fix. Until it is, keep the name and ignore the report, which records why the name is there:
+With `mismatched` set the name is reported like any other alias. goimports will put it back after `-fix` removes it, so the use for this is to call the mismatch out: it is the package's to fix, and until it is, the name stays with a comment that records why it is there:
 
 ```go
 devices "github.com/jackofallops/kermit/sdk/iothub/2022-04-30-preview/iothub" //azignore:AZG010 - package name does not match its path
@@ -68,6 +70,8 @@ devices "github.com/jackofallops/kermit/sdk/iothub/2022-04-30-preview/iothub" //
 | `ignore` | | regular expressions; an import is skipped when its package name matches any of them |
 | `allow` | | aliases that are never reported |
 | `generated` | false | also check generated files: those with the standard `// Code generated ... DO NOT EDIT.` header, and the provider's `_gen.go` files |
+| `own-package` | false | also report an alias that avoids the name of the file's own package |
+| `mismatched` | false | also report an alias that is the package's real name where the import path does not show it; see [above](#packages-named-differently-from-their-path) |
 
 `ignore` and `allow` take several values: a list in the golangci settings, or the flag repeated on the command line.
 

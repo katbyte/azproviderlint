@@ -10,10 +10,13 @@ import (
 	"go/token"
 	"go/types"
 	"os"
+	"path"
 	"path/filepath"
 	"regexp"
 	"slices"
+	"strconv"
 	"strings"
+	"unicode"
 
 	"golang.org/x/tools/go/analysis"
 )
@@ -26,10 +29,14 @@ import (
 // the package without its tests does not carry them.
 //
 // A package whose name differs from what its import path suggests (`devices` imported from
-// `.../iothub`) is reported like any other, although goimports writes that name itself: the
-// mismatch is the package's mistake, and an azignore on the import is what calls it out.
+// `.../iothub`) keeps an explicit name, as goimports writes it: that name is not reported,
+// and the fix replaces a made-up alias with it rather than removing the alias. The
+// mismatched flag reports that name too and has the fix remove every alias, for consumers
+// who would rather call the mismatch out with an azignore on the import.
 // Two imports with the same package name are both left alone, even when both are aliased,
-// since dropping either alias is only safe while the other one stays.
+// since dropping either alias is only safe while the other one stays. So is an import named
+// like the file's own package, unless the own-package flag is set: Go allows the name, but
+// `keyvault.BaseClient` inside package keyvault reads as a reference to the package itself.
 var Analyzer = &analysis.Analyzer{
 	Name: "AZG010",
 	Doc:  "check for import aliases that are not needed because the package name does not clash",
@@ -44,6 +51,13 @@ var ignore []*regexp.Regexp
 // allow lists aliases that are never reported, whatever package they name.
 var allow []string
 
+// ownPackage also reports an alias that avoids the name of the file's own package.
+var ownPackage bool
+
+// mismatched also reports an alias that is the package's real name where the import path
+// does not show it.
+var mismatched bool
+
 // checkGenerated also checks generated files, where a report means the generator needs
 // fixing: those with the standard `// Code generated ... DO NOT EDIT.` header, and the
 // provider's _gen.go files, which carry a header of their own.
@@ -55,6 +69,10 @@ func init() {
 	Analyzer.Flags.Init("AZG010", flag.ContinueOnError)
 	Analyzer.Flags.BoolVar(&checkGenerated, "generated", false,
 		"also check generated files")
+	Analyzer.Flags.BoolVar(&ownPackage, "own-package", false,
+		"also report an alias that avoids the name of the file's own package")
+	Analyzer.Flags.BoolVar(&mismatched, "mismatched", false,
+		"also report an alias that is the package's real name where the import path does not show it")
 	Analyzer.Flags.Func("ignore", "skip imports whose package name matches this regular expression; repeat for several",
 		func(s string) error {
 			pattern, err := regexp.Compile(s)
@@ -103,6 +121,25 @@ func run(pass *analysis.Pass) (any, error) {
 			alias := spec.Name.Name
 			name := pkgName.Imported().Name()
 
+			// the name goimports assumes from the import path; when the package is named
+			// otherwise it writes the real name into the import, so the fix does too
+			writeName := false
+			if !mismatched {
+				base := path.Base(pkgName.Imported().Path())
+				if version, ok := strings.CutPrefix(base, "v"); ok {
+					if _, err := strconv.Atoi(version); err == nil {
+						base = path.Base(path.Dir(pkgName.Imported().Path()))
+					}
+				}
+				base = strings.TrimPrefix(base, "go-")
+				if i := strings.IndexFunc(base, func(r rune) bool { return !unicode.IsLetter(r) && !unicode.IsDigit(r) && r != '_' }); i >= 0 {
+					base = base[:i]
+				}
+				writeName = base != name
+			}
+			if alias == name && writeName {
+				continue
+			}
 			if slices.Contains(allow, alias) {
 				continue
 			}
@@ -110,6 +147,10 @@ func run(pass *analysis.Pass) (any, error) {
 				continue
 			}
 			if types.Universe.Lookup(name) != nil || pass.Pkg.Scope().Lookup(name) != nil {
+				continue
+			}
+			// the file's own package, or the one an external test file tests
+			if !ownPackage && name == strings.TrimSuffix(file.Name.Name, "_test") {
 				continue
 			}
 
@@ -204,6 +245,9 @@ func run(pass *analysis.Pass) (any, error) {
 			}
 
 			edits := []analysis.TextEdit{{Pos: spec.Name.Pos(), End: spec.Path.Pos()}}
+			if writeName {
+				edits[0] = analysis.TextEdit{Pos: spec.Name.Pos(), End: spec.Name.End(), NewText: []byte(name)}
+			}
 			if alias != name {
 				ast.Inspect(file, func(n ast.Node) bool {
 					if id, ok := n.(*ast.Ident); ok && pass.TypesInfo.Uses[id] == pkgName {

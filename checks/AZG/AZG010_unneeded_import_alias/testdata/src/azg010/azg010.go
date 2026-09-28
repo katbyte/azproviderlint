@@ -7,7 +7,6 @@ import (
 	set "example.com/go-set/v3"                    // want `import alias "set" repeats the package name`
 	iothub "example.com/iothub"                    // want `import alias "iothub" is not needed, the package name "devices" does not clash`
 	networkValidate "example.com/network/validate" // want `import alias "networkValidate" is not needed, the package name "validate" does not clash`
-	sdk "example.com/sdk/azg010"                   // want `import alias "sdk" is not needed, the package name "azg010" does not clash`
 )
 
 // fields and methods live in their own namespace, so sharing the package name is fine
@@ -17,15 +16,20 @@ type widget struct {
 
 func (widget) validate() {}
 
+// and so do labels
+func labelled() {
+validate:
+	for {
+		break validate
+	}
+}
+
 func use() {
 	_ = s.ToUpper("x")
 	_ = set.Set{}
 	datadog.NewClient()
 	iothub.New()
 	networkValidate.SubnetID()
-
-	// sharing a name with the file's own package is not a clash
-	sdk.New()
 }
 
 // a local that only shares the alias's name is left as it is

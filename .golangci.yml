@@ -97,9 +97,6 @@ linters:
         type: module
         settings:
           enable: [AZG] # general Go style rules only; AZR/AZD/AZS/AZT/AZV/AZP are azure-provider specific
-          AZG010:
-            ignore:
-              - '^AZ[A-Z]\d{3}$' # rule packages are named after the rule, but their folders also carry a description
     errcheck:
       check-type-assertions: true # unchecked x.(T) assertions panic on mismatch
       exclude-functions:
