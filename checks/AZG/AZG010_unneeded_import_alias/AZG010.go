@@ -10,13 +10,10 @@ import (
 	"go/token"
 	"go/types"
 	"os"
-	"path"
 	"path/filepath"
 	"regexp"
 	"slices"
-	"strconv"
 	"strings"
-	"unicode"
 
 	"golang.org/x/tools/go/analysis"
 )
@@ -29,8 +26,8 @@ import (
 // the package without its tests does not carry them.
 //
 // A package whose name differs from what its import path suggests (`devices` imported from
-// `.../iothub`) keeps an explicit name, as goimports writes it; the fix replaces the alias
-// with the package name rather than removing it, and such an explicit name is not reported.
+// `.../iothub`) is reported like any other, although goimports writes that name itself: the
+// mismatch is the package's mistake, and an azignore on the import is what calls it out.
 // Two imports with the same package name are both left alone, even when both are aliased,
 // since dropping either alias is only safe while the other one stays.
 var Analyzer = &analysis.Analyzer{
@@ -47,17 +44,17 @@ var ignore []*regexp.Regexp
 // allow lists aliases that are never reported, whatever package they name.
 var allow []string
 
-// checkGenerated includes generated files, where a report means the generator needs fixing:
-// those with the standard `// Code generated ... DO NOT EDIT.` header, and the provider's
-// _gen.go files, which carry a header of their own.
+// checkGenerated also checks generated files, where a report means the generator needs
+// fixing: those with the standard `// Code generated ... DO NOT EDIT.` header, and the
+// provider's _gen.go files, which carry a header of their own.
 var checkGenerated bool
 
 // both flags add to their list each time they are set, since a regular expression cannot be
 // split on a separator that it may itself contain
 func init() {
 	Analyzer.Flags.Init("AZG010", flag.ContinueOnError)
-	Analyzer.Flags.BoolVar(&checkGenerated, "generated", true,
-		"check generated files (false skips them)")
+	Analyzer.Flags.BoolVar(&checkGenerated, "generated", false,
+		"also check generated files")
 	Analyzer.Flags.Func("ignore", "skip imports whose package name matches this regular expression; repeat for several",
 		func(s string) error {
 			pattern, err := regexp.Compile(s)
@@ -106,23 +103,6 @@ func run(pass *analysis.Pass) (any, error) {
 			alias := spec.Name.Name
 			name := pkgName.Imported().Name()
 
-			// the name goimports assumes from the import path; when the package is named
-			// otherwise it writes the name explicitly, so the fix keeps one too
-			base := path.Base(pkgName.Imported().Path())
-			if version, ok := strings.CutPrefix(base, "v"); ok {
-				if _, err := strconv.Atoi(version); err == nil {
-					base = path.Base(path.Dir(pkgName.Imported().Path()))
-				}
-			}
-			base = strings.TrimPrefix(base, "go-")
-			if i := strings.IndexFunc(base, func(r rune) bool { return !unicode.IsLetter(r) && !unicode.IsDigit(r) && r != '_' }); i >= 0 {
-				base = base[:i]
-			}
-			explicit := base != name
-
-			if alias == name && explicit {
-				continue
-			}
 			if slices.Contains(allow, alias) {
 				continue
 			}
@@ -224,9 +204,6 @@ func run(pass *analysis.Pass) (any, error) {
 			}
 
 			edits := []analysis.TextEdit{{Pos: spec.Name.Pos(), End: spec.Path.Pos()}}
-			if explicit {
-				edits[0] = analysis.TextEdit{Pos: spec.Name.Pos(), End: spec.Name.End(), NewText: []byte(name)}
-			}
 			if alias != name {
 				ast.Inspect(file, func(n ast.Node) bool {
 					if id, ok := n.(*ast.Ident); ok && pass.TypesInfo.Uses[id] == pkgName {

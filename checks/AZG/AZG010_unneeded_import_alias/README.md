@@ -36,16 +36,30 @@ Not reported:
 - the name is declared at package level in the package's own test files, which would break the test build
 - the name is declared anywhere in the file, even in another function, so the rename would shadow or be shadowed
 - two imports share a package name, even if both are aliased, since dropping either alias only works while the other stays
-- the alias is the package's real name and the import path does not show it (`devices "…/iothub"`); goimports adds that name itself, so removing it would be undone by the formatter
+- generated files, unless `generated` is set
 - the main package `go test` writes to run a package's tests, which lives in the build cache
 
 ## The fix
 
-`-fix` removes the alias and renames every use in the file. If the package's name differs from what its path suggests (`v2021_03_01` from `…/2021-03-01`), the fix swaps the alias for the package name instead of removing it, as goimports would write it.
+`-fix` removes the alias and renames every use in the file.
 
 Removing one alias can free a name another alias was avoiding, so a second `-fix` run can find more.
 
-Files with the standard `// Code generated ... DO NOT EDIT.` header are reported, but `-fix` leaves them as they are. An unneeded alias there means the generator or its template needs fixing, not the output.
+With `generated` set, files with the standard `// Code generated ... DO NOT EDIT.` header are reported, but `-fix` leaves them as they are. An unneeded alias there means the generator or its template needs fixing, not the output.
+
+## Packages named differently from their path
+
+```go
+devices "github.com/jackofallops/kermit/sdk/iothub/2022-04-30-preview/iothub"
+```
+
+This is reported even though `devices` is the package's real name: the folder is `iothub`, but its files say `package devices`. goimports writes the real name into the import because the path does not show it, so it will put the name back after `-fix` removes it.
+
+The mismatch is the package's to fix. Until it is, keep the name and ignore the report, which records why the name is there:
+
+```go
+devices "github.com/jackofallops/kermit/sdk/iothub/2022-04-30-preview/iothub" //azignore:AZG010 - package name does not match its path
+```
 
 ## Options
 
@@ -53,7 +67,7 @@ Files with the standard `// Code generated ... DO NOT EDIT.` header are reported
 |---|---|---|
 | `ignore` | | regular expressions; an import is skipped when its package name matches any of them |
 | `allow` | | aliases that are never reported |
-| `generated` | true | also check generated files: those with the standard `// Code generated ... DO NOT EDIT.` header, and the provider's `_gen.go` files |
+| `generated` | false | also check generated files: those with the standard `// Code generated ... DO NOT EDIT.` header, and the provider's `_gen.go` files |
 
 `ignore` and `allow` take several values: a list in the golangci settings, or the flag repeated on the command line.
 

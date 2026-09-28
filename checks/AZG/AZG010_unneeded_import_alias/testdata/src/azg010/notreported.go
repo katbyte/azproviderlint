@@ -3,9 +3,6 @@ package azg010
 import (
 	_ "example.com/tags"
 
-	// the path suggests "iothub", so goimports writes the package name explicitly
-	devices "example.com/iothub"
-
 	// both share the package name validate, so dropping either alias is only safe while the other stays
 	computeValidate "example.com/compute/validate"
 	networkValidate "example.com/network/validate"
@@ -26,7 +23,6 @@ import (
 var tags = []string{}
 
 func notReported() {
-	devices.New()
 	computeValidate.VirtualMachineName()
 	networkValidate.SubnetID()
 	helperTags.Expand()
