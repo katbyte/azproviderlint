@@ -50,10 +50,28 @@ Removing one alias can free a name another alias was avoiding, so a second `-fix
 
 | Option | Default | Effect |
 |---|---|---|
-| `allow-renames` | false | only report aliases that repeat the package name or add a number to it (`validate2`); leave descriptive renames like `networkValidate` alone |
-| `ignore` | | skip imports whose package name matches this regular expression, such as `^v\d{4}_\d{2}_\d{2}` for versioned SDK packages |
+| `ignore` | | regular expressions; an import is skipped when its package name matches any of them |
+| `allow` | | aliases that are never reported |
 
-Set with `-AZG010.<option>` on the CLI or under the rule name in the golangci settings; see the [root README](../../../README.md#options).
+Both take several values: a list in the golangci settings, or the flag repeated on the command line.
+
+```yaml
+          AZG010:
+            ignore:
+              - '^v\d{4}_\d{2}_\d{2}' # versioned SDK packages: v2021_03_01, v2021_04_01_preview
+              - '^v\d+_\d+$'          # v7_4
+            allow: [log, azValidate]
+```
+
+```bash
+azproviderlint -AZG010 '-AZG010.ignore=^v\d{4}_\d{2}_\d{2}' '-AZG010.ignore=^v\d+_\d+$' -AZG010.allow=log -AZG010.allow=azValidate ./...
+```
+
+`ignore` is matched against the package's name, not the alias or the import path. A pattern matches anywhere in the name unless it is anchored with `^` and `$`. Give each pattern its own entry; they are not split on commas, since a pattern can contain one (`\d{2,4}`).
+
+`allow` entries are whole alias names. They can also be comma-separated in one entry (`log,azValidate`).
+
+See the [root README](../../../README.md#options) for where the settings go.
 
 ## Ignoring Reports
 

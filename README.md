@@ -194,7 +194,7 @@ There is no per-rule flag on the golangci-lint command line. Use the settings ab
 
 ### Options
 
-Some rules take options. Each rule's README lists them. In golangci-lint they go under the rule's name in the same settings block. On the standalone binary they are `-<RULE>.<option>` flags.
+Some rules take options. Each rule's README lists them. In golangci-lint they go under the rule's name in the same settings block. On the standalone binary they are `-<RULE>.<option>` flags. An option that takes several values takes a list in the settings, and is repeated on the command line.
 
 ```yaml
         settings:

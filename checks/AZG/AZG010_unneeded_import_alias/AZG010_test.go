@@ -19,13 +19,23 @@ func TestAZG010(t *testing.T) {
 
 	// the flags are package state read during run, so flag fixtures must run sequentially
 	// within the same test rather than as parallel siblings
-	allowRenames = true
-	analysistest.Run(t, dir, Analyzer, "azg010renames")
-	allowRenames = false
-
-	if err := Analyzer.Flags.Set("ignore", `^v\d{4}_`); err != nil {
-		t.Fatal(err)
+	for _, pattern := range []string{`^v\d{4}_`, `^devices$`} {
+		if err := Analyzer.Flags.Set("ignore", pattern); err != nil {
+			t.Fatal(err)
+		}
 	}
 	analysistest.Run(t, dir, Analyzer, "azg010ignore")
 	ignore = nil
+
+	for _, aliases := range []string{"s", "networkValidate, iothub"} {
+		if err := Analyzer.Flags.Set("allow", aliases); err != nil {
+			t.Fatal(err)
+		}
+	}
+	analysistest.Run(t, dir, Analyzer, "azg010allow")
+	allow = nil
+
+	if err := Analyzer.Flags.Set("ignore", "("); err == nil {
+		t.Fatal("expected an error for an invalid ignore pattern")
+	}
 }

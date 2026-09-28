@@ -155,6 +155,18 @@ func TestBuildAnalyzersRuleFlags(t *testing.T) {
 	}
 }
 
+func TestBuildAnalyzersRuleFlagLists(t *testing.T) {
+	t.Parallel()
+
+	// a list sets the flag once per entry, so each entry is validated on its own
+	if _, err := buildAnalyzers(t, map[string]any{"AZG010": map[string]any{"ignore": []string{`^v\d{4}_`, `^devices$`}}}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := buildAnalyzers(t, map[string]any{"AZG010": map[string]any{"ignore": []string{`^v\d{4}_`, `(`}}}); err == nil {
+		t.Fatal("expected an error for an invalid pattern in a list")
+	}
+}
+
 func TestBuildAnalyzersRuleFlagErrors(t *testing.T) {
 	t.Parallel()
 

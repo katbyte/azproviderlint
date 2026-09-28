@@ -13,6 +13,7 @@ import (
 	"path"
 	"path/filepath"
 	"regexp"
+	"slices"
 	"strconv"
 	"strings"
 	"unicode"
@@ -41,22 +42,32 @@ var Analyzer = &analysis.Analyzer{
 	Run:  run,
 }
 
-// allowRenames limits reports to aliases that repeat the package name, or add a number to it
-// (`validate2`), leaving descriptive renames such as `networkValidate` alone.
-var allowRenames bool
+// ignore skips imports whose package name matches any of these, such as versioned SDK
+// packages (`v2021_03_01`) that read better under a descriptive alias.
+var ignore []*regexp.Regexp
 
-// ignore skips imports whose package name matches, such as versioned SDK packages
-// (`v2021_03_01`) that read better under a descriptive alias.
-var ignore *regexp.Regexp
+// allow lists aliases that are never reported, whatever package they name.
+var allow []string
 
+// both flags add to their list each time they are set, since a regular expression cannot be
+// split on a separator that it may itself contain
 func init() {
 	Analyzer.Flags.Init("AZG010", flag.ContinueOnError)
-	Analyzer.Flags.BoolVar(&allowRenames, "allow-renames", false,
-		"only report aliases that repeat the package name or add a number to it (validate2)")
-	Analyzer.Flags.Func("ignore", "skip imports whose package name matches this regular expression",
-		func(s string) (err error) {
-			ignore, err = regexp.Compile(s)
-			return err
+	Analyzer.Flags.Func("ignore", "skip imports whose package name matches this regular expression; repeat for several",
+		func(s string) error {
+			pattern, err := regexp.Compile(s)
+			if err != nil {
+				return err
+			}
+			ignore = append(ignore, pattern)
+			return nil
+		})
+	Analyzer.Flags.Func("allow", "alias to leave unreported; repeat or comma-separate for several",
+		func(s string) error {
+			for alias := range strings.SplitSeq(s, ",") {
+				allow = append(allow, strings.TrimSpace(alias))
+			}
+			return nil
 		})
 }
 
@@ -103,14 +114,11 @@ func run(pass *analysis.Pass) (any, error) {
 			if alias == name && explicit {
 				continue
 			}
-			if ignore != nil && ignore.MatchString(name) {
+			if slices.Contains(allow, alias) {
 				continue
 			}
-			if allowRenames && alias != name {
-				number, ok := strings.CutPrefix(alias, name)
-				if _, err := strconv.Atoi(number); !ok || err != nil {
-					continue
-				}
+			if slices.ContainsFunc(ignore, func(pattern *regexp.Regexp) bool { return pattern.MatchString(name) }) {
+				continue
 			}
 			if types.Universe.Lookup(name) != nil || pass.Pkg.Scope().Lookup(name) != nil {
 				continue
