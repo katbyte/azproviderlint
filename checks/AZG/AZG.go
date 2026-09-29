@@ -14,6 +14,7 @@ import (
 	AZG008 "github.com/katbyte/azproviderlint/checks/AZG/AZG008_unchecked_nil_dereference"
 	AZG009 "github.com/katbyte/azproviderlint/checks/AZG/AZG009_pointer_from_enum_conversion"
 	AZG010 "github.com/katbyte/azproviderlint/checks/AZG/AZG010_unneeded_import_alias"
+	AZG011 "github.com/katbyte/azproviderlint/checks/AZG/AZG011_nil_dereference_requires_guard"
 )
 
 // Checks contains all AZG (general Go style & readability) analyzers.
@@ -28,4 +29,5 @@ var Checks = []*analysis.Analyzer{
 	AZG008.Analyzer,
 	AZG009.Analyzer,
 	AZG010.Analyzer,
+	AZG011.Analyzer,
 }

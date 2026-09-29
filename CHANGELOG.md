@@ -1,3 +1,7 @@
+## Unreleased
+
+- add rule `AZG011`: places where a missing value would crash the provider and only a hand-written check can prevent it; report only, no fix ([#32](https://github.com/katbyte/azproviderlint/pull/32))
+
 ## v0.11.0 (2026-09-28)
 
 - **breaking**: move the provider-wide rules into the new `AZP` category — `AZS005`→`AZP002` (resource/data source parity), `AZS006`→`AZP003` (data source properties), `AZS008`→`AZP004` (sorted registration entries), `AZR005`→`AZP005` (case-insensitive segments flag); update `//azignore:` comments and settings references ([#48](https://github.com/katbyte/azproviderlint/pull/48))

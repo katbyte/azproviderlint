@@ -100,6 +100,9 @@ linters:
           AZG010:
             ignore:
               - '^AZ[A-Z]\d{3}$' # rule packages are named after the rule, but their folders also carry a description
+          # AST nodes are dereferenced straight from type switches and assertions, and AZP003's
+          # tree nodes and collector are built non-nil; AZG011 cannot prove either
+          AZG011: {exclude-types: "go/ast.*,go/types.*,golang.org/x/tools/*,*/AZP003_*.treeNode,*/AZP003_*.collector"}
     errcheck:
       check-type-assertions: true # unchecked x.(T) assertions panic on mismatch
       exclude-functions:

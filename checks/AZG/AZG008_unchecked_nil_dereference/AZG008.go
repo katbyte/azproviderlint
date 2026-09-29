@@ -34,7 +34,7 @@ import (
 // `pointer.FromEnum(x)` and other dereferences to `pointer.From(x)` — note both change
 // behaviour from panic to zero value, which is the desired semantics in flatten/read paths
 // but should be reviewed elsewhere; fix-with: none reports without fixes. Dereferences whose
-// context needs the pointer itself (`*x = v`, `&*x`, `(*x)++`) are AZG009's, as are implicit
+// context needs the pointer itself (`*x = v`, `&*x`, `(*x)++`) are AZG011's, as are implicit
 // dereferences (`m.Properties.Name` with a nil `Properties`); chains containing calls or
 // index expressions (`*resp.Items[i].Name`) are out of scope. _test.go files are checked
 // unless tests=false.
@@ -128,7 +128,7 @@ func checkDeref(pass *analysis.Pass, parents map[ast.Node]ast.Node, params map[t
 	}
 
 	// contexts that need an addressable pointee (*x = v, (*x).F = v, &*x, (*x)++, a pointer
-	// method on *x) cannot take pointer.From and are AZG009's to report
+	// method on *x) cannot take pointer.From and are AZG011's to report
 	if nilguard.DerefNeedsPointer(pass, parents, star) {
 		return
 	}

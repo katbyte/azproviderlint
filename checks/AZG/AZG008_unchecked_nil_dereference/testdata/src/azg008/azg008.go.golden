@@ -51,8 +51,8 @@ func invalidPrefixGuardOnly(d data, m model) {
 	}
 }
 
-// Should NOT be flagged here: an assignment target needs the pointer itself — AZG009's.
-func writeTargetIsAZG009(props properties) {
+// Should NOT be flagged here: an assignment target needs the pointer itself — AZG011's.
+func writeTargetIsAZG011(props properties) {
 	*props.Count = 1
 }
 
@@ -310,7 +310,7 @@ func invalidReassignedAlias(d data, props properties, other *int) {
 
 // Should NOT be flagged: these contexts need an addressable pointee, so pointer.From cannot
 // stand in — assignment through a field, an array index or slice, or a pointer-receiver
-// method; they are AZG009's to report.
+// method; they are AZG011's to report.
 type counter struct{ n int }
 
 func (c *counter) inc() { c.n++ }
