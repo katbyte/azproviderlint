@@ -1,0 +1,46 @@
+package azg008
+
+import (
+	"context"
+	"net/http"
+
+	"github.com/example/sdk/widgets"
+)
+
+// Should be flagged WITHOUT a fix: the callee only serialises its input, but the call site
+// hands it a write method — as a net/http constant, a string literal, or either in parens.
+func invalidMethodAtCallSite(c widgets.WidgetsClient, ctx context.Context, h widgetHolder) {
+	_ = c.Do(ctx, http.MethodPut, "id", *h.Model)     // want "may panic - add a nil check \\(no fix: the value is sent as a write request body"
+	_ = c.Do(ctx, "POST", "id", *h.Model)             // want "may panic - add a nil check \\(no fix: the value is sent as a write request body"
+	_ = c.Do(ctx, (http.MethodPatch), "id", *h.Model) // want "may panic - add a nil check \\(no fix: the value is sent as a write request body"
+	_ = c.Do(ctx, ("PATCH"), "id", *h.Model)          // want "may panic - add a nil check \\(no fix: the value is sent as a write request body"
+}
+
+// Should be flagged WITH a fix: the call site passes a read method, so nothing is written.
+func invalidReadMethodAtCallSite(c widgets.WidgetsClient, ctx context.Context, h widgetHolder) {
+	_ = c.Do(ctx, http.MethodGet, "id", *h.Model) // want "may panic - add a nil check or use pointer.From"
+	_ = c.Do(ctx, "DELETE", "id", *h.Model)       // want "may panic - add a nil check or use pointer.From"
+}
+
+// Should be flagged WITHOUT a fix: a local variable assigned a write method in the same
+// function counts as that method, whether at declaration or later.
+func invalidMethodViaVariable(c widgets.WidgetsClient, ctx context.Context, h widgetHolder) {
+	method := http.MethodPut
+	_ = c.Do(ctx, method, "id", *h.Model) // want "may panic - add a nil check \\(no fix: the value is sent as a write request body"
+	var m2 string
+	m2 = "PATCH"
+	_ = c.Do(ctx, m2, "id", *h.Model) // want "may panic - add a nil check \\(no fix: the value is sent as a write request body"
+	const verb = "POST"
+	_ = c.Do(ctx, verb, "id", *h.Model) // want "may panic - add a nil check \\(no fix: the value is sent as a write request body"
+}
+
+// Should be flagged WITH a fix: a variable only ever holding read methods, or one assigned
+// from a call, is not a write method.
+func invalidReadMethodViaVariable(c widgets.WidgetsClient, ctx context.Context, h widgetHolder) {
+	method := http.MethodGet
+	_ = c.Do(ctx, method, "id", *h.Model) // want "may panic - add a nil check or use pointer.From"
+	dyn := pickMethod()
+	_ = c.Do(ctx, dyn, "id", *h.Model) // want "may panic - add a nil check or use pointer.From"
+}
+
+func pickMethod() string { return http.MethodPut }

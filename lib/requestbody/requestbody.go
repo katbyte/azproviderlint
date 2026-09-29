@@ -5,7 +5,7 @@ package requestbody
 
 import (
 	"go/ast"
-	"go/token"
+	"go/constant"
 	"go/types"
 	"reflect"
 
@@ -129,15 +129,8 @@ func run(pass *analysis.Pass) (any, error) {
 			// (autorest's WithJSON) is still this function's parameter being serialised
 			ast.Inspect(c.body, func(n ast.Node) bool {
 				switch x := n.(type) {
-				case *ast.BasicLit:
-					if x.Kind == token.STRING {
-						switch x.Value {
-						case `"PUT"`, `"PATCH"`, `"POST"`:
-							f.Writes = true
-						}
-					}
-				case *ast.Ident:
-					if isHTTPWriteMethod(pass, x) {
+				case *ast.BasicLit, *ast.Ident, *ast.SelectorExpr:
+					if e, ok := n.(ast.Expr); ok && isWriteMethodConst(pass, e) {
 						f.Writes = true
 					}
 				case *ast.CallExpr:
@@ -161,28 +154,69 @@ func run(pass *analysis.Pass) (any, error) {
 		})
 }
 
-// isWriteMethodValue reports whether e is net/http's MethodPut/MethodPatch/MethodPost or the
-// equivalent string literal.
+// isWriteMethodValue reports whether e is a PUT, PATCH, or POST method value: a string
+// constant with that value (net/http's MethodPut/MethodPatch/MethodPost or a literal), or a
+// local variable assigned one in the enclosing declaration.
 func isWriteMethodValue(pass *analysis.Pass, e ast.Expr) bool {
-	switch x := ast.Unparen(e).(type) {
-	case *ast.BasicLit:
-		return x.Kind == token.STRING && (x.Value == `"PUT"` || x.Value == `"PATCH"` || x.Value == `"POST"`)
-	case *ast.Ident:
-		return isHTTPWriteMethod(pass, x)
-	case *ast.SelectorExpr:
-		return isHTTPWriteMethod(pass, x.Sel)
+	e = ast.Unparen(e)
+	if isWriteMethodConst(pass, e) {
+		return true
 	}
-	return false
-}
-
-// isHTTPWriteMethod reports whether id names net/http's MethodPut, MethodPatch, or MethodPost.
-func isHTTPWriteMethod(pass *analysis.Pass, id *ast.Ident) bool {
-	c, ok := pass.TypesInfo.Uses[id].(*types.Const)
-	if !ok || c.Pkg() == nil || c.Pkg().Path() != "net/http" {
+	id, ok := e.(*ast.Ident)
+	if !ok {
 		return false
 	}
-	switch c.Name() {
-	case "MethodPut", "MethodPatch", "MethodPost":
+	v, ok := pass.TypesInfo.Uses[id].(*types.Var)
+	if !ok || v.Pkg() != pass.Pkg {
+		return false
+	}
+	var decl ast.Node
+	for _, file := range pass.Files {
+		for _, d := range file.Decls {
+			if d.Pos() <= v.Pos() && v.Pos() < d.End() {
+				decl = d
+			}
+		}
+	}
+	if decl == nil {
+		return false
+	}
+	found := false
+	ast.Inspect(decl, func(n ast.Node) bool {
+		var names []ast.Expr
+		var values []ast.Expr
+		switch x := n.(type) {
+		case *ast.AssignStmt:
+			names, values = x.Lhs, x.Rhs
+		case *ast.ValueSpec:
+			for _, id := range x.Names {
+				names = append(names, id)
+			}
+			values = x.Values
+		default:
+			return !found
+		}
+		if len(names) != len(values) {
+			return !found
+		}
+		for i, name := range names {
+			if id, ok := name.(*ast.Ident); ok && pass.TypesInfo.ObjectOf(id) == v && isWriteMethodConst(pass, values[i]) {
+				found = true
+			}
+		}
+		return !found
+	})
+	return found
+}
+
+// isWriteMethodConst reports whether e is a string constant equal to PUT, PATCH, or POST.
+func isWriteMethodConst(pass *analysis.Pass, e ast.Expr) bool {
+	tv := pass.TypesInfo.Types[ast.Unparen(e)]
+	if tv.Value == nil || tv.Value.Kind() != constant.String {
+		return false
+	}
+	switch constant.StringVal(tv.Value) {
+	case "PUT", "PATCH", "POST":
 		return true
 	}
 	return false

@@ -1,6 +1,8 @@
 # AZV001 - 'invalid format' error messages must describe the expected format
 
-The AZV001 analyzer reports error messages containing `invalid format of ...`. These messages aren't descriptive - they tell the user something is wrong without telling them how to fix it. Error messages should describe the expected format instead.
+AZV001 reports validation errors that say `invalid format of ...`.
+
+That message tells the user something is wrong but not how to fix it. Say what a valid value looks like instead.
 
 ## Flagged Code
 
@@ -16,14 +18,10 @@ return fmt.Errorf("%q must start with a letter, may contain letters and numbers,
 
 ## Ignoring Reports
 
-When run via golangci-lint, reports can be ignored with a `//nolint:azproviderlint` Go code comment at the end of the offending line or on the line immediately preceding it:
-
-```go
-return fmt.Errorf("invalid format of %q", name) //nolint:azproviderlint
-```
-
-To ignore only this check on a line — leaving any other azproviderlint checks active — use a `//azignore:AZV001 - <reason>` comment instead, in the same positions:
+Put `//azignore:AZV001 - <reason>` at the end of the line, or on the line above it. The reason is required.
 
 ```go
 return fmt.Errorf("invalid format of %q", name) //azignore:AZV001 - <reason>
 ```
+
+Under golangci-lint, `//nolint:azproviderlint` in the same place also works, but it silences every azproviderlint check on that line.

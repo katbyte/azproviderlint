@@ -11,3 +11,34 @@ func exampleDataSourceReadGood(d *ResourceData, id string) error {
 	d.SetId(id)
 	return nil
 }
+
+func (d *ResourceData) Set(key string, value interface{}) {}
+
+func markGone(id string) {}
+
+// Should NOT be flagged: two-argument calls are not SetId
+func exampleDataSourceSetEmpty(d *ResourceData) error {
+	d.Set("name", "")
+	return nil
+}
+
+// Should NOT be flagged: a plain function call, not a method on d
+func exampleDataSourceHelperCall(d *ResourceData) error {
+	markGone("")
+	return nil
+}
+
+// Should NOT be flagged: a different method taking one string
+func exampleDataSourceOtherMethod(d *ResourceData) error {
+	d.SetType("")
+	return nil
+}
+
+func (d *ResourceData) SetType(t string) {}
+
+// Should NOT be flagged: a non-literal argument
+func exampleDataSourceNonLiteral(d *ResourceData) error {
+	empty := ""
+	d.SetId(empty)
+	return nil
+}

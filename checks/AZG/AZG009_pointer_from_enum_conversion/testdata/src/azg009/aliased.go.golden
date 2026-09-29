@@ -1,0 +1,11 @@
+package azg009
+
+import (
+	ptr "github.com/hashicorp/go-azure-helpers/lang/pointer"
+	sdk "github.com/hashicorp/go-azure-sdk/resource-manager/example"
+)
+
+// Should be flagged: the pointer package is imported under an alias, which the fix preserves.
+func invalidAliasedImport(input *sdk.Status) string {
+	return ptr.FromEnum(input) // want `string\(pointer\.From\(\.\.\.\)\) with a go-azure-sdk enum should use pointer\.FromEnum\(\.\.\.\) instead`
+}

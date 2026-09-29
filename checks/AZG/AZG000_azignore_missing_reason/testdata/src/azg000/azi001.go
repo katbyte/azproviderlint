@@ -20,7 +20,7 @@ func multipleRulesWithReason() {
 
 // Should NOT be flagged: em dash separator
 func emDashReason() {
-	err := doSomething() //azignore:AZS006 — deliberately not exposed in the data source
+	err := doSomething() //azignore:AZP003 — deliberately not exposed in the data source
 	_ = err
 }
 

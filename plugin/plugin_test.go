@@ -5,6 +5,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/golangci/plugin-module-register/register"
+
 	"github.com/katbyte/azproviderlint/checks"
 )
 
@@ -121,17 +123,17 @@ func TestBuildAnalyzersRuleFlags(t *testing.T) {
 	t.Parallel()
 
 	names, err := buildAnalyzers(t, map[string]any{
-		"enable": []string{"AZS006"},
-		"AZS006": map[string]any{"ignore-sensitive": true}, // unquoted YAML bool
+		"enable": []string{"AZP003"},
+		"AZP003": map[string]any{"ignore-sensitive": true}, // unquoted YAML bool
 	})
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(names) != 1 || names[0] != "AZS006" {
-		t.Fatalf("expected exactly [AZS006], got %v", names)
+	if len(names) != 1 || names[0] != "AZP003" {
+		t.Fatalf("expected exactly [AZP003], got %v", names)
 	}
 
-	p, err := New(map[string]any{"AZS006": map[string]any{"ignore-sensitive": "true"}})
+	p, err := New(map[string]any{"AZP003": map[string]any{"ignore-sensitive": "true"}})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -144,12 +146,24 @@ func TestBuildAnalyzersRuleFlags(t *testing.T) {
 		t.Fatal(err)
 	}
 	for _, a := range analyzers {
-		if a.Name != "AZS006" {
+		if a.Name != "AZP003" {
 			continue
 		}
 		if f := a.Flags.Lookup("ignore-sensitive"); f == nil || f.Value.String() != "true" {
-			t.Fatalf("expected AZS006 ignore-sensitive flag to be true, got %v", f)
+			t.Fatalf("expected AZP003 ignore-sensitive flag to be true, got %v", f)
 		}
+	}
+}
+
+func TestBuildAnalyzersRuleFlagLists(t *testing.T) {
+	t.Parallel()
+
+	// a list sets the flag once per entry, so each entry is validated on its own
+	if _, err := buildAnalyzers(t, map[string]any{"AZG010": map[string]any{"ignore": []string{`^v\d{4}_`, `^devices$`}}}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := buildAnalyzers(t, map[string]any{"AZG010": map[string]any{"ignore": []string{`^v\d{4}_`, `(`}}}); err == nil {
+		t.Fatal("expected an error for an invalid pattern in a list")
 	}
 }
 
@@ -159,10 +173,10 @@ func TestBuildAnalyzersRuleFlagErrors(t *testing.T) {
 	if _, err := buildAnalyzers(t, map[string]any{"AZX999": map[string]any{"some-flag": "true"}}); err == nil {
 		t.Fatal("expected an error for flags on an unknown rule name")
 	}
-	if _, err := New(map[string]any{"AZS006": "not-a-map"}); err == nil {
+	if _, err := New(map[string]any{"AZP003": "not-a-map"}); err == nil {
 		t.Fatal("expected an error for a non-map rule settings value")
 	}
-	if _, err := buildAnalyzers(t, map[string]any{"AZS006": map[string]any{"no-such-flag": "true"}}); err == nil {
+	if _, err := buildAnalyzers(t, map[string]any{"AZP003": map[string]any{"no-such-flag": "true"}}); err == nil {
 		t.Fatal("expected an error for an unknown flag name")
 	}
 }
@@ -205,5 +219,28 @@ func TestBuildAnalyzersLowercasedSettings(t *testing.T) {
 	}
 	if slices.Contains(names, "AZR002") {
 		t.Fatal("expected lowercase disable entry to disable AZR002")
+	}
+}
+
+func TestNewSettingsErrors(t *testing.T) {
+	t.Parallel()
+
+	if _, err := New(make(chan int)); err == nil {
+		t.Fatal("expected an error for settings that cannot be encoded")
+	}
+	if _, err := New(map[string]any{"enable": "AZG"}); err == nil {
+		t.Fatal("expected an error for a non-list enable value")
+	}
+}
+
+func TestGetLoadMode(t *testing.T) {
+	t.Parallel()
+
+	p, err := New(nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if mode := p.GetLoadMode(); mode != register.LoadModeTypesInfo {
+		t.Fatalf("expected %q, got %q", register.LoadModeTypesInfo, mode)
 	}
 }

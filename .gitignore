@@ -4,6 +4,9 @@
 dist/
 /azproviderlint
 *.test
+# a fixture package that stands in for the main package go test generates
+!checks/AZG/AZG010_unneeded_import_alias/testdata/src/azg010.test/
 *.out
+.coverage/
 .tools/bin/
 .tools/venv/

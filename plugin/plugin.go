@@ -24,20 +24,22 @@ const (
 
 // Settings allows rules to be enabled/disabled per-rule from .golangci.yml via
 // linters.settings.custom.azproviderlint.settings. An empty enable list means all rules. A
-// list entry names either a rule (AZS006) or a whole category (AZG — a rule name with the
+// list entry names either a rule (AZP003) or a whole category (AZG — a rule name with the
 // digits stripped, matching every rule in it). Any other top-level key must be a rule name
-// and sets that rule's analyzer flags:
+// and sets that rule's analyzer flags, where a list sets the flag once per entry:
 //
 //	settings:
-//	  enable: [AZG, AZS006]
-//	  AZS006:
+//	  enable: [AZG, AZP003]
+//	  AZP003:
 //	    ignore-sensitive: true
+//	  AZG010:
+//	    allow: [log, azValidate]
 type Settings struct {
 	Enable  []string `json:"enable"`
 	Disable []string `json:"disable"`
 	// Flags holds rule-specific analyzer flags, keyed by rule then flag name, collected from
 	// the settings' rule-name keys.
-	Flags map[string]map[string]string `json:"-"`
+	Flags map[string]map[string][]string `json:"-"`
 }
 
 func New(settings any) (register.LinterPlugin, error) {
@@ -60,7 +62,7 @@ func New(settings any) (register.LinterPlugin, error) {
 	}
 
 	// flag values are stringified so YAML booleans and numbers work unquoted
-	s.Flags = map[string]map[string]string{}
+	s.Flags = map[string]map[string][]string{}
 	for rule, v := range raw {
 		if rule == keyEnable || rule == keyDisable {
 			continue
@@ -69,9 +71,15 @@ func New(settings any) (register.LinterPlugin, error) {
 		if !ok {
 			return nil, fmt.Errorf("azproviderlint setting %q: expected a map of flag values", rule)
 		}
-		s.Flags[rule] = map[string]string{}
+		s.Flags[rule] = map[string][]string{}
 		for flag, value := range flags {
-			s.Flags[rule][flag] = fmt.Sprintf("%v", value)
+			values, ok := value.([]any)
+			if !ok {
+				values = []any{value}
+			}
+			for _, v := range values {
+				s.Flags[rule][flag] = append(s.Flags[rule][flag], fmt.Sprintf("%v", v))
+			}
 		}
 	}
 
@@ -98,7 +106,7 @@ func (p *Plugin) BuildAnalyzers() ([]*analysis.Analyzer, error) {
 			return nil, fmt.Errorf("unknown azproviderlint rule or category %q in settings", name)
 		}
 	}
-	flags := make(map[string]map[string]string, len(p.settings.Flags))
+	flags := make(map[string]map[string][]string, len(p.settings.Flags))
 	for name, values := range p.settings.Flags {
 		if !known[strings.ToLower(name)] {
 			return nil, fmt.Errorf("unknown azproviderlint rule %q in settings", name)
@@ -119,9 +127,11 @@ func (p *Plugin) BuildAnalyzers() ([]*analysis.Analyzer, error) {
 		if listed(p.settings.Disable) {
 			continue
 		}
-		for flag, value := range flags[strings.ToLower(a.Name)] {
-			if err := a.Flags.Set(flag, value); err != nil {
-				return nil, fmt.Errorf("setting %s flag %q: %w", a.Name, flag, err)
+		for flag, values := range flags[strings.ToLower(a.Name)] {
+			for _, value := range values {
+				if err := a.Flags.Set(flag, value); err != nil {
+					return nil, fmt.Errorf("setting %s flag %q: %w", a.Name, flag, err)
+				}
 			}
 		}
 		analyzers = append(analyzers, a)
@@ -131,7 +141,7 @@ func (p *Plugin) BuildAnalyzers() ([]*analysis.Analyzer, error) {
 }
 
 // category returns the rule family a rule name belongs to: its name with the trailing digits
-// stripped (AZS006 -> AZS).
+// stripped (AZP003 -> AZP).
 func category(name string) string {
 	return strings.TrimRight(name, "0123456789")
 }

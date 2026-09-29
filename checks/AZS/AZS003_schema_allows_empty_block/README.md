@@ -1,6 +1,6 @@
-# AZS003 - optional blocks must not allow empty blocks
+# AZS003 - TypeList blocks must not allow empty blocks
 
-The AZS003 analyzer reports `Type: schema.TypeList` blocks (Optional or Required) whose nested `Resource` schema contains only optional properties with no `Default`/`DefaultFunc` and no `AtLeastOneOf`/`ExactlyOneOf` constraint. Such schemas accept an empty block:
+AZS003 reports a `TypeList` block whose nested schema is all optional, with no `Default`, `DefaultFunc`, `AtLeastOneOf`, or `ExactlyOneOf` on any of its fields. A block like that accepts:
 
 ```hcl
 resource "azurerm_example" "example" {
@@ -8,11 +8,11 @@ resource "azurerm_example" "example" {
 }
 ```
 
-which yields a `nil` list element that expand functions commonly crash on (`raw[0].(map[string]interface{})` — see [azurerm #11426](https://github.com/hashicorp/terraform-provider-azurerm/issues/11426)), or a permanent diff. A single `Required` property, `Default`, or `AtLeastOneOf`/`ExactlyOneOf` constraint on any property makes the block safe. azurerm's `pluginsdk` type aliases are recognised.
+An empty block comes through as a `nil` list element. Expand functions usually do `raw[0].(map[string]interface{})` on it and panic (see [azurerm #11426](https://github.com/hashicorp/terraform-provider-azurerm/issues/11426)), or the user gets a diff that never goes away. Making any one field `Required`, giving it a `Default`, or adding an `AtLeastOneOf` or `ExactlyOneOf` constraint fixes it.
 
-Note this is a heuristic: blocks whose expand functions guard against `nil` elements are safe in practice but still reported — suppress those with `//azignore:AZS003`.
+This is a heuristic. A block whose expand function handles the nil element is safe in practice but is still reported. Suppress those with an `//azignore:AZS003` comment.
 
-Ports [tfproviderlint PR #236 (XS003)](https://github.com/bflad/tfproviderlint/pull/236).
+Ported from [tfproviderlint PR #236 (XS003)](https://github.com/bflad/tfproviderlint/pull/236). The `pluginsdk` aliases used in azurerm are recognised.
 
 ## Flagged Code
 
@@ -53,14 +53,10 @@ Ports [tfproviderlint PR #236 (XS003)](https://github.com/bflad/tfproviderlint/p
 
 ## Ignoring Reports
 
-When run via golangci-lint, reports can be ignored with a `//nolint:azproviderlint` Go code comment at the end of the offending line or on the line immediately preceding it:
-
-```go
-"settings": { //nolint:azproviderlint
-```
-
-To ignore only this check on a line — leaving any other azproviderlint checks active — use a `//azignore:AZS003 - <reason>` comment instead, in the same positions:
+Put `//azignore:AZS003 - <reason>` at the end of the line, or on the line above it. The reason is required.
 
 ```go
 "settings": { //azignore:AZS003 - <reason>
 ```
+
+Under golangci-lint, `//nolint:azproviderlint` in the same place also works, but it silences every azproviderlint check on that line.

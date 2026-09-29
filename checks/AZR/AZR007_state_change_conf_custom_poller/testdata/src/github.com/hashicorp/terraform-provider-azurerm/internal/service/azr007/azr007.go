@@ -66,3 +66,18 @@ func validCustomPoller() {
 	p := &MyCustomPoller{}
 	_ = p.PollUntilDone(context.Background())
 }
+
+// StateChangeConf shares the SDK type's name but lives in this package.
+type StateChangeConf struct{ Target []string }
+
+// Should NOT be flagged: a same-named type from a different package.
+func validLocalStateChangeConf() {
+	conf := &StateChangeConf{Target: []string{"Done"}}
+	_ = conf
+}
+
+// Should NOT be flagged: an unnamed composite literal.
+func validAnonymousLiteral() {
+	conf := struct{ Target []string }{Target: []string{"Done"}}
+	_ = conf
+}

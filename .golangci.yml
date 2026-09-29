@@ -96,10 +96,13 @@ linters:
       azproviderlint:
         type: module
         settings:
-          enable: [AZG] # general Go style rules only; AZR/AZD/AZS/AZT/AZV are azure-provider specific
-          # AST nodes are dereferenced straight from type switches and assertions, and AZS006's
-          # tree nodes and collector are built non-nil; AZG009 cannot prove either
-          AZG009: {exclude-types: "go/ast.*,go/types.*,golang.org/x/tools/*,*/AZS006_*.treeNode,*/AZS006_*.collector"}
+          enable: [AZG] # general Go style rules only; AZR/AZD/AZS/AZT/AZV/AZP are azure-provider specific
+          AZG010:
+            ignore:
+              - '^AZ[A-Z]\d{3}$' # rule packages are named after the rule, but their folders also carry a description
+          # AST nodes are dereferenced straight from type switches and assertions, and AZP003's
+          # tree nodes and collector are built non-nil; AZG011 cannot prove either
+          AZG011: {exclude-types: "go/ast.*,go/types.*,golang.org/x/tools/*,*/AZP003_*.treeNode,*/AZP003_*.collector"}
     errcheck:
       check-type-assertions: true # unchecked x.(T) assertions panic on mismatch
       exclude-functions:

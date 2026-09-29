@@ -1,10 +1,15 @@
 # AZG004 - use pointer.From instead of nil-check dereference
 
-The AZG004 analyzer reports the manual `y := <zero>; if x != nil { y = *x }` idiom — a zero-value initialization immediately followed by a nil check that dereferences a pointer — where the generic `pointer.From(x)` helper from [go-azure-helpers](https://github.com/hashicorp/go-azure-helpers) should be used instead.
+AZG004 reports the pattern of setting a variable to its zero value and then overwriting it from a pointer if the pointer is not nil:
 
-`pointer.From` returns the dereferenced value, or the type's zero value when the pointer is nil, so the whole init-and-nil-check dance collapses to a single expression. The check only fires when the variable is initialized to a zero value (`false`, `0`, `""`, `nil`), the `if` has no `else` branch and a single `x != nil` condition, and its body is exactly one `y = *x` assignment whose dereferenced expression matches the nil-checked one. Both the short-declaration form (`y := <zero>`) and the var-declaration form (`var y T`, `var y T = <zero>`, `var y = <zero>`) are matched.
+```go
+enabled := false
+if props.Enabled != nil {
+	enabled = *props.Enabled
+}
+```
 
-The report carries a suggested fix, so `azproviderlint -AZG004 -fix` (or an editor applying the suggested fix) rewrites both statements into a single `y := pointer.From(x)` automatically — referencing the pointer package by whatever name the file imports it under, and inserting the import when the file lacks it — in sorted position among the file's non-standard-library imports, so gci-style import grouping is preserved.
+`pointer.From(x)` from [go-azure-helpers](https://github.com/hashicorp/go-azure-helpers) does exactly that in one line: it returns `*x`, or the zero value when `x` is nil.
 
 ## Flagged Code
 
@@ -14,7 +19,7 @@ if props.Enabled != nil {
 	enabled = *props.Enabled
 }
 
-// the var form is matched too
+// the var form counts too
 var enabled bool
 if props.Enabled != nil {
 	enabled = *props.Enabled
@@ -26,24 +31,27 @@ if props.Enabled != nil {
 ```go
 enabled := pointer.From(props.Enabled)
 
-// left alone: an else branch, a non-zero initial value, a mismatched or
-// re-declared variable, or non-adjacent statements
+// not reported: a non-zero starting value changes the meaning
 enabled := true
 if props.Enabled != nil {
 	enabled = *props.Enabled
 }
 ```
 
+## What counts
+
+The two statements must be next to each other. The variable must start as a zero value (`false`, `0`, `""`, `nil`), whether written as `y := 0`, `var y T`, `var y T = 0`, or `var y = 0`. The `if` must have exactly one condition, `x != nil`, no `else`, and a body that is just `y = *x` where `x` is the same expression that was checked.
+
+## The fix
+
+`-fix` collapses both statements into `y := pointer.From(x)`. It uses whatever name the file already imports the pointer package under, or adds the import in sorted position among the non-standard-library imports so gci grouping is kept.
+
 ## Ignoring Reports
 
-When run via golangci-lint, reports can be ignored with a `//nolint:azproviderlint` Go code comment at the end of the offending line or on the line immediately preceding it:
-
-```go
-enabled := false //nolint:azproviderlint
-```
-
-To ignore only this check on a line — leaving any other azproviderlint checks active — use a `//azignore:AZG004 - <reason>` comment instead, in the same positions:
+Put `//azignore:AZG004 - <reason>` at the end of the declaration line, or on the line above it. The reason is required.
 
 ```go
 enabled := false //azignore:AZG004 - <reason>
 ```
+
+Under golangci-lint, `//nolint:azproviderlint` in the same place also works, but it silences every azproviderlint check on that line.

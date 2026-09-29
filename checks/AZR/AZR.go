@@ -8,11 +8,11 @@ import (
 	AZR002 "github.com/katbyte/azproviderlint/checks/AZR/AZR002_combined_create_update_method"
 	AZR003 "github.com/katbyte/azproviderlint/checks/AZR/AZR003_resource_data_get_in_delete"
 	AZR004 "github.com/katbyte/azproviderlint/checks/AZR/AZR004_resource_id_equality_comparison"
-	AZR005 "github.com/katbyte/azproviderlint/checks/AZR/AZR005_case_insensitive_segments_feature_flag"
 	AZR006 "github.com/katbyte/azproviderlint/checks/AZR/AZR006_stop_context_without_timeouts"
 	AZR007 "github.com/katbyte/azproviderlint/checks/AZR/AZR007_state_change_conf_custom_poller"
 	AZR008 "github.com/katbyte/azproviderlint/checks/AZR/AZR008_flatten_returns_nil_slice"
 	AZR009 "github.com/katbyte/azproviderlint/checks/AZR/AZR009_lifecycle_logging"
+	AZR010 "github.com/katbyte/azproviderlint/checks/AZR/AZR010_flatten_handles_nil_input"
 )
 
 // Checks contains all AZR (resource implementation) analyzers.
@@ -21,9 +21,9 @@ var Checks = []*analysis.Analyzer{
 	AZR002.Analyzer,
 	AZR003.Analyzer,
 	AZR004.Analyzer,
-	AZR005.Analyzer,
 	AZR006.Analyzer,
 	AZR007.Analyzer,
 	AZR008.Analyzer,
 	AZR009.Analyzer,
+	AZR010.Analyzer,
 }

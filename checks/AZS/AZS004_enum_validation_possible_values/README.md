@@ -1,8 +1,14 @@
-# AZS004 - enum validation must use the possible values helper
+# AZS004 - enum validation must use the SDK's possible-values helper
 
-The AZS004 analyzer reports `validation.StringInSlice([]string{...}, ...)` calls whose hand-written list references an SDK enum's constants. A partial list silently rejects values the API accepts, and even a complete list goes stale the moment the SDK adds a new value — when the SDK ships a possible-values helper, validation should use it. Incomplete lists are reported with the missing values named; complete lists are reported with a suggestion to switch to the helper; lists carrying values that are not part of the enum at all (typos, or deliberate legacy extras) are reported with the extra values named and advice to append any deliberate extras to the helper's result rather than swapping them away.
+AZS004 reports `validation.StringInSlice([]string{...}, ...)` where the hand-written list is made of an SDK enum's constants.
 
-A type only counts as a closed enum when its package exports a possible-values helper (`PossibleValuesFor<Enum>()` in go-azure-sdk, `Possible<Enum>Values()` in older SDKs) returning either `[]string` or a slice of the enum type itself, so ordinary named string types with a few convenience constants are not reported. For the typed-slice track-1 form the helper cannot be passed to `StringInSlice` directly, so the advice must convert: when the matched validation package exports a generic enum-slice wrapper (`StringInEnumSlice[T ~string](valid []T, ignoreCase bool)`, as azurerm's `internal/tf/validation` does) the advice names it — `validation.StringInEnumSlice(cdn.PossibleTransformValues(), false)`, echoing the call's ignoreCase argument — and otherwise routes through go-azure-helpers' generic conversion: `pointer.FromEnumSlice(pointer.To(cdn.PossibleTransformValues()))`. The `StringInSlice` callee is resolved through the type checker and matched by name, signature and a package path of/ending in `validation`, so both the plugin SDK's `helper/validation` and provider-internal wrappers of it (e.g. azurerm's `internal/tf/validation`) are recognised. Raw string literals in the list count towards coverage; lists containing non-constant elements or constants of more than one enum type are skipped, since a computed list or a deliberate union cannot be proven incomplete statically.
+A hand-written list is a copy of something the SDK already knows. If it is missing a value, users cannot set something the API accepts. If it is complete today, it is wrong the day the SDK adds a value. When the SDK ships a possible-values helper, use it.
+
+The report tells you which case you are in:
+
+- **Missing values**: the message names them.
+- **Complete list**: switch to the helper.
+- **Extra values** that are not in the enum at all: the message names them. Typos should be fixed. Deliberate extras should be appended to the helper's result rather than kept in a hand-written list.
 
 ## Flagged Code
 
@@ -20,45 +26,29 @@ validation.StringInSlice([]string{
 validation.StringInSlice(virtualmachines.PossibleValuesForVirtualMachinePriorityTypes(), false)
 ```
 
-## Flags
+## What counts
 
-Two flags suppress one reporting class each, for providers where subsets or supersets are policy rather than drift. A list that is exactly the enum is always reported, since switching to the helper there is a pure win.
+A type is treated as an enum only when its package exports a possible-values helper: `PossibleValuesFor<Enum>()` in go-azure-sdk, or `Possible<Enum>Values()` in older SDKs. A named string type with a couple of convenience constants is not reported.
 
-- `-AZS004.allow-missing-values`: do not report in-place validation arrays that are missing enum values (deliberate subsets)
-- `-AZS004.allow-extra-values`: do not report in-place validation arrays containing values that are not part of the enum (deliberate supersets)
+The older SDKs' helpers return a slice of the enum type, which `StringInSlice` will not take. The advice then names a conversion: `validation.StringInEnumSlice(cdn.PossibleTransformValues(), false)` when the validation package has that generic wrapper (azurerm's `internal/tf/validation` does), otherwise `pointer.FromEnumSlice(pointer.To(cdn.PossibleTransformValues()))` from go-azure-helpers.
 
-Via the golangci-lint plugin the flags are set through a rule-name key in the settings:
-
-```yaml
-linters:
-  settings:
-    custom:
-      azproviderlint:
-        settings:
-          AZS004:
-            allow-missing-values: true
-            allow-extra-values: true
-```
+`StringInSlice` is matched by name and signature in any package whose path is or ends in `validation`, so both the plugin SDK's `helper/validation` and provider wrappers of it count. Plain string literals in the list count toward coverage. Lists with non-constant elements, or with constants from more than one enum, are skipped because they cannot be proven incomplete.
 
 ## Options
 
 | Option | Default | Effect |
 |---|---|---|
-| `allow-missing-values` | false | do not report lists that are a deliberate subset of the enum |
-| `allow-extra-values` | false | do not report lists carrying values that are not part of the enum |
+| `allow-missing-values` | false | do not report lists that leave out enum values (deliberate subsets) |
+| `allow-extra-values` | false | do not report lists that add values not in the enum (deliberate supersets) |
 
-Set via `-AZS004.<option>` on the CLI or a rule-name key in the plugin's golangci settings.
+A list that matches the enum exactly is always reported, since the helper is a pure win there. Set options with `-AZS004.<option>` on the CLI or under the rule name in the golangci settings; see the [root README](../../../README.md#options).
 
 ## Ignoring Reports
 
-A deliberately unsupported subset of an enum is a legitimate reason to suppress this check. When run via golangci-lint, reports can be ignored with a `//nolint:azproviderlint` Go code comment at the end of the offending line or on the line immediately preceding it:
-
-```go
-ValidateFunc: validation.StringInSlice([]string{ //nolint:azproviderlint
-```
-
-To ignore only this check on a line — leaving any other azproviderlint checks active — use a `//azignore:AZS004 - <reason>` comment instead, in the same positions:
+Deliberately supporting only part of an enum is a fine reason to suppress this. Put `//azignore:AZS004 - <reason>` at the end of the line, or on the line above it. The reason is required.
 
 ```go
 ValidateFunc: validation.StringInSlice([]string{ //azignore:AZS004 - <reason>
 ```
+
+Under golangci-lint, `//nolint:azproviderlint` in the same place also works, but it silences every azproviderlint check on that line.

@@ -22,3 +22,16 @@ func goodError(name string) error {
 func goodErrorShort(name string) error {
 	return fmt.Errorf("%q has an invalid format: expected `letter[letter|number]*letter`", name)
 }
+
+// Should NOT be flagged: non-string literals are skipped
+const maxLength = 64
+
+// Should be flagged: a raw string literal is inspected too
+func badRawString(name string) error {
+	return fmt.Errorf(`invalid format of %s`, name) // want `unclear error message: describe the expected format instead of 'invalid format of'`
+}
+
+// Should NOT be flagged: 'invalid format of' must be followed by a space
+func goodSuffix(name string) error {
+	return fmt.Errorf("%q: invalid format offset", name)
+}

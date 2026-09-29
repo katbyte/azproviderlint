@@ -72,6 +72,7 @@ type Logger struct{}
 
 func (Logger) Info(msg string)                          {}
 func (Logger) Infof(format string, args ...interface{}) {}
+func (Logger) Error(msg string)                         {}
 
 type ResourceMetaData struct {
 	Logger Logger

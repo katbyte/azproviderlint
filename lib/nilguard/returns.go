@@ -78,7 +78,7 @@ func runReturns(pass *analysis.Pass) (any, error) {
 			if c.mask == 0 {
 				return c, false
 			}
-			c.parents = parentMap(decl.Body)
+			c.parents = ParentMap(decl.Body)
 			return c, true
 		},
 		func(_ *returnsSet, c returnsCandidate) nonNilResults {
@@ -135,8 +135,8 @@ func returnMask(pass *analysis.Pass, parents map[ast.Node]ast.Node, ret *ast.Ret
 	return mask
 }
 
-// parentMap returns the child-to-parent map for every node under root.
-func parentMap(root ast.Node) map[ast.Node]ast.Node {
+// ParentMap returns the child-to-parent map for every node under root.
+func ParentMap(root ast.Node) map[ast.Node]ast.Node {
 	parents := map[ast.Node]ast.Node{}
 	var stack []ast.Node
 	ast.Inspect(root, func(x ast.Node) bool {

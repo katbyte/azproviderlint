@@ -13,14 +13,16 @@ GOFUMPT=$(TOOLS_BIN)/gofumpt
 GOLANGCI_LINT=$(TOOLS_BIN)/golangci-lint
 
 # non-Go tools also live in .tools/bin at pinned versions, but the pins are here (dependabot
-# cannot bump them): shellcheck and typos are static binaries downloaded from their github releases,
+# cannot bump them): shellcheck, typos and zizmor are static binaries downloaded from their github releases,
 # yamllint is python installed into a repo-local venv. all rebuild when this makefile changes.
 SHELLCHECK_VERSION=v0.11.0
 TYPOS_VERSION=v1.50.1
 YAMLLINT_VERSION=1.38.0
+ZIZMOR_VERSION=v1.30.1
 SHELLCHECK=$(TOOLS_BIN)/shellcheck
 TYPOS=$(TOOLS_BIN)/typos
 YAMLLINT=$(TOOLS_BIN)/yamllint
+ZIZMOR=$(TOOLS_BIN)/zizmor
 
 # golangci-lint with this repo's own module plugin compiled in (.tools/.custom-gcl.yml), so the
 # AZG rules lint azproviderlint itself; the plain go.mod one exists to bootstrap `golangci-lint custom`
@@ -58,6 +60,14 @@ $(YAMLLINT): makefile
 	@mkdir -p $(TOOLS_BIN)
 	@python3 -m venv .tools/venv && .tools/venv/bin/pip install -q yamllint==$(YAMLLINT_VERSION) && ln -sf ../venv/bin/yamllint $@
 
+$(ZIZMOR): makefile
+	@echo "==> downloading zizmor $(ZIZMOR_VERSION)..."
+	@mkdir -p $(TOOLS_BIN)
+	@case "$$(uname)" in Darwin) target=apple-darwin;; *) target=unknown-linux-gnu;; esac; \
+		arch=$$(uname -m); [ "$$arch" = "arm64" ] && arch=aarch64; \
+		curl -sSfL "https://github.com/zizmorcore/zizmor/releases/download/$(ZIZMOR_VERSION)/zizmor-$$arch-$$target.tar.gz" \
+		| tar -xz -O zizmor > $@ && chmod +x $@
+
 default: fmt build
 
 all: fmt build
@@ -74,14 +84,14 @@ install: ## Install azproviderlint into GOPATH/bin with version info from git
 	@echo "==> installing..."
 	go install -ldflags "-X github.com/katbyte/azproviderlint/version.GitCommit=${GIT_COMMIT} -X github.com/katbyte/azproviderlint/version.Version=${GIT_VERSION}" .
 
-tools: $(ACTIONLINT) $(GOFUMPT) $(GOLANGCI_LINT) $(GOLANGCI_LINT_MODULES) $(SHELLCHECK) $(TYPOS) $(YAMLLINT) ## Install all pinned dev tools into .tools/bin
+tools: $(ACTIONLINT) $(GOFUMPT) $(GOLANGCI_LINT) $(GOLANGCI_LINT_MODULES) $(SHELLCHECK) $(TYPOS) $(YAMLLINT) $(ZIZMOR) ## Install all pinned dev tools into .tools/bin
 
 ##@ Formatting
 fmt: $(GOFUMPT) $(GOLANGCI_LINT) ## Fix Go formatting (gofmt, gofumpt, goimports)
 	@echo "==> Fixing source code with gofmt..."
-	find . -name '*.go' | grep -v vendor | xargs gofmt -s -w
+	find . -name '*.go' | grep -vE 'vendor|testdata' | xargs gofmt -s -w
 	@echo "==> Fixing source code with gofumpt..."
-	find . -name '*.go' | grep -v vendor | xargs $(GOFUMPT) -w
+	find . -name '*.go' | grep -vE 'vendor|testdata' | xargs $(GOFUMPT) -w
 	@echo "==> Fixing imports with golangci-lint (goimports)..."
 	$(GOLANGCI_LINT) fmt -E goimports ./...
 
@@ -119,6 +129,10 @@ typos-fix: $(TYPOS) ## Fix spelling mistakes found by typos
 	@echo "==> Fixing typos..."
 	@$(TYPOS) --write-changes
 
+zizmor: $(ZIZMOR) ## Audit GitHub workflows for security issues with zizmor
+	@echo "==> Auditing workflows with zizmor..."
+	@$(ZIZMOR) .
+
 depscheck: ## Check that go.mod/go.sum and vendor/ are in sync
 	@echo "==> Checking source code with go mod tidy..."
 	@go mod tidy
@@ -142,6 +156,15 @@ depscheck: ## Check that go.mod/go.sum and vendor/ are in sync
 test: build ## Run the unit tests (with -race)
 	go test -race ./... -timeout ${TEST_TIMEOUT}
 
+COVERDIR?=.coverage
+cover: ## Run the unit tests with coverage across every package and report the total
+	@rm -rf $(COVERDIR) && mkdir -p $(COVERDIR)
+	@go test -count=1 -coverpkg=./... -coverprofile=$(COVERDIR)/coverage.out ./... -timeout ${TEST_TIMEOUT} >/dev/null
+	@go tool cover -func=$(COVERDIR)/coverage.out | tail -1
+
+cover-html: cover ## Run the unit tests with coverage and open the HTML report
+	@go tool cover -html=$(COVERDIR)/coverage.out
+
 check-all: build test lint actionlint yamllint shellcheck typos depscheck ## Run build + test + all linters + depscheck
 
-.PHONY: default all help fmt goimports build lint lint-fix actionlint yamllint shellcheck typos typos-fix depscheck check-all install tools test
+.PHONY: default all help fmt goimports build lint lint-fix actionlint yamllint shellcheck typos typos-fix zizmor depscheck check-all install tools test

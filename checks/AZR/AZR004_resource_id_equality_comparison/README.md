@@ -1,8 +1,8 @@
 # AZR004 - compare resource id types with resourceids.Match
 
-The AZR004 analyzer reports Resource IDs being compared with `==` or `!=` (`a.ID() == b.ID()`).
+AZR004 reports resource IDs compared with `==` or `!=`, such as `a.ID() == b.ID()`.
 
-Azure Resource IDs contain user-specified segments that are compared case-insensitively by the API, so string equality is unreliable. Use `resourceids.Match(a, b)` from `github.com/hashicorp/go-azure-helpers/resourcemanager/resourceids` instead (and `!resourceids.Match(a, b)` in place of `!=`).
+Parts of an Azure resource ID come from the user, and Azure compares those parts without caring about case. So two IDs can name the same resource and still be different strings. Use `resourceids.Match(a, b)` from `github.com/hashicorp/go-azure-helpers/resourcemanager/resourceids`, and `!resourceids.Match(a, b)` in place of `!=`.
 
 ## Flagged Code
 
@@ -22,14 +22,10 @@ if resourceids.Match(subnetId, other) {
 
 ## Ignoring Reports
 
-When run via golangci-lint, reports can be ignored with a `//nolint:azproviderlint` Go code comment at the end of the offending line or on the line immediately preceding it:
-
-```go
-if subnetId.ID() == other.ID() { //nolint:azproviderlint
-```
-
-To ignore only this check on a line — leaving any other azproviderlint checks active — use a `//azignore:AZR004 - <reason>` comment instead, in the same positions:
+Put `//azignore:AZR004 - <reason>` at the end of the line, or on the line above it. The reason is required.
 
 ```go
 if subnetId.ID() == other.ID() { //azignore:AZR004 - <reason>
 ```
+
+Under golangci-lint, `//nolint:azproviderlint` in the same place also works, but it silences every azproviderlint check on that line.

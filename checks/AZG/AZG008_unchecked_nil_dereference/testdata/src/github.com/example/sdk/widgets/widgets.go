@@ -51,3 +51,14 @@ func (c WidgetsClient) PutPtr(ctx context.Context, id string, input *Widget) err
 	}
 	return req.Marshal(input)
 }
+
+// Do serialises its input but takes the HTTP method from the caller, so whether the input is
+// a write body is decided at each call site.
+func (c WidgetsClient) Do(ctx context.Context, method string, id string, input Widget) error {
+	opts := client.RequestOptions{HttpMethod: method, Path: id}
+	req, err := c.Client.NewRequest(ctx, opts)
+	if err != nil {
+		return err
+	}
+	return req.Marshal(input)
+}

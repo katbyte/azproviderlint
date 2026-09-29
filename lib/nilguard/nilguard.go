@@ -1,4 +1,4 @@
-// Package nilguard is the shared guard engine behind AZG008 and AZG009: it decides whether a
+// Package nilguard is the shared guard engine behind AZG008 and AZG011: it decides whether a
 // pointer-typed variable or selector chain is provably non-nil at a given point in a function
 // body.
 package nilguard
@@ -78,7 +78,7 @@ func ForEachFunc(pass *analysis.Pass, insp *inspector.Inspector, tests bool, vis
 			return
 		}
 
-		visit(body, params, parentMap(body))
+		visit(body, params, ParentMap(body))
 	})
 }
 

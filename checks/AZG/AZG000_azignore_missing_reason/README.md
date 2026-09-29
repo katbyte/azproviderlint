@@ -1,14 +1,16 @@
 # AZG000 - azignore directives must give a reason
 
-The AZG000 analyzer reports `//azignore:` directives that do not carry a reason. A suppression without a reason tells the next reader nothing — whether the flagged code is a deliberate exception, a false positive, or debt someone meant to come back to — so every directive must say why the check does not apply:
+AZG000 reports `//azignore:` comments that do not say why.
+
+A suppression with no reason tells the next reader nothing. Is this a deliberate exception, a false positive, or something someone meant to come back to? Write it down:
 
 ```go
 //azignore:<Rule>[,<Rule>...] - <reason>
 ```
 
-The reason is free text following the rule list; the `-` separator (a `–` or `—` also works) is permitted but not required — `//azignore:AZR001 deliberate subset` parses the same. Rule names have a fixed shape (letters then digits), so the rule list ends at the first token that is not rule-shaped and the reason is never confused with it, dashes and commas included.
+The reason is any text after the rule list. The `-` is optional, so `//azignore:AZR001 deliberate subset` works too. Rule names are always letters then digits, so the reason cannot be mistaken for a rule even if it starts with a dash or contains commas.
 
-Bare directives still suppress their target checks — this check's report is the enforcement, so one problem produces one actionable message rather than the suppressed check's report reappearing alongside it.
+A directive without a reason still suppresses its target check. This report is the only thing you see, so one problem gives one message rather than two.
 
 ## Flagged Code
 
@@ -32,9 +34,9 @@ err := client.Delete(ctx, id)
 
 ## Ignoring Reports
 
-AZG000 deliberately does not honour `//azignore:AZG000` — a bare directive could otherwise suppress the report about itself by adding `AZG000` to its rule list.
+`//azignore:AZG000` is deliberately not honoured, otherwise a bare directive could hide the report about itself by adding `AZG000` to its own list.
 
-When run via golangci-lint, reports can still be ignored with a `//nolint:azproviderlint` Go code comment at the end of the offending line or on the line immediately preceding it, and providers that accept bare directives as policy can disable the check entirely via the plugin's `disable` setting:
+Under golangci-lint, `//nolint:azproviderlint` on the line still works. If bare directives are fine by your project's policy, turn the check off in the plugin settings:
 
 ```yaml
 linters:

@@ -1,14 +1,8 @@
 # AZG006 - inline single-use variable only used in a later function call
 
-The AZG006 analyzer reports a single-line variable declaration whose variable is used exactly once, as an argument of a later call whose every other argument is a basic literal or a plain identifier — `x := flattenThing(...)` followed by `d.Set("key", x)` — and should be inlined into the call.
+AZG006 reports a one-line `x := <expr>` where `x` is used exactly once, as an argument to a later call whose other arguments are all literals or plain names. The usual shape is `x := flattenThing(...)` followed by `d.Set("key", x)`. Inline it.
 
-When the sibling arguments are literals or bare names like `ctx`/`id` the temporary's name documents nothing they do not already say (`client.ImportThenPoll(ctx, id, importParameters)` reads no worse as `client.ImportThenPoll(ctx, id, expandMsSqlServerImport(d))`). Calls with any more complex sibling — selector chains, calls, type assertions — are out of scope: there the name is documentation among expressions (`client.CreateOrUpdate(ctx, id, payload)`) and inlining could reorder their evaluation. Multi-line initializers are out of scope since splicing one into an argument list hurts readability. Nothing is reported when a statement between the declaration and the call writes to, takes the address of, or shadows anything the initializer reads — there the temporary preserves a value the intervening code changes, so inlining would change behavior.
-
-Two settings tighten the rule further: `only-when-literals` restricts sibling arguments to basic literals (blocking the rare case where several temporaries feeding one call co-inline into a long line), and `maximum-arguments` skips calls carrying more than that many arguments (default 0 = unlimited).
-
-The consuming statement may be a bare call or the call in an if statement's init (`if err := d.Set("key", x); err != nil`), in the same block as the declaration and at most `max-gap` source lines below it (default 100, settable via `-AZG006.max-gap` or the plugin settings).
-
-The report carries a suggested fix, so `azproviderlint -AZG006 -fix` (or an editor applying the suggested fix) inlines the variable automatically.
+Next to `"key"`, `ctx`, or `id`, the temporary's name is not telling the reader anything those do not already say. `client.ImportThenPoll(ctx, id, expandMsSqlServerImport(d))` reads no worse than the two-line version.
 
 ## Flagged Code
 
@@ -28,21 +22,41 @@ if err := d.Set("apns_credential", flattenNotificationHubsAPNSCredentials(props.
 ```
 
 ```go
-// the name documents the payload among expression arguments — not flagged
+// not reported: next to other expressions, the name is documentation
 payload := expandThing(d)
 client.CreateOrUpdate(ctx, id, payload)
 ```
+
+## What counts
+
+The call can be a statement on its own or the init of an `if` (`if err := d.Set("key", x); err != nil`), in the same block, within `max-gap` lines.
+
+Not reported:
+
+- calls with any more complex sibling argument, such as a selector chain, another call, or a type assertion. There the name earns its place, and inlining could reorder evaluation.
+- multi-line initializers, which would make the call hard to read
+- something between the declaration and the call writes to, takes the address of, or shadows anything the initializer reads
+
+## The fix
+
+`-fix` moves the initializer into the call.
 
 ## Options
 
 | Option | Default | Effect |
 |---|---|---|
-| `max-gap` | 100 | maximum source lines between the declaration and the consuming call |
-| `only-when-literals` | false | require every sibling argument to be a basic literal (plain identifiers are otherwise also accepted) |
-| `maximum-arguments` | 0 | skip calls with more than this many arguments (0 = unlimited) |
+| `max-gap` | 100 | most lines allowed between the declaration and the call |
+| `only-when-literals` | false | require every sibling argument to be a literal, not just a plain name |
+| `maximum-arguments` | 0 | skip calls with more arguments than this (0 means no limit) |
 
-Set via `-AZG006.<option>` on the CLI or a rule-name key in the plugin's golangci settings.
+The last two are for tightening the rule further when several temporaries feeding one call would inline into a long line. Set with `-AZG006.<option>` on the CLI or under the rule name in the golangci settings; see the [root README](../../../README.md#options).
 
 ## Ignoring Reports
 
-When run via golangci-lint, reports can be ignored with a `//nolint:azproviderlint` Go code comment at the end of the offending line or on the line immediately preceding it. To ignore only this check on a line — leaving any other azproviderlint checks active — use `//azignore:AZG006 - <reason>` instead, in the same positions.
+Put `//azignore:AZG006 - <reason>` at the end of the declaration line, or on the line above it. The reason is required.
+
+```go
+apns := flattenNotificationHubsAPNSCredentials(props.ApnsCredential) //azignore:AZG006 - <reason>
+```
+
+Under golangci-lint, `//nolint:azproviderlint` in the same place also works, but it silences every azproviderlint check on that line.
