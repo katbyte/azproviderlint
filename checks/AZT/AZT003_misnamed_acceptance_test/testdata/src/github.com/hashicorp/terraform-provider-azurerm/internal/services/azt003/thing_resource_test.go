@@ -120,13 +120,6 @@ func TestAccThing_envConstant(t *testing.T) {
 	}
 }
 
-// Should NOT be flagged: Acc is the start of a word, not the acceptance prefix
-func TestAccountName(t *testing.T) {
-	if azt003.BuildName("a") != "a-thing" {
-		t.Fatal("wrong name")
-	}
-}
-
 // Should NOT be flagged: not a test function
 func (r ThingResource) TestAccThing_receiver(t *testing.T) {}
 
@@ -160,5 +153,12 @@ func testThing_name(t *testing.T) {
 func TestAccThing_randomName(t *testing.T) { // want `TestAccThing_randomName does not run an acceptance test, name it TestThing_randomName so it is not picked up as one`
 	if azt003.BuildName(acceptance.RandString(5)) == "" {
 		t.Fatal("empty name")
+	}
+}
+
+// Should be flagged: Acc starts a word here, but test runners still match the prefix
+func TestAccountName(t *testing.T) { // want `TestAccountName does not run an acceptance test, rename it so it does not start with TestAcc and is not picked up as one`
+	if azt003.BuildName("a") != "a-thing" {
+		t.Fatal("wrong name")
 	}
 }

@@ -6,9 +6,9 @@ import (
 	"go/ast"
 	"go/constant"
 	"go/types"
-	"regexp"
 	"slices"
 	"strings"
+	"unicode"
 
 	"golang.org/x/tools/go/analysis"
 
@@ -24,10 +24,6 @@ var Analyzer = &analysis.Analyzer{
 	URL:  "https://github.com/katbyte/azproviderlint/blob/main/checks/AZT/AZT003_misnamed_acceptance_test/README.md",
 	Run:  run,
 }
-
-// The uppercase requirement after TestAcc keeps unit test functions like TestAccountName
-// from counting as acceptance tests.
-var acceptanceTestFunc = regexp.MustCompile(`^TestAcc[A-Z]`)
 
 // The Terraform test harnesses; a provider's own internal/acceptance package counts too.
 var harnessPackages = map[string]bool{
@@ -50,7 +46,8 @@ func run(pass *analysis.Pass) (any, error) {
 				continue
 			}
 			decls[fn] = fd
-			if isTest && fd.Recv == nil && acceptanceTestFunc.MatchString(fd.Name.Name) {
+			// the bare prefix, as test runners match it: TestAccountName is picked up too
+			if isTest && fd.Recv == nil && strings.HasPrefix(fd.Name.Name, "TestAcc") {
 				candidates = append(candidates, fn)
 			}
 		}
@@ -114,8 +111,15 @@ func run(pass *analysis.Pass) (any, error) {
 		if runs[fn] {
 			continue
 		}
+		// Acc that starts a word (TestAccountName) cannot simply be dropped
+		rest := strings.TrimPrefix(fn.Name(), "TestAcc")
+		if rest != "" && unicode.IsLower(rune(rest[0])) {
+			pass.Reportf(decls[fn].Name.Pos(),
+				"%s does not run an acceptance test, rename it so it does not start with TestAcc and is not picked up as one", fn.Name())
+			continue
+		}
 		pass.Reportf(decls[fn].Name.Pos(),
-			"%s does not run an acceptance test, name it Test%s so it is not picked up as one", fn.Name(), strings.TrimPrefix(fn.Name(), "TestAcc"))
+			"%s does not run an acceptance test, name it Test%s so it is not picked up as one", fn.Name(), rest)
 	}
 
 	return nil, nil

@@ -12,7 +12,7 @@ A function counts as an acceptance test when it does one of these, itself or thr
 
 Other functions in the package are followed whether they are called or passed as a value, so sequential tests that list `testAccThing_basic` in a map pass. A helper in a different package is not followed.
 
-Only `_test.go` files are checked. Names like `TestAccountName` are left alone, since `Acc` there is the start of a word.
+Only `_test.go` files are checked. Names like `TestAccountName` are reported too: `Acc` is the start of a word there, but test runners match the bare prefix and pick the test up all the same.
 
 ## Flagged Code
 
@@ -56,7 +56,7 @@ func TestAccContainerRegistry_basic(t *testing.T) {
 
 ## No fix
 
-AZT003 only reports. Usually the answer is to drop `Acc` from the name. If the test was meant to be an acceptance test and lost its body, restore or delete it instead.
+AZT003 only reports. Usually the answer is to drop `Acc` from the name, or to reword it when `Acc` starts a word (`TestAccountName` to `TestValidateAccountName`). If the test was meant to be an acceptance test and lost its body, restore or delete it instead.
 
 ## Ignoring Reports
 
