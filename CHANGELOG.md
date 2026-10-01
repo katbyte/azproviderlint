@@ -1,3 +1,7 @@
+## Unreleased
+
+- add rule `AZT003`: test functions named `TestAcc` that never run an acceptance test, so are scheduled as one without touching Azure; report only, no fix ([#64](https://github.com/katbyte/azproviderlint/pull/64))
+
 ## v0.11.0 (2026-09-28)
 
 - **breaking**: move the provider-wide rules into the new `AZP` category — `AZS005`→`AZP002` (resource/data source parity), `AZS006`→`AZP003` (data source properties), `AZS008`→`AZP004` (sorted registration entries), `AZR005`→`AZP005` (case-insensitive segments flag); update `//azignore:` comments and settings references ([#48](https://github.com/katbyte/azproviderlint/pull/48))
