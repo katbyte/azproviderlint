@@ -5,6 +5,7 @@ package AZT004
 import (
 	"go/ast"
 	"go/types"
+	"regexp"
 	"strings"
 
 	"golang.org/x/tools/go/analysis"
@@ -22,6 +23,10 @@ var Analyzer = &analysis.Analyzer{
 	Requires: []*analysis.Analyzer{acctest.Analyzer},
 	Run:      run,
 }
+
+// strayAcc matches Acc as a whole word inside a camel-case name: followed by an upper-case
+// letter, an underscore or the end, so Account and Access are not matched.
+var strayAcc = regexp.MustCompile(`Acc([A-Z_]|$)`)
 
 func run(pass *analysis.Pass) (any, error) {
 	runs, ok := pass.ResultOf[acctest.Analyzer].(acctest.Funcs)
@@ -45,10 +50,10 @@ func run(pass *analysis.Pass) (any, error) {
 				continue
 			}
 
-			// Acc already sits somewhere in the name (TestWebAppAccActiveSlot_basic), so
-			// prefixing it would double up
+			// Acc already sits somewhere in the name as its own word (TestWebAppAccActiveSlot_basic),
+			// so prefixing it would double up; Account and Access do not count
 			rest := strings.TrimPrefix(fn.Name(), "Test")
-			if strings.Contains(rest, "Acc") {
+			if strayAcc.MatchString(rest) {
 				pass.Reportf(fd.Name.Pos(), "%s runs an acceptance test, rename it to start with TestAcc so acceptance runs pick it up", fn.Name())
 				continue
 			}

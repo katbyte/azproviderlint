@@ -19,3 +19,6 @@ type TestCase struct {
 func Test(t T, c TestCase) {}
 
 func ParallelTest(t T, c TestCase) {}
+
+// UnitTest runs the case without TF_ACC: a unit test on the harness, not an acceptance test.
+func UnitTest(t T, c TestCase) {}

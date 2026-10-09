@@ -156,6 +156,11 @@ func TestAccThing_randomName(t *testing.T) { // want `TestAccThing_randomName do
 	}
 }
 
+// Should be flagged: the harness's UnitTest runs without TF_ACC, so this is a unit test
+func TestAccThing_unitHarness(t *testing.T) { // want `TestAccThing_unitHarness does not run an acceptance test, name it TestThing_unitHarness so it is not picked up as one`
+	resource.UnitTest(t, resource.TestCase{Steps: []resource.TestStep{{Config: "unit"}}})
+}
+
 // Should be flagged: Acc starts a word here, but test runners still match the prefix
 func TestAccountName(t *testing.T) { // want `TestAccountName does not run an acceptance test, rename it so it does not start with TestAcc and is not picked up as one`
 	if azt003.BuildName("a") != "a-thing" {

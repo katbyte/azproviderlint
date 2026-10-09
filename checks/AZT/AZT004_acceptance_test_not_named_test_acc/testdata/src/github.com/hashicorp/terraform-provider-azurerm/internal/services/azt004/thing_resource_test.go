@@ -72,6 +72,17 @@ func TestWebAppAccActiveSlot_basic(t *testing.T) { // want `TestWebAppAccActiveS
 	data.ResourceTest(t, ThingResource{}, []acceptance.TestStep{{Config: "basic"}})
 }
 
+// Should NOT be flagged: the harness's UnitTest runs without TF_ACC, so this is a unit test
+func TestThing_unitHarness(t *testing.T) {
+	resource.UnitTest(t, resource.TestCase{Steps: []resource.TestStep{{Config: "unit"}}})
+}
+
+// Should be flagged, with the plain suggestion: Account is not a stray Acc
+func TestStorageAccount_basic(t *testing.T) { // want `TestStorageAccount_basic runs an acceptance test, name it TestAccStorageAccount_basic so acceptance runs pick it up`
+	data := acceptance.BuildTestData(t, "azurerm_thing", "test")
+	data.ResourceTest(t, ThingResource{}, []acceptance.TestStep{{Config: "basic"}})
+}
+
 // Should NOT be flagged: a method is not a test function, so no runner selects it
 func (r ThingResource) TestThing_receiver(t *testing.T) {
 	data := acceptance.BuildTestData(t, "azurerm_thing", "test")

@@ -17,7 +17,8 @@ import (
 
 // Analyzer computes Funcs for a package. A function runs an acceptance test when it hands
 // `t` to the Terraform test harness or the provider's own internal/acceptance package, looks
-// at TF_ACC, or calls or passes around another function of the package that does. Packages
+// at TF_ACC, or calls or passes around another function of the package that does. The
+// harness's UnitTest entry point is the exception: it runs without TF_ACC by design. Packages
 // without test files have nothing to find and yield an empty result.
 var Analyzer = &analysis.Analyzer{
 	Name:       "acctest",
@@ -69,7 +70,7 @@ func run(pass *analysis.Pass) (any, error) {
 				if callee == nil || callee.Pkg() == nil {
 					break
 				}
-				if path := callee.Pkg().Path(); !harnessPackages[path] && !strings.HasSuffix(path, "/internal/acceptance") {
+				if path := callee.Pkg().Path(); (!harnessPackages[path] && !strings.HasSuffix(path, "/internal/acceptance")) || callee.Name() == "UnitTest" {
 					break
 				}
 				for _, arg := range n.Args {
