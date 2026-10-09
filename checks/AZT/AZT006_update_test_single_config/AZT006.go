@@ -39,10 +39,12 @@ func run(pass *analysis.Pass) (any, error) {
 				if !ok {
 					return true
 				}
+
 				named, ok := types.Unalias(pass.TypesInfo.TypeOf(cl)).(*types.Named)
 				if !ok || named.Obj().Name() != "TestStep" {
 					return true
 				}
+
 				for _, elt := range cl.Elts {
 					kv, ok := elt.(*ast.KeyValueExpr)
 					if !ok {
@@ -54,6 +56,7 @@ func run(pass *analysis.Pass) (any, error) {
 						distinct[text] = true
 					}
 				}
+
 				return true
 			})
 
