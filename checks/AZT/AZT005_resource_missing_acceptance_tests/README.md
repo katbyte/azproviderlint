@@ -59,6 +59,21 @@ Not reported:
 
 AZT005 only reports. Add the missing tests, named for the steps they cover.
 
+## Options
+
+| Option | Default | Effect |
+|---|---|---|
+| `disable` | | a step not to ask for: `basic`, `requiresImport`, `complete` or `update` |
+
+`disable` takes several values: a list in the golangci settings, or the flag repeated or comma-separated on the command line. Every step is asked for by default; turning the others off lets a provider enforce `basic` first and add the rest as the backlog clears.
+
+```yaml
+          AZT005:
+            disable: [complete, update]
+```
+
+Set with `-AZT005.<option>` on the CLI or under the rule name in the golangci settings; see the [root README](../../../README.md#options).
+
 ## Ignoring Reports
 
 Put `//azignore:AZT005 - <reason>` at the end of the registration line, or on the line above it. The reason is required.

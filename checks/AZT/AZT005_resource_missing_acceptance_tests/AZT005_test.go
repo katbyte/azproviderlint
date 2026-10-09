@@ -12,5 +12,11 @@ func TestAZT005(t *testing.T) {
 	t.Parallel()
 
 	_, filename, _, _ := runtime.Caller(0)
-	analysistest.Run(t, filepath.Join(filepath.Dir(filename), "testdata"), Analyzer, "azt005")
+	dir := filepath.Join(filepath.Dir(filename), "testdata")
+
+	analysistest.Run(t, dir, Analyzer, "azt005")
+
+	disabled = map[string]bool{"requiresImport": true, "complete": true, "update": true}
+	analysistest.Run(t, dir, Analyzer, "azt005disable")
+	disabled = map[string]bool{}
 }

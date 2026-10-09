@@ -3,12 +3,15 @@
 package AZT005
 
 import (
+	"flag"
+	"fmt"
 	"go/ast"
 	"go/parser"
 	"go/token"
 	"go/types"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"unicode"
 
@@ -38,6 +41,29 @@ var Analyzer = &analysis.Analyzer{
 
 // The registration keys that give an untyped resource an Update handler.
 var updateKeys = map[string]bool{"Update": true, "UpdateContext": true, "UpdateWithoutTimeout": true}
+
+// The steps a test can be named for, in the order they are reported.
+var allSteps = []string{"basic", "requiresImport", "complete", "update"}
+
+// disabled holds the steps the `disable` option turned off, so a consumer can enforce the
+// rule one step at a time.
+var disabled = map[string]bool{}
+
+func init() {
+	Analyzer.Flags.Init("AZT005", flag.ContinueOnError)
+	Analyzer.Flags.Func("disable", "a step not to ask for: basic, requiresImport, complete or update; repeat or comma-separate for several", func(s string) error {
+		for step := range strings.SplitSeq(s, ",") {
+			step = strings.TrimSpace(step)
+			if !slices.Contains(allSteps, step) {
+				return fmt.Errorf("unknown step %q, expected one of %s", step, strings.Join(allSteps, ", "))
+			}
+
+			disabled[step] = true
+		}
+
+		return nil
+	})
+}
 
 // testFunc is one acceptance test function found in a test file: TestAccFoo_list_basic has
 // prefix Foo and segments [list basic].
@@ -118,6 +144,11 @@ func run(pass *analysis.Pass) (any, error) {
 			if updatable {
 				steps = append(steps, "complete", "update")
 			}
+		}
+
+		steps = slices.DeleteFunc(steps, func(step string) bool { return disabled[step] })
+		if len(steps) == 0 {
+			continue
 		}
 
 		// the tests for this entry: in a test file named after the declaring file, or named
