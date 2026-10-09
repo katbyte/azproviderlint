@@ -1,8 +1,10 @@
-package azt003
+package azt004
 
 import (
 	"os"
 	"testing"
+
+	"github.com/hashicorp/terraform-provider-azurerm/internal/acceptance"
 )
 
 func BuildName(prefix string) string {
@@ -10,8 +12,8 @@ func BuildName(prefix string) string {
 }
 
 // Should NOT be flagged: go test only runs functions from _test.go files
-func TestAccNotInATestFile(t *testing.T) {
-	_ = BuildName("a")
+func TestNotInATestFile(t *testing.T) {
+	acceptance.BuildTestData(t, "azurerm_thing", "test")
 }
 
 // Configured is production code that reads TF_ACC to pick a default; calling it does not make
