@@ -1,6 +1,6 @@
 ## Unreleased
 
-- add rule `AZG012`: in a body of more than five statements, an `if`/`for`/`switch`/`select` must be followed by a blank line before the next step; short bodies and runs of one-line guards are left alone; fixable with `-fix`; `statements` and `lines` set what counts as short
+- add rule `AZG012`: in a body of more than five statements, an `if`/`for`/`switch`/`select` must be followed by a blank line before the next step; short bodies and runs of one-line guards are left alone; fixable with `-fix`; `statements` and `lines` set what counts as short ([#71](https://github.com/katbyte/azproviderlint/pull/71))
 - add rule `AZT003`: test functions named `TestAcc` that never run an acceptance test, so are scheduled as one without touching Azure; report only, no fix ([#64](https://github.com/katbyte/azproviderlint/pull/64))
 
 ## v0.11.0 (2026-09-28)
