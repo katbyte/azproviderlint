@@ -53,6 +53,7 @@ func run(pass *analysis.Pass) (any, error) {
 		case *ast.Ident:
 			schemaType = v.Name
 		}
+
 		if schemaType != "TypeList" {
 			return
 		}
@@ -66,10 +67,12 @@ func run(pass *analysis.Pass) (any, error) {
 		if !ok || ref.Op != token.AND {
 			return
 		}
+
 		resource, ok := ref.X.(*ast.CompositeLit)
 		if !ok || !tf.IsSchemaHelperType(pass, resource, "Resource") {
 			return
 		}
+
 		properties, ok := compositeLitFields(resource)["Schema"].(*ast.CompositeLit)
 		if !ok || len(properties.Elts) == 0 {
 			return
@@ -80,25 +83,25 @@ func run(pass *analysis.Pass) (any, error) {
 			if !ok {
 				return
 			}
+
 			value := kv.Value
 			if addr, isAddr := value.(*ast.UnaryExpr); isAddr && addr.Op == token.AND {
 				value = addr.X
 			}
+
 			// a property defined elsewhere (variable/function) cannot be inspected - stay quiet
 			property, ok := value.(*ast.CompositeLit)
 			if !ok {
 				return
 			}
+
 			propertyFields := compositeLitFields(property)
-			if astx.IsTrueConstant(pass, propertyFields["Required"]) ||
-				isSet(propertyFields["Default"]) || isSet(propertyFields["DefaultFunc"]) ||
-				isSet(propertyFields["AtLeastOneOf"]) || isSet(propertyFields["ExactlyOneOf"]) {
+			if astx.IsTrueConstant(pass, propertyFields["Required"]) || isSet(propertyFields["Default"]) || isSet(propertyFields["DefaultFunc"]) || isSet(propertyFields["AtLeastOneOf"]) || isSet(propertyFields["ExactlyOneOf"]) {
 				return
 			}
 		}
 
-		pass.Reportf(cl.Pos(),
-			"schema allows an empty block as every property is optional with no default - add AtLeastOneOf/ExactlyOneOf constraints, a Required property, or a Default so empty blocks cannot crash expand functions or cause spurious diffs")
+		pass.Reportf(cl.Pos(), "schema allows an empty block as every property is optional with no default - add AtLeastOneOf/ExactlyOneOf constraints, a Required property, or a Default so empty blocks cannot crash expand functions or cause spurious diffs")
 	})
 
 	return nil, nil

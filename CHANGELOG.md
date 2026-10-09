@@ -1,6 +1,8 @@
 ## Unreleased
 
 - add rule `AZT006`: tests named for an update step must apply two different configs; one config, or the same config twice, never runs the update; report only, no fix ([#69](https://github.com/katbyte/azproviderlint/pull/69))
+- add rule `AZT007`: a `TestAcc` name must not carry `Acc` again as a word of its own (`_storageAccBehindFireWall`); `Account` and `Access` are fine; report only, no fix ([#72](https://github.com/katbyte/azproviderlint/pull/72))
+- add rule `AZT004`: test functions that run an acceptance test but are not named `TestAcc`, so acceptance runs never pick them up; report only, no fix ([#67](https://github.com/katbyte/azproviderlint/pull/67))
 - add rule `AZT003`: test functions named `TestAcc` that never run an acceptance test, so are scheduled as one without touching Azure; report only, no fix ([#64](https://github.com/katbyte/azproviderlint/pull/64))
 
 ## v0.11.0 (2026-09-28)

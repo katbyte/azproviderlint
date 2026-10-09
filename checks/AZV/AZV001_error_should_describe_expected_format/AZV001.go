@@ -46,8 +46,7 @@ func run(pass *analysis.Pass) (any, error) {
 		}
 
 		if strings.Contains(value, "invalid format of ") {
-			pass.Reportf(lit.Pos(),
-				"unclear error message: describe the expected format instead of 'invalid format of'")
+			pass.Reportf(lit.Pos(), "unclear error message: describe the expected format instead of 'invalid format of'")
 		}
 	})
 

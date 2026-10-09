@@ -26,8 +26,7 @@ func run(pass *analysis.Pass) (any, error) {
 					continue
 				}
 
-				pass.Reportf(comment.Pos(),
-					"azignore directive must include a reason: '//azignore:<Rule> - <reason>'")
+				pass.Reportf(comment.Pos(), "azignore directive must include a reason: '//azignore:<Rule> - <reason>'")
 			}
 		}
 	}

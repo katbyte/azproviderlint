@@ -55,8 +55,7 @@ func TestParseDirective(t *testing.T) {
 
 			rules, reason, ok := ParseDirective(tc.text)
 			if ok != tc.ok || reason != tc.reason || !slices.Equal(rules, tc.rules) {
-				t.Fatalf("ParseDirective(%q) = %v, %q, %v; want %v, %q, %v",
-					tc.text, rules, reason, ok, tc.rules, tc.reason, tc.ok)
+				t.Fatalf("ParseDirective(%q) = %v, %q, %v; want %v, %q, %v", tc.text, rules, reason, ok, tc.rules, tc.reason, tc.ok)
 			}
 		})
 	}

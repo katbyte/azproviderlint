@@ -68,12 +68,14 @@ func checkBlock(pass *analysis.Pass, stmts []ast.Stmt) {
 			lhsIdents = append(lhsIdents, ident)
 			lhsNames = append(lhsNames, ident.Name)
 		}
+
 		if len(lhsNames) != len(assignStmt.Lhs) {
 			continue
 		}
 		if lhsNames[len(lhsNames)-1] != "err" {
 			continue
 		}
+
 		allBlankPrefix := true
 		for _, name := range lhsNames[:len(lhsNames)-1] {
 			if name != "_" {
@@ -81,9 +83,11 @@ func checkBlock(pass *analysis.Pass, stmts []ast.Stmt) {
 				break
 			}
 		}
+
 		if !allBlankPrefix {
 			continue
 		}
+
 		errIdent := lhsIdents[len(lhsIdents)-1]
 
 		// Next statement must be `if err != nil`
@@ -123,10 +127,8 @@ func checkBlock(pass *analysis.Pass, stmts []ast.Stmt) {
 		}
 
 		pass.Report(analysis.Diagnostic{
-			Pos: assignStmt.Pos(),
-			Message: fmt.Sprintf(
-				"'%s' assignment should be combined with the following 'if err != nil' into a single 'if' init statement",
-				strings.Join(lhsNames, ", ")),
+			Pos:            assignStmt.Pos(),
+			Message:        fmt.Sprintf("'%s' assignment should be combined with the following 'if err != nil' into a single 'if' init statement", strings.Join(lhsNames, ", ")),
 			SuggestedFixes: fixes,
 		})
 	}

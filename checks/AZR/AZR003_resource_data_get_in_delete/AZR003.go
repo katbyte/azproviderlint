@@ -69,8 +69,7 @@ func checkUntypedDelete(pass *analysis.Pass, fn *ast.FuncDecl) {
 			return true
 		}
 
-		pass.Reportf(call.Pos(),
-			"%s.Get should not be used within a Delete function as it does not work as expected during deletion", dataParam)
+		pass.Reportf(call.Pos(), "%s.Get should not be used within a Delete function as it does not work as expected during deletion", dataParam)
 		return true
 	})
 }
@@ -93,9 +92,11 @@ func checkTypedDelete(pass *analysis.Pass, fn *ast.FuncDecl) {
 		default:
 			return true
 		}
+
 		if len(names) != len(values) {
 			return true
 		}
+
 		for i, v := range values {
 			sel, ok := ast.Unparen(v).(*ast.SelectorExpr)
 			if !ok || sel.Sel.Name != "ResourceData" {
@@ -107,6 +108,7 @@ func checkTypedDelete(pass *analysis.Pass, fn *ast.FuncDecl) {
 				}
 			}
 		}
+
 		return true
 	})
 
@@ -126,15 +128,14 @@ func checkTypedDelete(pass *analysis.Pass, fn *ast.FuncDecl) {
 			if x.Sel.Name != "ResourceData" {
 				return true
 			}
-			pass.Reportf(call.Pos(),
-				"ResourceData.Get should not be used within a Delete function as it does not work as expected during deletion")
+			pass.Reportf(call.Pos(), "ResourceData.Get should not be used within a Delete function as it does not work as expected during deletion")
 		case *ast.Ident:
 			if !aliases[pass.TypesInfo.ObjectOf(x)] {
 				return true
 			}
-			pass.Reportf(call.Pos(),
-				"%s.Get should not be used within a Delete function as it does not work as expected during deletion", x.Name)
+			pass.Reportf(call.Pos(), "%s.Get should not be used within a Delete function as it does not work as expected during deletion", x.Name)
 		}
+
 		return true
 	})
 }

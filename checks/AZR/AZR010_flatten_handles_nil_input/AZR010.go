@@ -168,10 +168,12 @@ func run(pass *analysis.Pass) (any, error) {
 			if !ok {
 				return true
 			}
+
 			fn := astx.CalledFunc(pass, call)
 			if fn == nil || !isFlatten(fn.Name()) {
 				return true
 			}
+
 			for i, arg := range call.Args {
 				t := pass.TypesInfo.TypeOf(arg)
 				if t == nil {
@@ -180,14 +182,17 @@ func run(pass *analysis.Pass) (any, error) {
 				if _, isPtr := t.Underlying().(*types.Pointer); !isPtr {
 					continue
 				}
+
 				key, ok := nilguard.PathKey(pass, arg)
 				if !ok {
 					continue
 				}
+
 				ifs, keys := guardingIf(pass, parents, call, key)
 				if ifs == nil || otherUse(pass, parents, ifs, keys) {
 					continue
 				}
+
 				src := types.ExprString(ast.Unparen(arg))
 				msg := "`" + fn.Name() + "(" + src + ")` is called under a nil check on `" + src + "` - handle nil inside the flatten function instead"
 				var fixes []analysis.SuggestedFix
@@ -195,8 +200,10 @@ func run(pass *analysis.Pass) (any, error) {
 					msg = "`" + fn.Name() + "` already handles a nil `" + src + "` - drop the nil check"
 					fixes = dropCheck(pass, ifs)
 				}
+
 				pass.Report(analysis.Diagnostic{Pos: call.Pos(), Message: msg, SuggestedFixes: fixes})
 			}
+
 			return true
 		})
 	})
@@ -229,8 +236,7 @@ func guardingIf(pass *analysis.Pass, parents map[ast.Node]ast.Node, call ast.Nod
 				keys = append(keys, lk)
 			}
 		}
-		if (ifs.Body == child && nilCompare(pass, ifs.Cond, keys, token.NEQ, token.LAND)) ||
-			(ifs.Else == child && nilCompare(pass, ifs.Cond, keys, token.EQL, token.LOR)) {
+		if (ifs.Body == child && nilCompare(pass, ifs.Cond, keys, token.NEQ, token.LAND)) || (ifs.Else == child && nilCompare(pass, ifs.Cond, keys, token.EQL, token.LOR)) {
 			return ifs, keys
 		}
 	}
@@ -250,12 +256,14 @@ func nilCompare(pass *analysis.Pass, cond ast.Expr, keys []string, cmp, join tok
 	if c.Op != cmp {
 		return false
 	}
+
 	other := c.X
 	if astx.IsNilValue(pass, c.X) {
 		other = c.Y
 	} else if !astx.IsNilValue(pass, c.Y) {
 		return false
 	}
+
 	k, ok := nilguard.PathKey(pass, other)
 	return ok && slices.Contains(keys, k)
 }
@@ -274,6 +282,7 @@ func otherUse(pass *analysis.Pass, parents map[ast.Node]ast.Node, ifs *ast.IfStm
 			if !ok || found {
 				return !found
 			}
+
 			k, ok := nilguard.PathKey(pass, e)
 			if !ok {
 				return true
@@ -290,6 +299,7 @@ func otherUse(pass *analysis.Pass, parents map[ast.Node]ast.Node, ifs *ast.IfStm
 					}
 				}
 			}
+
 			found = true
 			return false
 		})
@@ -307,16 +317,19 @@ func dropCheck(pass *analysis.Pass, ifs *ast.IfStmt) []analysis.SuggestedFix {
 	if !ok || cmp.Op != token.NEQ || ifs.Init != nil || ifs.Else != nil || len(ifs.Body.List) != 1 {
 		return nil
 	}
+
 	stmt := ifs.Body.List[0]
 	src, ok := astx.SourceText(pass, ifs)
 	if !ok {
 		return nil
 	}
+
 	rbrace := int(ifs.Body.Rbrace - ifs.Pos())
 	lineStart := strings.LastIndex(string(src[:rbrace]), "\n")
 	if lineStart < 0 {
 		return nil // single-line if: nothing to unwrap cleanly
 	}
+
 	edits := []analysis.TextEdit{
 		{Pos: ifs.Pos(), End: stmt.Pos()},
 		{Pos: ifs.Pos() + token.Pos(lineStart), End: ifs.Body.Rbrace + 1},
@@ -332,5 +345,6 @@ func dropCheck(pass *analysis.Pass, ifs *ast.IfStmt) []analysis.SuggestedFix {
 		}
 		off += 2 + next
 	}
+
 	return []analysis.SuggestedFix{{Message: "Drop the nil check", TextEdits: edits}}
 }

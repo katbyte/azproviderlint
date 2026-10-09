@@ -47,8 +47,7 @@ func run(pass *analysis.Pass) (any, error) {
 			return
 		}
 
-		pass.Reportf(call.Pos(),
-			"SetId should not be passed a dereferenced pointer, use a generated Resource ID Formatter/Parser and id.ID()")
+		pass.Reportf(call.Pos(), "SetId should not be passed a dereferenced pointer, use a generated Resource ID Formatter/Parser and id.ID()")
 	})
 
 	return nil, nil

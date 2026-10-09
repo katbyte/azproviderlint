@@ -46,12 +46,9 @@ var maxGap int
 
 func init() {
 	Analyzer.Flags.Init("AZG006", flag.ContinueOnError)
-	Analyzer.Flags.IntVar(&maxGap, "max-gap", 100,
-		"maximum number of source lines between the variable's declaration and the consuming call")
-	Analyzer.Flags.BoolVar(&onlyWhenLiterals, "only-when-literals", false,
-		"only inline when every sibling argument is a basic literal (plain identifiers are otherwise also accepted)")
-	Analyzer.Flags.IntVar(&maximumArguments, "maximum-arguments", 0,
-		"skip calls with more than this many arguments (0 = unlimited)")
+	Analyzer.Flags.IntVar(&maxGap, "max-gap", 100, "maximum number of source lines between the variable's declaration and the consuming call")
+	Analyzer.Flags.BoolVar(&onlyWhenLiterals, "only-when-literals", false, "only inline when every sibling argument is a basic literal (plain identifiers are otherwise also accepted)")
+	Analyzer.Flags.IntVar(&maximumArguments, "maximum-arguments", 0, "skip calls with more than this many arguments (0 = unlimited)")
 }
 
 // onlyWhenLiterals restricts sibling arguments to basic literals; by default plain
@@ -171,9 +168,9 @@ func checkPair(pass *analysis.Pass, body *ast.BlockStmt, first, second ast.Stmt,
 
 	message := fmt.Sprintf("%q is only used by the following call and should be inlined", ident.Name)
 	if !adjacent {
-		message = fmt.Sprintf("%q is only used by the call on line %d and should be inlined",
-			ident.Name, pass.Fset.Position(second.Pos()).Line)
+		message = fmt.Sprintf("%q is only used by the call on line %d and should be inlined", ident.Name, pass.Fset.Position(second.Pos()).Line)
 	}
+
 	pass.Report(analysis.Diagnostic{
 		Pos:            assign.Pos(),
 		Message:        message,

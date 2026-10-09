@@ -63,6 +63,7 @@ func CallBodyArg(pass *analysis.Pass, call *ast.CallExpr, arg int) bool {
 	if arg < 0 || arg > 63 {
 		return false
 	}
+
 	f := facts.Of[bodyFact](pass, Analyzer).Get(astx.CalledFunc(pass, call))
 	if f.Serialised&(1<<arg) == 0 {
 		return false
@@ -70,11 +71,13 @@ func CallBodyArg(pass *analysis.Pass, call *ast.CallExpr, arg int) bool {
 	if f.Writes {
 		return true
 	}
+
 	for _, a := range call.Args {
 		if isWriteMethodValue(pass, a) {
 			return true
 		}
 	}
+
 	return false
 }
 
@@ -162,14 +165,17 @@ func isWriteMethodValue(pass *analysis.Pass, e ast.Expr) bool {
 	if isWriteMethodConst(pass, e) {
 		return true
 	}
+
 	id, ok := e.(*ast.Ident)
 	if !ok {
 		return false
 	}
+
 	v, ok := pass.TypesInfo.Uses[id].(*types.Var)
 	if !ok || v.Pkg() != pass.Pkg {
 		return false
 	}
+
 	var decl ast.Node
 	for _, file := range pass.Files {
 		for _, d := range file.Decls {
@@ -178,9 +184,11 @@ func isWriteMethodValue(pass *analysis.Pass, e ast.Expr) bool {
 			}
 		}
 	}
+
 	if decl == nil {
 		return false
 	}
+
 	found := false
 	ast.Inspect(decl, func(n ast.Node) bool {
 		var names []ast.Expr
@@ -196,14 +204,17 @@ func isWriteMethodValue(pass *analysis.Pass, e ast.Expr) bool {
 		default:
 			return !found
 		}
+
 		if len(names) != len(values) {
 			return !found
 		}
+
 		for i, name := range names {
 			if id, ok := name.(*ast.Ident); ok && pass.TypesInfo.ObjectOf(id) == v && isWriteMethodConst(pass, values[i]) {
 				found = true
 			}
 		}
+
 		return !found
 	})
 	return found

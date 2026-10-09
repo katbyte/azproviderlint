@@ -41,8 +41,7 @@ func run(pass *analysis.Pass) (any, error) {
 			return
 		}
 
-		pass.Reportf(sel.Pos(),
-			"data sources should return an error when a resource cannot be found instead of calling MarkAsGone")
+		pass.Reportf(sel.Pos(), "data sources should return an error when a resource cannot be found instead of calling MarkAsGone")
 	})
 
 	return nil, nil
