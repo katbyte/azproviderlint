@@ -44,10 +44,8 @@ var (
 )
 
 func init() {
-	Analyzer.Flags.BoolVar(&allowMissingValues, "allow-missing-values", false,
-		"do not report in-place validation arrays that are missing enum values (deliberate subsets)")
-	Analyzer.Flags.BoolVar(&allowExtraValues, "allow-extra-values", false,
-		"do not report in-place validation arrays containing values that are not part of the enum (deliberate supersets)")
+	Analyzer.Flags.BoolVar(&allowMissingValues, "allow-missing-values", false, "do not report in-place validation arrays that are missing enum values (deliberate subsets)")
+	Analyzer.Flags.BoolVar(&allowExtraValues, "allow-extra-values", false, "do not report in-place validation arrays containing values that are not part of the enum (deliberate supersets)")
 }
 
 func run(pass *analysis.Pass) (any, error) {
@@ -65,6 +63,7 @@ func run(pass *analysis.Pass) (any, error) {
 		if !ok {
 			return
 		}
+
 		validationPkg := stringInSliceValidationPkg(pass, call)
 		if validationPkg == nil {
 			return
@@ -115,6 +114,7 @@ func run(pass *analysis.Pass) (any, error) {
 		for _, v := range values {
 			isValue[v.value] = true
 		}
+
 		var extra []string
 		for _, v := range coveredOrder {
 			if !isValue[v] {
@@ -131,16 +131,14 @@ func run(pass *analysis.Pass) (any, error) {
 			// internal/tf/validation), advise calling that directly; otherwise bridge with
 			// go-azure-helpers' generic enum-slice conversion.
 			if hasStringInEnumSlice(validationPkg) {
-				helperExpr = fmt.Sprintf("%s.StringInEnumSlice(%s, %s)",
-					validationPkg.Name(), helperExpr, types.ExprString(call.Args[1]))
+				helperExpr = fmt.Sprintf("%s.StringInEnumSlice(%s, %s)", validationPkg.Name(), helperExpr, types.ExprString(call.Args[1]))
 			} else {
 				helperExpr = fmt.Sprintf("pointer.FromEnumSlice(pointer.To(%s))", helperExpr)
 			}
 		}
+
 		if len(missing) == 0 && len(extra) == 0 {
-			pass.Reportf(lit.Pos(),
-				"enum validation for %s.%s lists every value manually; use %s so new values are picked up automatically",
-				pkgName, enum.Obj().Name(), helperExpr)
+			pass.Reportf(lit.Pos(), "enum validation for %s.%s lists every value manually; use %s so new values are picked up automatically", pkgName, enum.Obj().Name(), helperExpr)
 			return
 		}
 
@@ -160,9 +158,8 @@ func run(pass *analysis.Pass) (any, error) {
 			// a plain swap to the helper would drop the extras, so the advice must keep them
 			advice += ", appending any deliberate extras"
 		}
-		pass.Reportf(lit.Pos(),
-			"enum validation for %s.%s %s; %s",
-			pkgName, enum.Obj().Name(), strings.Join(clauses, " and "), advice)
+
+		pass.Reportf(lit.Pos(), "enum validation for %s.%s %s; %s", pkgName, enum.Obj().Name(), strings.Join(clauses, " and "), advice)
 	})
 
 	return nil, nil
@@ -275,6 +272,7 @@ func appendEnumConstTypes(pass *analysis.Pass, enums []*types.Named, elem ast.Ex
 				return true
 			}
 		}
+
 		enums = append(enums, named)
 		return true
 	})
@@ -307,14 +305,17 @@ func enumValues(named *types.Named) (helper string, typed bool, values []enumVal
 		if !ok {
 			continue
 		}
+
 		sig, ok := fn.Type().(*types.Signature)
 		if !ok || sig.Params().Len() != 0 || sig.Results().Len() != 1 {
 			continue
 		}
+
 		slice, ok := sig.Results().At(0).Type().(*types.Slice)
 		if !ok {
 			continue
 		}
+
 		switch {
 		case types.Identical(slice.Elem(), types.Typ[types.String]):
 			typed = false
@@ -323,9 +324,11 @@ func enumValues(named *types.Named) (helper string, typed bool, values []enumVal
 		default:
 			continue
 		}
+
 		helper = candidate
 		break
 	}
+
 	if helper == "" {
 		return "", false, nil
 	}

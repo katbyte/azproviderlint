@@ -52,8 +52,7 @@ func run(pass *analysis.Pass) (any, error) {
 			return
 		}
 
-		pass.Reportf(call.Pos(),
-			"data sources should return an error when a resource cannot be found instead of calling SetId with an empty string")
+		pass.Reportf(call.Pos(), "data sources should return an error when a resource cannot be found instead of calling SetId with an empty string")
 	})
 
 	return nil, nil

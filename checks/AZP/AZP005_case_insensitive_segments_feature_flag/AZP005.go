@@ -43,8 +43,7 @@ func run(pass *analysis.Pass) (any, error) {
 				continue
 			}
 
-			pass.Reportf(assign.Pos(),
-				"TreatUserSpecifiedSegmentsAsCaseInsensitive must not be set, the case-aware comparisons feature is not ready for use")
+			pass.Reportf(assign.Pos(), "TreatUserSpecifiedSegmentsAsCaseInsensitive must not be set, the case-aware comparisons feature is not ready for use")
 		}
 	})
 

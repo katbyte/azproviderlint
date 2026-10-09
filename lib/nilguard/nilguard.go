@@ -64,9 +64,11 @@ func ForEachFunc(pass *analysis.Pass, insp *inspector.Inspector, tests bool, vis
 			body = fn.Body
 			collectParams(fn.Type.Params)
 		}
+
 		if body == nil {
 			return
 		}
+
 		ast.Inspect(body, func(x ast.Node) bool {
 			if lit, ok := x.(*ast.FuncLit); ok {
 				collectParams(lit.Type.Params)
@@ -180,13 +182,11 @@ func guardedKey(pass *analysis.Pass, parents map[ast.Node]ast.Node, at ast.Node,
 			// only evaluates once the left proved x non-nil; likewise `ok && *x` / `err != nil
 			// || *x` for the companion of the call that produced x
 			if p.Y == child {
-				if (p.Op == token.LAND && impliesNonNil(pass, p.X, key)) ||
-					(p.Op == token.LOR && impliedByNil(pass, p.X, key)) {
+				if (p.Op == token.LAND && impliesNonNil(pass, p.X, key)) || (p.Op == token.LOR && impliedByNil(pass, p.X, key)) {
 					return true
 				}
 				errKey, okKey := companionOf(pass, parents, at, key)
-				if (p.Op == token.LAND && condProvesValid(pass, p.X, errKey, okKey)) ||
-					(p.Op == token.LOR && condProvesInvalid(pass, p.X, errKey, okKey)) {
+				if (p.Op == token.LAND && condProvesValid(pass, p.X, errKey, okKey)) || (p.Op == token.LOR && condProvesInvalid(pass, p.X, errKey, okKey)) {
 					return true
 				}
 			}
@@ -375,17 +375,20 @@ func equivalentKeys(pass *analysis.Pass, parents map[ast.Node]ast.Node, at ast.N
 			if !ok {
 				continue
 			}
+
 			var rk string
 			var rkOK bool
 			if len(assign.Lhs) == len(assign.Rhs) {
 				rk, rkOK = PathKey(pass, assign.Rhs[i])
 			}
+
 			if touches(lk, key) {
 				if k := rk + strings.TrimPrefix(key, lk); rkOK && !stale(k) {
 					keys = append(keys, k)
 				}
 				return false
 			}
+
 			if k := lk + strings.TrimPrefix(key, rk); rkOK && touches(rk, key) && !stale(k) {
 				keys = append(keys, k)
 			}
@@ -658,10 +661,12 @@ func literalField(expr ast.Expr, suffix string) ast.Expr {
 		if u, ok := e.(*ast.UnaryExpr); ok && u.Op == token.AND {
 			e = ast.Unparen(u.X)
 		}
+
 		lit, ok := e.(*ast.CompositeLit)
 		if !ok {
 			return nil
 		}
+
 		expr = nil
 		for _, elt := range lit.Elts {
 			kv, ok := elt.(*ast.KeyValueExpr)
@@ -673,6 +678,7 @@ func literalField(expr ast.Expr, suffix string) ast.Expr {
 				break
 			}
 		}
+
 		if expr == nil {
 			return nil
 		}
@@ -688,17 +694,19 @@ func compositeIDArg(pass *analysis.Pass, expr ast.Expr, suffix string) ast.Expr 
 	if !ok || len(call.Args) < 2 {
 		return nil
 	}
+
 	fn := astx.CalledFunc(pass, call)
-	if fn == nil || fn.Pkg() == nil || fn.Pkg().Path() != commonIDsPkgPath ||
-		(fn.Name() != "NewCompositeResourceID" && fn.Name() != "ParseCompositeResourceID") {
+	if fn == nil || fn.Pkg() == nil || fn.Pkg().Path() != commonIDsPkgPath || (fn.Name() != "NewCompositeResourceID" && fn.Name() != "ParseCompositeResourceID") {
 		return nil
 	}
+
 	switch suffix {
 	case ".First":
 		return call.Args[len(call.Args)-2]
 	case ".Second":
 		return call.Args[len(call.Args)-1]
 	}
+
 	return nil
 }
 
@@ -713,6 +721,7 @@ func companionKeys(pass *analysis.Pass, assign *ast.AssignStmt) (errKey, okKey s
 		if !ok {
 			continue
 		}
+
 		obj := pass.TypesInfo.Uses[id]
 		if obj == nil {
 			obj = pass.TypesInfo.Defs[id]
@@ -720,6 +729,7 @@ func companionKeys(pass *analysis.Pass, assign *ast.AssignStmt) (errKey, okKey s
 		if obj == nil {
 			continue
 		}
+
 		if types.Identical(obj.Type(), errType) {
 			errKey, _ = PathKey(pass, lhs)
 		} else if basic, isBasic := obj.Type().Underlying().(*types.Basic); isBasic && basic.Kind() == types.Bool {
@@ -913,14 +923,17 @@ func fromNonZero(pass *analysis.Pass, cmp *ast.BinaryExpr, key string) bool {
 			if _, isBuiltin := pass.TypesInfo.Uses[id].(*types.Builtin); !isBuiltin {
 				return false
 			}
+
 			inner, ok := ast.Unparen(call.Args[0]).(*ast.CallExpr)
 			if !ok || len(inner.Args) != 1 {
 				return false
 			}
+
 			fn := astx.CalledFunc(pass, inner)
 			if fn == nil || fn.Pkg() == nil || fn.Pkg().Path() != pointerpkg.PkgPath || fn.Name() != "From" {
 				return false
 			}
+
 			k, ok := PathKey(pass, inner.Args[0])
 			return ok && k == key && (op == token.NEQ || op == token.GTR) && isZeroConst(pass, other)
 		}

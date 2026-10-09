@@ -47,8 +47,7 @@ var Analyzer = &analysis.Analyzer{
 var ignoreSensitive bool
 
 func init() {
-	Analyzer.Flags.BoolVar(&ignoreSensitive, "ignore-sensitive", false,
-		"do not report resource properties marked Sensitive: true")
+	Analyzer.Flags.BoolVar(&ignoreSensitive, "ignore-sensitive", false, "do not report resource properties marked Sensitive: true")
 }
 
 var (
@@ -149,6 +148,7 @@ func run(pass *analysis.Pass) (any, error) {
 		if !ok || reported[ds.name] {
 			continue
 		}
+
 		reported[ds.name] = true
 
 		// per-property //azignore:AZP003 directives are honoured on the resource side only:
@@ -167,6 +167,7 @@ func run(pass *analysis.Pass) (any, error) {
 		if len(missing) == 0 {
 			continue
 		}
+
 		slices.Sort(missing)
 
 		pass.Reportf(ds.pos, "data source %q is missing resource properties: %s", ds.name, strings.Join(missing, ", "))
@@ -193,15 +194,18 @@ func (c *collector) collectRegistrations(body *ast.BlockStmt) []entry {
 		if ptr, ok := t.(*types.Pointer); ok {
 			t = types.Unalias(ptr.Elem())
 		}
+
 		named, ok := t.(*types.Named)
 		if !ok {
 			return
 		}
+
 		typeName := named.Obj().Name()
 		name, ok := c.resourceTypeOf(typeName)
 		if !ok {
 			return
 		}
+
 		entries = append(entries, entry{name: name, pos: elem.Pos(), typeName: typeName})
 	}
 
@@ -295,14 +299,17 @@ func (t *treeNode) walkMissing(dsNames map[string]bool, prefix string, missing *
 		if ignoreSensitive && child.sensitive {
 			continue
 		}
+
 		path := name
 		if prefix != "" {
 			path = prefix + "." + name
 		}
+
 		if !dsNames[name] {
 			*missing = append(*missing, strconv.Quote(path))
 			continue
 		}
+
 		child.walkMissing(dsNames, path, missing)
 	}
 }
@@ -371,10 +378,12 @@ func (b *treeBuilder) build(n ast.Node, node *treeNode) {
 				if !ok || i >= len(v.Rhs) {
 					continue
 				}
+
 				m, ok := types.Unalias(b.c.pass.TypesInfo.TypeOf(idx.X)).(*types.Map)
 				if !ok || !isSchemaMap(m) {
 					continue
 				}
+
 				handled = true
 				if name, ok := b.c.constantString(idx.Index); ok {
 					if b.honorIgnores && b.c.ignoredAt(idx.Index.Pos()) {
@@ -419,6 +428,7 @@ func (b *treeBuilder) hasBoolField(expr ast.Expr, field string) bool {
 				return false
 			}
 		}
+
 		kv, ok := n.(*ast.KeyValueExpr)
 		if !ok {
 			return true
@@ -429,6 +439,7 @@ func (b *treeBuilder) hasBoolField(expr ast.Expr, field string) bool {
 				return false
 			}
 		}
+
 		return true
 	})
 	return found
@@ -442,14 +453,17 @@ func (b *treeBuilder) collectMap(lit *ast.CompositeLit, node *treeNode) {
 		if !ok {
 			continue
 		}
+
 		name, ok := b.c.constantString(kv.Key)
 		if !ok {
 			b.clean = false
 			continue
 		}
+
 		if b.honorIgnores && b.c.ignoredAt(kv.Key.Pos()) {
 			continue
 		}
+
 		child := node.child(name)
 		if b.hasBoolField(kv.Value, "WriteOnly") {
 			child.writeOnly = true
@@ -457,6 +471,7 @@ func (b *treeBuilder) collectMap(lit *ast.CompositeLit, node *treeNode) {
 		if b.hasBoolField(kv.Value, "Sensitive") {
 			child.sensitive = true
 		}
+
 		b.build(kv.Value, child)
 	}
 }
@@ -473,14 +488,17 @@ func isSchemaMap(m *types.Map) bool {
 	if ptr, isPtr := elem.(*types.Pointer); isPtr {
 		elem = types.Unalias(ptr.Elem())
 	}
+
 	named, ok := elem.(*types.Named)
 	if !ok {
 		return false
 	}
+
 	switch named.Obj().Name() {
 	case "Schema", "Attribute", "Block":
 		return true
 	}
+
 	return false
 }
 
@@ -517,14 +535,17 @@ func (c *collector) delegatesToRegistrationMethod(expr ast.Expr) bool {
 	if !ok {
 		return false
 	}
+
 	sel, ok := call.Fun.(*ast.SelectorExpr)
 	if !ok {
 		return false
 	}
+
 	name := sel.Sel.Name
 	if !resourceMethods[name] && !dataSourceMethods[name] {
 		return false
 	}
+
 	_, isFunc := c.pass.TypesInfo.ObjectOf(sel.Sel).(*types.Func)
 	return isFunc
 }
@@ -562,6 +583,7 @@ func (c *collector) constantString(expr ast.Expr) (string, bool) {
 	if !ok {
 		return "", false
 	}
+
 	v, ok := c.pass.TypesInfo.ObjectOf(id).(*types.Var)
 	if !ok || v.Pkg() != c.pass.Pkg || v.Parent() != c.pass.Pkg.Scope() {
 		return "", false

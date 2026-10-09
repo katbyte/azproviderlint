@@ -33,6 +33,7 @@ func ParseDirective(text string) (rules []string, reason string, ok bool) {
 	if !strings.HasPrefix(body, prefix) {
 		return nil, "", false
 	}
+
 	body = strings.TrimSpace(strings.TrimPrefix(body, prefix))
 
 	list := ruleList.FindString(body)
@@ -90,6 +91,7 @@ func Lines(pass *analysis.Pass, name string) map[string]map[int]bool {
 				if ignored[pos.Filename] == nil {
 					ignored[pos.Filename] = map[int]bool{}
 				}
+
 				ignored[pos.Filename][pos.Line] = true
 				ignored[pos.Filename][pos.Line+1] = true
 			}

@@ -240,11 +240,13 @@ func suggestedFixes(pass *analysis.Pass, initStmt ast.Stmt, ifStmt *ast.IfStmt, 
 		if !ok || init.Tok != token.DEFINE || len(init.Lhs) != 1 || len(init.Rhs) != 1 {
 			return nil
 		}
+
 		lhs, lhsOk := init.Lhs[0].(*ast.Ident)
 		checked, checkedOk := checkedExpr.(*ast.Ident)
 		if !lhsOk || !checkedOk || lhs.Name != checked.Name {
 			return nil
 		}
+
 		fromExpr = init.Rhs[0]
 	}
 

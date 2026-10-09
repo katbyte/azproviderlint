@@ -47,8 +47,7 @@ func run(pass *analysis.Pass) (any, error) {
 			return
 		}
 
-		pass.Reportf(kv.Pos(),
-			"new resources should use separate Create and Update methods instead of a combined CreateUpdate method")
+		pass.Reportf(kv.Pos(), "new resources should use separate Create and Update methods instead of a combined CreateUpdate method")
 	})
 
 	return nil, nil

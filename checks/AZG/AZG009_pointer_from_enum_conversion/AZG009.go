@@ -32,26 +32,32 @@ func run(pass *analysis.Pass) (any, error) {
 		if !ok || len(call.Args) != 1 {
 			return
 		}
+
 		conversion, ok := ast.Unparen(call.Fun).(*ast.Ident)
 		if !ok || pass.TypesInfo.Uses[conversion] != types.Universe.Lookup("string") {
 			return
 		}
+
 		from, ok := ast.Unparen(call.Args[0]).(*ast.CallExpr)
 		if !ok || len(from.Args) != 1 {
 			return
 		}
+
 		fun := ast.Unparen(from.Fun)
 		if index, isIndex := fun.(*ast.IndexExpr); isIndex {
 			fun = ast.Unparen(index.X)
 		}
+
 		sel, ok := fun.(*ast.SelectorExpr)
 		if !ok {
 			return
 		}
+
 		fn := astx.CalledFunc(pass, from)
 		if fn == nil || fn.Name() != "From" || fn.Pkg() == nil || fn.Pkg().Path() != pointerpkg.PkgPath {
 			return
 		}
+
 		named, ok := types.Unalias(pass.TypesInfo.TypeOf(from)).(*types.Named)
 		if !ok || !azuresdk.IsEnumType(named) {
 			return
@@ -76,8 +82,7 @@ func suggestedFixes(pass *analysis.Pass, call, from *ast.CallExpr, sel *ast.Sele
 		}
 		for _, group := range file.Comments {
 			for _, comment := range group.List {
-				if comment.Pos() > call.Pos() && comment.End() < call.End() &&
-					(comment.Pos() < from.Pos() || comment.End() > from.End()) {
+				if comment.Pos() > call.Pos() && comment.End() < call.End() && (comment.Pos() < from.Pos() || comment.End() > from.End()) {
 					return nil
 				}
 			}

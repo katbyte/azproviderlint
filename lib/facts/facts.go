@@ -34,10 +34,12 @@ func (s *Set[T, PT]) Get(fn *types.Func) T {
 	if s == nil || fn == nil {
 		return v
 	}
+
 	fn = fn.Origin() // instantiated generics resolve to their declaration
 	if fn.Pkg() == s.pass.Pkg {
 		return s.local[fn]
 	}
+
 	s.pass.ImportObjectFact(fn, PT(&v))
 	return v
 }
@@ -69,6 +71,7 @@ func Run[T comparable, PT interface {
 	if !ok {
 		return s, nil
 	}
+
 	type candidate struct {
 		fn *types.Func
 		c  C
@@ -104,6 +107,7 @@ func Run[T comparable, PT interface {
 			pass.ExportObjectFact(fn, PT(&v))
 		}
 	}
+
 	return s, nil
 }
 

@@ -18,10 +18,12 @@ func IsSchemaHelperType(pass *analysis.Pass, cl *ast.CompositeLit, name string) 
 	if ptr, ok := types.Unalias(t).(*types.Pointer); ok {
 		t = ptr.Elem()
 	}
+
 	named, ok := types.Unalias(t).(*types.Named)
 	if !ok {
 		return false
 	}
+
 	obj := named.Obj()
 	return obj.Name() == name && obj.Pkg() != nil && obj.Pkg().Name() == "schema"
 }

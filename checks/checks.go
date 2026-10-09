@@ -20,13 +20,4 @@ import (
 // '//azignore:<Name> - <reason>' comment directives — except AZG000, which polices the
 // directives themselves and is deliberately unwrapped (and kept out of AZG.Checks) so a
 // bare directive cannot suppress the report about itself by listing AZG000.
-var All = append(azignore.Wrap(slices.Concat(
-	AZC.Checks,
-	AZD.Checks,
-	AZG.Checks,
-	AZP.Checks,
-	AZR.Checks,
-	AZS.Checks,
-	AZT.Checks,
-	AZV.Checks,
-)), AZG000.Analyzer)
+var All = append(azignore.Wrap(slices.Concat(AZC.Checks, AZD.Checks, AZG.Checks, AZP.Checks, AZR.Checks, AZS.Checks, AZT.Checks, AZV.Checks)), AZG000.Analyzer)
