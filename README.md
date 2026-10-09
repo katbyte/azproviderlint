@@ -49,6 +49,7 @@ Rules are named `AZ`, a category letter, and a number. The letters follow [tfpro
 | [AZG008](checks/AZG/AZG008_unchecked_nil_dereference) | pointer dereferences must have a nil guard or use pointer.From |
 | [AZG009](checks/AZG/AZG009_pointer_from_enum_conversion) | use pointer.FromEnum for enum conversions |
 | [AZG010](checks/AZG/AZG010_unneeded_import_alias) | drop import aliases that are not needed |
+| [AZG012](checks/AZG/AZG012_missing_blank_line_between_steps) | separate the steps of a longer function body with blank lines |
 
 ### AZP - Provider-Wide Conventions
 

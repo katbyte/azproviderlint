@@ -213,14 +213,17 @@ func delegatesToRegistrationMethod(pass *analysis.Pass, expr ast.Expr) bool {
 	if !ok {
 		return false
 	}
+
 	sel, ok := call.Fun.(*ast.SelectorExpr)
 	if !ok {
 		return false
 	}
+
 	name := sel.Sel.Name
 	if !resourceMethods[name] && !dataSourceMethods[name] {
 		return false
 	}
+
 	_, isFunc := pass.TypesInfo.ObjectOf(sel.Sel).(*types.Func)
 	return isFunc
 }
@@ -238,6 +241,7 @@ func constantString(pass *analysis.Pass, expr ast.Expr) (string, bool) {
 	if !ok {
 		return "", false
 	}
+
 	v, ok := pass.TypesInfo.ObjectOf(id).(*types.Var)
 	if !ok || v.Pkg() != pass.Pkg || v.Parent() != pass.Pkg.Scope() {
 		return "", false
@@ -277,6 +281,7 @@ func resourceTypeOf(pass *analysis.Pass, elem ast.Expr) (string, bool) {
 	if ptr, ok := t.(*types.Pointer); ok {
 		t = types.Unalias(ptr.Elem())
 	}
+
 	named, ok := t.(*types.Named)
 	if !ok {
 		return "", false
