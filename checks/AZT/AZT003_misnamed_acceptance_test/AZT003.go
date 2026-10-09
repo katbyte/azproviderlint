@@ -40,19 +40,20 @@ func run(pass *analysis.Pass) (any, error) {
 			if !ok || fd.Body == nil || fd.Recv != nil || !strings.HasPrefix(fd.Name.Name, "TestAcc") {
 				continue
 			}
+
 			fn, ok := pass.TypesInfo.Defs[fd.Name].(*types.Func)
 			if !ok || runs[fn] != nil {
 				continue
 			}
+
 			// Acc that starts a word (TestAccountName) cannot simply be dropped
 			rest := strings.TrimPrefix(fn.Name(), "TestAcc")
 			if rest != "" && unicode.IsLower(rune(rest[0])) {
-				pass.Reportf(fd.Name.Pos(),
-					"%s does not run an acceptance test, rename it so it does not start with TestAcc and is not picked up as one", fn.Name())
+				pass.Reportf(fd.Name.Pos(), "%s does not run an acceptance test, rename it so it does not start with TestAcc and is not picked up as one", fn.Name())
 				continue
 			}
-			pass.Reportf(fd.Name.Pos(),
-				"%s does not run an acceptance test, name it Test%s so it is not picked up as one", fn.Name(), rest)
+
+			pass.Reportf(fd.Name.Pos(), "%s does not run an acceptance test, name it Test%s so it is not picked up as one", fn.Name(), rest)
 		}
 	}
 

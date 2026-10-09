@@ -111,5 +111,6 @@ func run(pass *analysis.Pass) (any, error) {
 	for fn := range runs {
 		found[fn] = decls[fn]
 	}
+
 	return found, nil
 }

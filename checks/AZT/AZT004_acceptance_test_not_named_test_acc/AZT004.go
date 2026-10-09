@@ -39,20 +39,21 @@ func run(pass *analysis.Pass) (any, error) {
 			if !ok || fd.Body == nil || fd.Recv != nil || !strings.HasPrefix(fd.Name.Name, "Test") || strings.HasPrefix(fd.Name.Name, "TestAcc") {
 				continue
 			}
+
 			fn, ok := pass.TypesInfo.Defs[fd.Name].(*types.Func)
 			if !ok || runs[fn] == nil {
 				continue
 			}
+
 			// Acc already sits somewhere in the name (TestWebAppAccActiveSlot_basic), so
 			// prefixing it would double up
 			rest := strings.TrimPrefix(fn.Name(), "Test")
 			if strings.Contains(rest, "Acc") {
-				pass.Reportf(fd.Name.Pos(),
-					"%s runs an acceptance test, rename it to start with TestAcc so acceptance runs pick it up", fn.Name())
+				pass.Reportf(fd.Name.Pos(), "%s runs an acceptance test, rename it to start with TestAcc so acceptance runs pick it up", fn.Name())
 				continue
 			}
-			pass.Reportf(fd.Name.Pos(),
-				"%s runs an acceptance test, name it TestAcc%s so acceptance runs pick it up", fn.Name(), rest)
+
+			pass.Reportf(fd.Name.Pos(), "%s runs an acceptance test, name it TestAcc%s so acceptance runs pick it up", fn.Name(), rest)
 		}
 	}
 
