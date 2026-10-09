@@ -9,6 +9,7 @@ import (
 	AZT003 "github.com/katbyte/azproviderlint/checks/AZT/AZT003_misnamed_acceptance_test"
 	AZT004 "github.com/katbyte/azproviderlint/checks/AZT/AZT004_acceptance_test_not_named_test_acc"
 	AZT005 "github.com/katbyte/azproviderlint/checks/AZT/AZT005_resource_missing_acceptance_tests"
+	AZT006 "github.com/katbyte/azproviderlint/checks/AZT/AZT006_update_test_single_config"
 	AZT007 "github.com/katbyte/azproviderlint/checks/AZT/AZT007_stray_acc_in_test_name"
 )
 
@@ -19,5 +20,6 @@ var Checks = []*analysis.Analyzer{
 	AZT003.Analyzer,
 	AZT004.Analyzer,
 	AZT005.Analyzer,
+	AZT006.Analyzer,
 	AZT007.Analyzer,
 }
