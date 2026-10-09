@@ -33,10 +33,12 @@ func RegistrationReturnShape(pass *analysis.Pass, fn *ast.FuncDecl) bool {
 		if !ok || basic.Kind() != types.String {
 			return false
 		}
+
 		ptr, ok := types.Unalias(t.Elem()).(*types.Pointer)
 		if !ok {
 			return false
 		}
+
 		named, ok := types.Unalias(ptr.Elem()).(*types.Named)
 		return ok && named.Obj().Name() == "Resource"
 	case *types.Slice:
@@ -109,10 +111,12 @@ func RegistrationEntries(pass *analysis.Pass, body *ast.BlockStmt) ([]Entry, boo
 				if _, isMap := types.Unalias(pass.TypesInfo.TypeOf(idx.X)).(*types.Map); !isMap {
 					continue
 				}
+
 				var value ast.Expr
 				if len(node.Rhs) == len(node.Lhs) {
 					value = node.Rhs[i]
 				}
+
 				name, ok := constantString(pass, idx.Index)
 				add(name, idx.Index.Pos(), value, ok)
 			}
@@ -146,14 +150,17 @@ func delegatesToRegistrationMethod(pass *analysis.Pass, expr ast.Expr) bool {
 	if !ok {
 		return false
 	}
+
 	sel, ok := call.Fun.(*ast.SelectorExpr)
 	if !ok {
 		return false
 	}
+
 	name := sel.Sel.Name
 	if !ResourceMethods[name] && !DataSourceMethods[name] {
 		return false
 	}
+
 	_, isFunc := pass.TypesInfo.ObjectOf(sel.Sel).(*types.Func)
 	return isFunc
 }
@@ -171,6 +178,7 @@ func constantString(pass *analysis.Pass, expr ast.Expr) (string, bool) {
 	if !ok {
 		return "", false
 	}
+
 	v, ok := pass.TypesInfo.ObjectOf(id).(*types.Var)
 	if !ok || v.Pkg() != pass.Pkg || v.Parent() != pass.Pkg.Scope() {
 		return "", false
@@ -210,6 +218,7 @@ func resourceTypeOf(pass *analysis.Pass, elem ast.Expr) (string, bool) {
 	if ptr, ok := t.(*types.Pointer); ok {
 		t = types.Unalias(ptr.Elem())
 	}
+
 	named, ok := t.(*types.Named)
 	if !ok {
 		return "", false

@@ -74,11 +74,13 @@ func run(pass *analysis.Pass) (any, error) {
 		if !ok || fn.Recv == nil || fn.Body == nil {
 			return
 		}
+
 		isResource := tf.ResourceMethods[fn.Name.Name]
 		isDataSource := tf.DataSourceMethods[fn.Name.Name]
 		if (!isResource && !isDataSource) || !tf.RegistrationReturnShape(pass, fn) {
 			return
 		}
+
 		found, _ := tf.RegistrationEntries(pass, fn.Body)
 		for _, e := range found {
 			entries = append(entries, registered{Entry: e, dataSource: isDataSource})
@@ -95,12 +97,14 @@ func run(pass *analysis.Pass) (any, error) {
 		if seen[kind+e.Name] || e.Expr == nil {
 			continue
 		}
+
 		seen[kind+e.Name] = true
 
 		file, updatable, ok := declaration(pass, funcDecls, e.Expr)
 		if !ok {
 			continue
 		}
+
 		dir := filepath.Dir(file)
 		tests, cached := testsByDir[dir]
 		if !cached {
@@ -137,6 +141,7 @@ func run(pass *analysis.Pass) (any, error) {
 				}
 			}
 		}
+
 		if prefix == "" {
 			prefix = camel(typeName)
 		}
@@ -147,9 +152,11 @@ func run(pass *analysis.Pass) (any, error) {
 				missing = append(missing, "TestAcc"+prefix+"_"+step)
 			}
 		}
+
 		if len(missing) == 0 {
 			continue
 		}
+
 		pass.Reportf(e.Pos, "%s %q is missing acceptance tests: %s", kind, e.Name, strings.Join(missing, ", "))
 	}
 
@@ -191,10 +198,12 @@ func declaration(pass *analysis.Pass, funcDecls map[*types.Func]*ast.FuncDecl, e
 	if ptr, isPtr := t.(*types.Pointer); isPtr {
 		t = types.Unalias(ptr.Elem())
 	}
+
 	named, isNamed := t.(*types.Named)
 	if !isNamed || named.Obj().Pkg() != pass.Pkg {
 		return "", false, false
 	}
+
 	update, _, _ := types.LookupFieldOrMethod(named, true, pass.Pkg, "Update")
 	_, updatable = update.(*types.Func)
 	return pass.Fset.Position(named.Obj().Pos()).Filename, updatable, true
@@ -208,6 +217,7 @@ func acceptanceTests(dir string) []testFunc {
 	if err != nil {
 		return nil
 	}
+
 	var tests []testFunc
 	fset := token.NewFileSet()
 	for _, entry := range names {
@@ -223,6 +233,7 @@ func acceptanceTests(dir string) []testFunc {
 			if !ok || fd.Recv != nil {
 				continue
 			}
+
 			rest, ok := strings.CutPrefix(fd.Name.Name, "TestAcc")
 			if !ok {
 				rest, ok = strings.CutPrefix(fd.Name.Name, "testAcc")
@@ -230,10 +241,12 @@ func acceptanceTests(dir string) []testFunc {
 			if !ok {
 				continue
 			}
+
 			parts := strings.Split(rest, "_")
 			tests = append(tests, testFunc{file: entry.Name(), prefix: parts[0], segments: parts[1:]})
 		}
 	}
+
 	return tests
 }
 
