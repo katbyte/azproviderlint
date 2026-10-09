@@ -76,8 +76,7 @@ func checkModelStruct(pass *analysis.Pass, modelName string, structType *ast.Str
 		}
 
 		for _, name := range fieldNames(field) {
-			pass.Reportf(field.Pos(),
-				"property %s in model %s should be type %s, got %s", name, modelName, want, got)
+			pass.Reportf(field.Pos(), "property %s in model %s should be type %s, got %s", name, modelName, want, got)
 		}
 	}
 }

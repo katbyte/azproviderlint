@@ -60,6 +60,7 @@ func runReturns(pass *analysis.Pass) (any, error) {
 			if decl.Type.Results == nil {
 				return c, false
 			}
+
 			for _, field := range decl.Type.Results.List {
 				names := field.Names
 				if len(names) == 0 {
@@ -75,9 +76,11 @@ func runReturns(pass *analysis.Pass) (any, error) {
 					}
 				}
 			}
+
 			if c.mask == 0 {
 				return c, false
 			}
+
 			c.parents = ParentMap(decl.Body)
 			return c, true
 		},

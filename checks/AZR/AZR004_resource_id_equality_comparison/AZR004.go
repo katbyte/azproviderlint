@@ -42,8 +42,7 @@ func run(pass *analysis.Pass) (any, error) {
 			return
 		}
 
-		pass.Reportf(cmp.Pos(),
-			"Resource IDs should not be compared with == or !=, use resourceids.Match instead")
+		pass.Reportf(cmp.Pos(), "Resource IDs should not be compared with == or !=, use resourceids.Match instead")
 	})
 
 	return nil, nil

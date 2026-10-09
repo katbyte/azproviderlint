@@ -72,14 +72,10 @@ var fixWith string
 
 func init() {
 	Analyzer.Flags.Init("AZG008", flag.ContinueOnError)
-	Analyzer.Flags.BoolVar(&includeParameters, "include-parameters", false,
-		"also report dereferences of bare pointer parameters (callers' nil-check contract is otherwise trusted)")
-	Analyzer.Flags.BoolVar(&checkTests, "tests", true,
-		"check _test.go files (false skips them)")
-	Analyzer.Flags.BoolVar(&reportRequestBody, "requestbody", true,
-		"report dereferences sent as a PUT/PATCH/POST body (never fixed); false skips them")
-	Analyzer.Flags.StringVar(&fixWith, "fix-with", fixPointerFrom,
-		"suggested-fix form: pointer.From or none")
+	Analyzer.Flags.BoolVar(&includeParameters, "include-parameters", false, "also report dereferences of bare pointer parameters (callers' nil-check contract is otherwise trusted)")
+	Analyzer.Flags.BoolVar(&checkTests, "tests", true, "check _test.go files (false skips them)")
+	Analyzer.Flags.BoolVar(&reportRequestBody, "requestbody", true, "report dereferences sent as a PUT/PATCH/POST body (never fixed); false skips them")
+	Analyzer.Flags.StringVar(&fixWith, "fix-with", fixPointerFrom, "suggested-fix form: pointer.From or none")
 }
 
 func run(pass *analysis.Pass) (any, error) {
@@ -171,6 +167,7 @@ func checkDeref(pass *analysis.Pass, parents map[ast.Node]ast.Node, params map[t
 	for parents[body] != nil {
 		body = parents[body]
 	}
+
 	sinks := map[types.Object]bool{}
 	ast.Inspect(body, func(n ast.Node) bool {
 		if call, ok := n.(*ast.CallExpr); ok {
@@ -239,6 +236,7 @@ climb:
 	case fixWith == fixPointerFrom:
 		fixes = suggestedFixes(pass, parents, star)
 	}
+
 	pass.Report(analysis.Diagnostic{
 		Pos:            star.Pos(),
 		Message:        msg,
@@ -263,10 +261,12 @@ func suggestedFixes(pass *analysis.Pass, parents map[ast.Node]ast.Node, star *as
 	if !ok {
 		return nil
 	}
+
 	file := astx.EnclosingFile(pass, star.Pos())
 	if file == nil {
 		return nil
 	}
+
 	pkgName, importEdit, ok := pointerpkg.Ref(file)
 	if !ok {
 		return nil
@@ -293,6 +293,7 @@ func suggestedFixes(pass *analysis.Pass, parents map[ast.Node]ast.Node, star *as
 	if importEdit != nil {
 		edits = append(edits, *importEdit)
 	}
+
 	return []analysis.SuggestedFix{{
 		Message:   "Replace the dereference with " + pkgName + ".From",
 		TextEdits: edits,

@@ -81,6 +81,7 @@ func run(pass *analysis.Pass) (any, error) {
 				defaultExpr = kv.Value
 			}
 		}
+
 		if typeExpr == nil || defaultExpr == nil {
 			return
 		}
@@ -92,6 +93,7 @@ func run(pass *analysis.Pass) (any, error) {
 		case *ast.Ident:
 			schemaType = v.Name
 		}
+
 		compatible, ok := compatibleKinds[schemaType]
 		if !ok {
 			return
@@ -102,14 +104,13 @@ func run(pass *analysis.Pass) (any, error) {
 		if value == nil {
 			return
 		}
+
 		kindName, ok := kindNames[value.Kind()]
 		if !ok || slices.Contains(compatible, value.Kind()) {
 			return
 		}
 
-		pass.Reportf(defaultExpr.Pos(),
-			"schema Default value type %s does not match the declared Type %s",
-			kindName, schemaType)
+		pass.Reportf(defaultExpr.Pos(), "schema Default value type %s does not match the declared Type %s", kindName, schemaType)
 	})
 
 	return nil, nil

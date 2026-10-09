@@ -32,8 +32,7 @@ var excludePackages string
 
 func init() {
 	Analyzer.Flags.Init("AZS007", flag.ContinueOnError)
-	Analyzer.Flags.StringVar(&excludePackages, "exclude-packages", "",
-		"comma-separated list of package names to skip")
+	Analyzer.Flags.StringVar(&excludePackages, "exclude-packages", "", "comma-separated list of package names to skip")
 }
 
 const failureMessage = "schema field has both Optional and Computed but is missing a '// Note: O+C because ...' comment between the two fields"

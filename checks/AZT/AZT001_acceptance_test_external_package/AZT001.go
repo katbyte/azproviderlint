@@ -52,12 +52,12 @@ func run(pass *analysis.Pass) (any, error) {
 				break
 			}
 		}
+
 		if !hasAccFunc {
 			continue
 		}
 
-		pass.Reportf(file.Name.Pos(),
-			"acceptance test files must use a _test package to prevent circular dependencies")
+		pass.Reportf(file.Name.Pos(), "acceptance test files must use a _test package to prevent circular dependencies")
 	}
 
 	return nil, nil

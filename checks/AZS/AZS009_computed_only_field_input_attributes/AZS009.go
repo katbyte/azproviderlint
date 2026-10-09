@@ -65,10 +65,12 @@ func run(pass *analysis.Pass) (any, error) {
 		if !push {
 			return false
 		}
+
 		cl, ok := n.(*ast.CompositeLit)
 		if !ok || visited[cl] || !tf.IsSchemaHelperType(pass, cl, "Schema") {
 			return true
 		}
+
 		kvs := keyValues(cl)
 		switch {
 		case astx.IsTrueConstant(pass, value(kvs, "Computed")) &&
@@ -78,6 +80,7 @@ func run(pass *analysis.Pass) (any, error) {
 		case inAttributesMethod(pass, stack):
 			check(pass, cl, visited, inAttributes, true)
 		}
+
 		return true
 	})
 
@@ -123,6 +126,7 @@ func check(pass *analysis.Pass, cl *ast.CompositeLit, visited map[*ast.Composite
 			SuggestedFixes: []analysis.SuggestedFix{{Message: "Remove " + name, TextEdits: []analysis.TextEdit{astx.DeleteLine(pass, kv)}}},
 		})
 	}
+
 	if kv := kvs["ConfigMode"]; kv != nil && isConfigModeBlock(pass, kv.Value) {
 		pass.Report(analysis.Diagnostic{
 			Pos:            kv.Key.Pos(),
@@ -135,6 +139,7 @@ func check(pass *analysis.Pass, cl *ast.CompositeLit, visited map[*ast.Composite
 	if !ok {
 		return
 	}
+
 	switch {
 	case tf.IsSchemaHelperType(pass, elem, "Schema"):
 		check(pass, elem, visited, onElem, false)
@@ -179,14 +184,17 @@ func inAttributesMethod(pass *analysis.Pass, stack []ast.Node) bool {
 		if fn.Name.Name != "Attributes" || fn.Recv == nil || fn.Type.Results == nil || len(fn.Type.Results.List) != 1 {
 			return false
 		}
+
 		m, ok := types.Unalias(pass.TypesInfo.TypeOf(fn.Type.Results.List[0].Type)).(*types.Map)
 		if !ok {
 			return false
 		}
+
 		ptr, ok := types.Unalias(m.Elem()).(*types.Pointer)
 		if !ok {
 			return false
 		}
+
 		named, ok := types.Unalias(ptr.Elem()).(*types.Named)
 		return ok && named.Obj().Name() == "Schema" && named.Obj().Pkg() != nil && named.Obj().Pkg().Name() == "schema"
 	}
@@ -248,10 +256,12 @@ func isConfigModeBlock(pass *analysis.Pass, e ast.Expr) bool {
 	if tv.Value == nil || tv.Value.Kind() != constant.Int {
 		return false
 	}
+
 	named, ok := types.Unalias(tv.Type).(*types.Named)
 	if !ok || named.Obj().Name() != "SchemaConfigMode" {
 		return false
 	}
+
 	v, _ := constant.Int64Val(tv.Value)
 	return v == 2 // SchemaConfigModeBlock
 }

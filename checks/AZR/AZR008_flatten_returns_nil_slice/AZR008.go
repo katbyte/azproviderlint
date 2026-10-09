@@ -91,6 +91,7 @@ func run(pass *analysis.Pass) (any, error) {
 				results = append(results, withName)
 			}
 		}
+
 		if !haveContainer {
 			return
 		}
@@ -144,6 +145,7 @@ func checkExplicitReturn(pass *analysis.Pass, body *ast.BlockStmt, retStmt *ast.
 		if !isProvablyNil(pass, body, res, retStmt.Pos(), namedResults) {
 			continue
 		}
+
 		kinds = append(kinds, results[i].kind)
 		edit := analysis.TextEdit{
 			Pos:     res.Pos(),
@@ -197,6 +199,7 @@ func checkNakedReturn(pass *analysis.Pass, body *ast.BlockStmt, retStmt *ast.Ret
 		}
 		values = append(values, res.name.Name())
 	}
+
 	if len(kinds) == 0 {
 		return
 	}
@@ -240,10 +243,12 @@ func isProvablyNil(pass *analysis.Pass, body *ast.BlockStmt, expr ast.Expr, retP
 	if astx.IsNilValue(pass, expr) {
 		return true
 	}
+
 	ident, ok := ast.Unparen(expr).(*ast.Ident)
 	if !ok {
 		return false
 	}
+
 	obj := pass.TypesInfo.Uses[ident]
 	if obj == nil {
 		return false
@@ -251,6 +256,7 @@ func isProvablyNil(pass *analysis.Pass, body *ast.BlockStmt, expr ast.Expr, retP
 	if !namedResults[obj] && !isZeroValueDeclared(pass, body, obj) {
 		return false
 	}
+
 	return isUnassignedBefore(pass, body, obj, retPos)
 }
 
@@ -321,20 +327,24 @@ func declarationLineEdit(pass *analysis.Pass, body *ast.BlockStmt, obj types.Obj
 		if !ok {
 			return true
 		}
+
 		gen, ok := decl.Decl.(*ast.GenDecl)
 		if !ok || len(gen.Specs) != 1 {
 			return true
 		}
+
 		spec, ok := gen.Specs[0].(*ast.ValueSpec)
 		if !ok || len(spec.Names) != 1 || pass.TypesInfo.Defs[spec.Names[0]] != obj {
 			return true
 		}
+
 		found = true
 		tf := pass.Fset.File(decl.Pos())
 		delEnd := decl.End()
 		if endLine := tf.Line(decl.End()); endLine+1 <= tf.LineCount() {
 			delEnd = tf.LineStart(endLine + 1)
 		}
+
 		edit = &analysis.TextEdit{Pos: tf.LineStart(tf.Line(decl.Pos())), End: delEnd}
 		return false
 	})

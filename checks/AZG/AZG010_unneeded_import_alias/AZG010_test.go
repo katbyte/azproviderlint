@@ -25,6 +25,7 @@ func TestAZG010(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
+
 	analysistest.Run(t, dir, Analyzer, "azg010ignore")
 	ignore = nil
 
@@ -33,6 +34,7 @@ func TestAZG010(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
+
 	analysistest.Run(t, dir, Analyzer, "azg010allow")
 	allow = nil
 

@@ -27,6 +27,7 @@ func buildAnalyzers(t *testing.T, settings any) ([]string, error) {
 	for _, a := range analyzers {
 		names = append(names, a.Name)
 	}
+
 	return names, nil
 }
 
@@ -81,6 +82,7 @@ func TestBuildAnalyzersEnableCategory(t *testing.T) {
 	if len(names) == 0 {
 		t.Fatal("expected the AZG rules")
 	}
+
 	for _, name := range names {
 		if !strings.HasPrefix(name, "AZG") {
 			t.Fatalf("expected only AZG rules, got %v", names)
@@ -89,6 +91,7 @@ func TestBuildAnalyzersEnableCategory(t *testing.T) {
 			t.Fatal("AZG005 should have been disabled")
 		}
 	}
+
 	if !slices.Contains(names, "AZG001") {
 		t.Fatalf("expected AZG001 in %v", names)
 	}
@@ -137,14 +140,17 @@ func TestBuildAnalyzersRuleFlags(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	pl, ok := p.(*Plugin)
 	if !ok {
 		t.Fatalf("expected *Plugin, got %T", p)
 	}
+
 	analyzers, err := pl.BuildAnalyzers()
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	for _, a := range analyzers {
 		if a.Name != "AZP003" {
 			continue
@@ -190,14 +196,17 @@ func TestBuildAnalyzersLowercasedSettings(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	pl, ok := p.(*Plugin)
 	if !ok {
 		t.Fatalf("expected *Plugin, got %T", p)
 	}
+
 	analyzers, err := pl.BuildAnalyzers()
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	found := false
 	for _, a := range analyzers {
 		if a.Name != "AZS004" {
@@ -208,6 +217,7 @@ func TestBuildAnalyzersLowercasedSettings(t *testing.T) {
 			t.Fatalf("expected AZS004 allow-missing-values flag to be true, got %v", f)
 		}
 	}
+
 	if !found {
 		t.Fatal("AZS004 missing from built analyzers")
 	}

@@ -56,6 +56,7 @@ func Ref(file *ast.File) (string, *analysis.TextEdit, bool) {
 			if !ok {
 				continue
 			}
+
 			path := strings.Trim(imp.Path.Value, `"`)
 			if !strings.Contains(strings.SplitN(path, "/", 2)[0], ".") {
 				continue // standard library: a different section
@@ -63,6 +64,7 @@ func Ref(file *ast.File) (string, *analysis.TextEdit, bool) {
 			if imp.Name != nil && imp.Name.Name == "_" {
 				continue // side-effect imports form their own section
 			}
+
 			if path < PkgPath {
 				// a trailing comment is not part of the spec's End; inserting between the two
 				// would re-attach the comment (e.g. a nolint directive) to the new import
@@ -78,6 +80,7 @@ func Ref(file *ast.File) (string, *analysis.TextEdit, bool) {
 		if insertAfter.IsValid() {
 			return PkgName, &analysis.TextEdit{Pos: insertAfter, End: insertAfter, NewText: []byte("\n\t" + newImport)}, true
 		}
+
 		if insertBefore != nil {
 			first := insertBefore.Pos()
 			// keep a doc comment attached to the spec it documents rather than the new import
@@ -92,6 +95,7 @@ func Ref(file *ast.File) (string, *analysis.TextEdit, bool) {
 		if imp, ok := gen.Specs[len(gen.Specs)-1].(*ast.ImportSpec); ok && imp.Comment != nil {
 			end = imp.Comment.End()
 		}
+
 		return PkgName, &analysis.TextEdit{Pos: end, End: end, NewText: []byte("\n\n\t" + newImport)}, true
 	}
 
