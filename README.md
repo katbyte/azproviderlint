@@ -105,8 +105,9 @@ Rules are named `AZ`, a category letter, and a number. The letters follow [tfpro
 | [AZT001](checks/AZT/AZT001_acceptance_test_external_package) | acceptance tests must use a _test package |
 | [AZT002](checks/AZT/AZT002_credentials_from_environment) | acceptance tests must not read credentials from the environment |
 | [AZT003](checks/AZT/AZT003_misnamed_acceptance_test) | TestAcc functions must run an acceptance test |
-| [AZT007](checks/AZT/AZT007_stray_acc_in_test_name) | acceptance test names must not carry a second Acc |
 | [AZT004](checks/AZT/AZT004_acceptance_test_not_named_test_acc) | acceptance tests must be named TestAcc |
+| [AZT006](checks/AZT/AZT006_update_test_single_config) | update tests must apply two different configs |
+| [AZT007](checks/AZT/AZT007_stray_acc_in_test_name) | acceptance test names must not carry a second Acc |
 
 ### AZN - Naming Conventions
 
