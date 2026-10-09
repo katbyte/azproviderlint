@@ -41,10 +41,12 @@ func run(pass *analysis.Pass) (any, error) {
 			if !ok || fd.Body == nil {
 				continue
 			}
+
 			fn, ok := pass.TypesInfo.Defs[fd.Name].(*types.Func)
 			if !ok {
 				continue
 			}
+
 			decls[fn] = fd
 			// the bare prefix, as test runners match it: TestAccountName is picked up too
 			if isTest && fd.Recv == nil && strings.HasPrefix(fd.Name.Name, "TestAcc") {
@@ -52,6 +54,7 @@ func run(pass *analysis.Pass) (any, error) {
 			}
 		}
 	}
+
 	if len(candidates) == 0 {
 		return nil, nil
 	}

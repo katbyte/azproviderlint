@@ -24,10 +24,12 @@ func RegistrationReturnShape(pass *analysis.Pass, fn *ast.FuncDecl) bool {
 		if !ok || basic.Kind() != types.String {
 			return false
 		}
+
 		ptr, ok := types.Unalias(t.Elem()).(*types.Pointer)
 		if !ok {
 			return false
 		}
+
 		named, ok := types.Unalias(ptr.Elem()).(*types.Named)
 		return ok && named.Obj().Name() == "Resource"
 	case *types.Slice:
