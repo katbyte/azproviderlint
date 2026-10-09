@@ -8,6 +8,7 @@ import (
 	AZT002 "github.com/katbyte/azproviderlint/checks/AZT/AZT002_credentials_from_environment"
 	AZT003 "github.com/katbyte/azproviderlint/checks/AZT/AZT003_misnamed_acceptance_test"
 	AZT004 "github.com/katbyte/azproviderlint/checks/AZT/AZT004_acceptance_test_not_named_test_acc"
+	AZT007 "github.com/katbyte/azproviderlint/checks/AZT/AZT007_stray_acc_in_test_name"
 )
 
 // Checks contains all AZT (acceptance testing) analyzers.
@@ -15,5 +16,6 @@ var Checks = []*analysis.Analyzer{
 	AZT001.Analyzer,
 	AZT002.Analyzer,
 	AZT003.Analyzer,
+	AZT007.Analyzer,
 	AZT004.Analyzer,
 }
