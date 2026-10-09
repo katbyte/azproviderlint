@@ -60,8 +60,7 @@ func run(pass *analysis.Pass) (any, error) {
 			return
 		}
 
-		pass.Reportf(lit.Pos(),
-			"prefer a Custom Poller over StateChangeConf")
+		pass.Reportf(lit.Pos(), "prefer a Custom Poller over StateChangeConf")
 	})
 
 	return nil, nil

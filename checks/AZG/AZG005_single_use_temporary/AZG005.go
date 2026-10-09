@@ -45,8 +45,7 @@ var maxGap int
 
 func init() {
 	Analyzer.Flags.Init("AZG005", flag.ContinueOnError)
-	Analyzer.Flags.IntVar(&maxGap, "max-gap", 100,
-		"maximum number of source lines between the temporary's declaration and its consumer")
+	Analyzer.Flags.IntVar(&maxGap, "max-gap", 100, "maximum number of source lines between the temporary's declaration and its consumer")
 }
 
 func run(pass *analysis.Pass) (any, error) {
@@ -142,9 +141,9 @@ func checkPair(pass *analysis.Pass, body *ast.BlockStmt, first, second ast.Stmt,
 
 	message := fmt.Sprintf("%q is only used by the following statement and should be inlined", ident.Name)
 	if !adjacent {
-		message = fmt.Sprintf("%q is only used by the statement on line %d and should be inlined",
-			ident.Name, pass.Fset.Position(second.Pos()).Line)
+		message = fmt.Sprintf("%q is only used by the statement on line %d and should be inlined", ident.Name, pass.Fset.Position(second.Pos()).Line)
 	}
+
 	pass.Report(analysis.Diagnostic{
 		Pos:            assign.Pos(),
 		Message:        message,

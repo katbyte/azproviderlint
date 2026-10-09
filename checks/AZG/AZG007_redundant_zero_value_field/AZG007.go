@@ -38,8 +38,7 @@ var checkTests bool
 
 func init() {
 	Analyzer.Flags.Init("AZG007", flag.ContinueOnError)
-	Analyzer.Flags.BoolVar(&checkTests, "tests", false,
-		"also report in test files, where a zero entry in a test table is often meaningful (off by default)")
+	Analyzer.Flags.BoolVar(&checkTests, "tests", false, "also report in test files, where a zero entry in a test table is often meaningful (off by default)")
 }
 
 func run(pass *analysis.Pass) (any, error) {
@@ -97,13 +96,12 @@ func run(pass *analysis.Pass) (any, error) {
 				if i > 0 {
 					prevEnd = compositeLit.Elts[i-1].End()
 				}
+
 				prevLine := pass.Fset.Position(prevEnd).Line
 				kvLine := pass.Fset.Position(kv.Pos()).Line
 				leadComment := false
 				for _, cg := range commentGroups {
-					if cg.Pos() > prevEnd && cg.End() < kv.Pos() &&
-						pass.Fset.Position(cg.Pos()).Line > prevLine &&
-						pass.Fset.Position(cg.End()).Line == kvLine-1 {
+					if cg.Pos() > prevEnd && cg.End() < kv.Pos() && pass.Fset.Position(cg.Pos()).Line > prevLine && pass.Fset.Position(cg.End()).Line == kvLine-1 {
 						leadComment = true
 						break
 					}
@@ -196,5 +194,6 @@ func isRedundantZero(pass *analysis.Pass, basic *types.Basic, value ast.Expr) bo
 	case info&types.IsNumeric != 0:
 		return constant.Sign(cv) == 0
 	}
+
 	return false
 }

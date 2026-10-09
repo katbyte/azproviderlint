@@ -75,14 +75,10 @@ var fixPointerCopy string
 
 func init() {
 	Analyzer.Flags.Init("AZG002", flag.ContinueOnError)
-	Analyzer.Flags.IntVar(&maxGap, "max-gap", 100,
-		"maximum number of source lines between the temporary's declaration and the statement taking its address")
-	Analyzer.Flags.StringVar(&use, "use", useNew,
-		"pointer-creation form to suggest: new or pointer.To (packages below go1.26 must set pointer.To)")
-	Analyzer.Flags.StringVar(&allow, "allow", "",
-		"comma-separated forms to leave unreported where they already appear: pointer.To")
-	Analyzer.Flags.StringVar(&fixPointerCopy, "fix-pointer-copy", fixPointerCopyNone,
-		"fix for a dereference-copy temporary (out := *p; &out): none, copy, or share")
+	Analyzer.Flags.IntVar(&maxGap, "max-gap", 100, "maximum number of source lines between the temporary's declaration and the statement taking its address")
+	Analyzer.Flags.StringVar(&use, "use", useNew, "pointer-creation form to suggest: new or pointer.To (packages below go1.26 must set pointer.To)")
+	Analyzer.Flags.StringVar(&allow, "allow", "", "comma-separated forms to leave unreported where they already appear: pointer.To")
+	Analyzer.Flags.StringVar(&fixPointerCopy, "fix-pointer-copy", fixPointerCopyNone, "fix for a dereference-copy temporary (out := *p; &out): none, copy, or share")
 }
 
 func run(pass *analysis.Pass) (any, error) {
@@ -97,6 +93,7 @@ func run(pass *analysis.Pass) (any, error) {
 	if fixPointerCopy != fixPointerCopyNone && fixPointerCopy != fixPointerCopyCopy && fixPointerCopy != fixPointerCopyShare {
 		return nil, fmt.Errorf("AZG002: invalid fix-pointer-copy flag %q: expected %q, %q or %q", fixPointerCopy, fixPointerCopyNone, fixPointerCopyCopy, fixPointerCopyShare)
 	}
+
 	allowed := map[string]bool{}
 	for form := range strings.SplitSeq(allow, ",") {
 		form = strings.TrimSpace(form)
@@ -230,11 +227,12 @@ func checkPair(pass *analysis.Pass, body *ast.BlockStmt, first, second ast.Stmt,
 	if form == usePointerTo {
 		display = usePointerTo
 	}
+
 	message := fmt.Sprintf("%q is only used as an address by the following statement and should be inlined with %s", ident.Name, display)
 	if len(between) > 0 {
-		message = fmt.Sprintf("%q is only used as an address by the statement on line %d and should be inlined with %s",
-			ident.Name, pass.Fset.Position(second.Pos()).Line, display)
+		message = fmt.Sprintf("%q is only used as an address by the statement on line %d and should be inlined with %s", ident.Name, pass.Fset.Position(second.Pos()).Line, display)
 	}
+
 	// `v := *p` then `&v` could inline to the copy-preserving pointer.To(*p)/new(*p), but the
 	// better form is often p itself — dropping the copy changes aliasing, so fix-pointer-copy picks
 	// the fix: none (default) leaves the choice to a person, copy preserves the copy, share
@@ -267,6 +265,7 @@ func checkPair(pass *analysis.Pass, body *ast.BlockStmt, first, second ast.Stmt,
 			}
 		}
 	}
+
 	pass.Report(analysis.Diagnostic{
 		Pos:            assign.Pos(),
 		Message:        message,
@@ -308,10 +307,12 @@ func suggestedFixes(pass *analysis.Pass, assign *ast.AssignStmt, addr *ast.Unary
 		if file == nil {
 			return nil
 		}
+
 		pkgName, edit, ok := pointerpkg.Ref(file)
 		if !ok {
 			return nil
 		}
+
 		creation = pkgName + ".To(" + string(exprSrc) + ")"
 		importEdit = edit
 	}

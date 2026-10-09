@@ -67,12 +67,9 @@ var checkGenerated bool
 // split on a separator that it may itself contain
 func init() {
 	Analyzer.Flags.Init("AZG010", flag.ContinueOnError)
-	Analyzer.Flags.BoolVar(&checkGenerated, "generated", false,
-		"also check generated files")
-	Analyzer.Flags.BoolVar(&ownPackage, "own-package", false,
-		"also report an alias that avoids the name of the file's own package")
-	Analyzer.Flags.BoolVar(&mismatched, "mismatched", true,
-		"report an alias that is the package's real name where the import path does not show it (false leaves it alone)")
+	Analyzer.Flags.BoolVar(&checkGenerated, "generated", false, "also check generated files")
+	Analyzer.Flags.BoolVar(&ownPackage, "own-package", false, "also report an alias that avoids the name of the file's own package")
+	Analyzer.Flags.BoolVar(&mismatched, "mismatched", true, "report an alias that is the package's real name where the import path does not show it (false leaves it alone)")
 	Analyzer.Flags.Func("ignore", "skip imports whose package name matches this regular expression; repeat for several",
 		func(s string) error {
 			pattern, err := regexp.Compile(s)
@@ -114,10 +111,12 @@ func run(pass *analysis.Pass) (any, error) {
 			if spec.Name == nil || spec.Name.Name == "_" || spec.Name.Name == "." {
 				continue
 			}
+
 			pkgName, ok := pass.TypesInfo.Defs[spec.Name].(*types.PkgName)
 			if !ok {
 				continue
 			}
+
 			alias := spec.Name.Name
 			name := pkgName.Imported().Name()
 
@@ -137,6 +136,7 @@ func run(pass *analysis.Pass) (any, error) {
 				}
 				writeName = base != name
 			}
+
 			if alias == name && writeName {
 				continue
 			}
@@ -169,6 +169,7 @@ func run(pass *analysis.Pass) (any, error) {
 					clash = true
 				}
 			}
+
 			if clash {
 				continue
 			}
@@ -196,6 +197,7 @@ func run(pass *analysis.Pass) (any, error) {
 					return true
 				})
 			}
+
 			if declared[name] {
 				continue
 			}
@@ -233,6 +235,7 @@ func run(pass *analysis.Pass) (any, error) {
 					}
 				}
 			}
+
 			if testDeclared[name] {
 				continue
 			}

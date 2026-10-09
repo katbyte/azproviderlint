@@ -56,6 +56,7 @@ func New(settings any) (register.LinterPlugin, error) {
 			lists[key] = v
 		}
 	}
+
 	s, err := register.DecodeSettings[Settings](lists)
 	if err != nil {
 		return nil, err
@@ -100,12 +101,14 @@ func (p *Plugin) BuildAnalyzers() ([]*analysis.Analyzer, error) {
 		known[strings.ToLower(a.Name)] = true
 		categories[strings.ToLower(category(a.Name))] = true
 	}
+
 	// enable/disable entries may name a rule or a category; flag keys must name a rule
 	for _, name := range slices.Concat(p.settings.Enable, p.settings.Disable) {
 		if l := strings.ToLower(name); !known[l] && !categories[l] {
 			return nil, fmt.Errorf("unknown azproviderlint rule or category %q in settings", name)
 		}
 	}
+
 	flags := make(map[string]map[string][]string, len(p.settings.Flags))
 	for name, values := range p.settings.Flags {
 		if !known[strings.ToLower(name)] {

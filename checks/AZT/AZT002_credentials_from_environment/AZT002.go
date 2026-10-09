@@ -62,8 +62,7 @@ func run(pass *analysis.Pass) (any, error) {
 				return true
 			}
 
-			pass.Reportf(call.Pos(),
-				"tests should not obtain credentials via os.Getenv(%q), create an azurerm_user_assigned_identity with minimal permissions as part of the test configuration instead", name)
+			pass.Reportf(call.Pos(), "tests should not obtain credentials via os.Getenv(%q), create an azurerm_user_assigned_identity with minimal permissions as part of the test configuration instead", name)
 			return true
 		})
 	}

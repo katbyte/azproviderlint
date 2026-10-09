@@ -52,8 +52,7 @@ func run(pass *analysis.Pass) (any, error) {
 			return
 		}
 
-		pass.Reportf(call.Pos(),
-			"Azure SDK clients should be created with NewFoosClientWithBaseURI and the resource manager endpoint explicitly specified")
+		pass.Reportf(call.Pos(), "Azure SDK clients should be created with NewFoosClientWithBaseURI and the resource manager endpoint explicitly specified")
 	})
 
 	return nil, nil

@@ -53,8 +53,7 @@ func run(pass *analysis.Pass) (any, error) {
 			return
 		}
 
-		pass.Reportf(assign.Pos(),
-			"use a timeouts-wrapped StopContext (timeouts.ForCreate/ForCreateUpdate/ForRead/ForUpdate/ForDelete) so Custom Timeouts are supported, instead of assigning ctx from meta directly")
+		pass.Reportf(assign.Pos(), "use a timeouts-wrapped StopContext (timeouts.ForCreate/ForCreateUpdate/ForRead/ForUpdate/ForDelete) so Custom Timeouts are supported, instead of assigning ctx from meta directly")
 	})
 
 	return nil, nil

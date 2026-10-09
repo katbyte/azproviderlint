@@ -32,14 +32,17 @@ func Funcs(pass *analysis.Pass, insp *inspector.Inspector) map[*ast.FuncDecl]str
 		if !ok {
 			return
 		}
+
 		key, ok := kv.Key.(*ast.Ident)
 		if !ok {
 			return
 		}
+
 		step, ok := steps[key.Name]
 		if !ok {
 			return
 		}
+
 		var id *ast.Ident
 		switch v := kv.Value.(type) {
 		case *ast.Ident:
@@ -49,6 +52,7 @@ func Funcs(pass *analysis.Pass, insp *inspector.Inspector) map[*ast.FuncDecl]str
 		default:
 			return
 		}
+
 		fn, ok := pass.TypesInfo.Uses[id].(*types.Func)
 		if !ok {
 			return

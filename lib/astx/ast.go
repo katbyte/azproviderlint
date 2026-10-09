@@ -139,6 +139,7 @@ func UnsafeToMovePast(pass *analysis.Pass, expr ast.Expr, stmts []ast.Stmt) bool
 			return true
 		}
 	}
+
 	return false
 }
 
@@ -170,16 +171,18 @@ func callMutables(pass *analysis.Pass, n ast.Node) map[*types.Var]bool {
 		if tv, ok := pass.TypesInfo.Types[call.Fun]; ok && tv.IsType() {
 			return true // a conversion copies its operand
 		}
+
 		if sel, ok := ast.Unparen(call.Fun).(*ast.SelectorExpr); ok {
-			if fn, ok := pass.TypesInfo.Uses[sel.Sel].(*types.Func); ok && fn.Pkg() != nil &&
-				fn.Pkg().Path() == pointerpkg.PkgPath {
+			if fn, ok := pass.TypesInfo.Uses[sel.Sel].(*types.Func); ok && fn.Pkg() != nil && fn.Pkg().Path() == pointerpkg.PkgPath {
 				return true // pure: reads through its arguments, never writes
 			}
 			mark(sel.X) // method receiver
 		}
+
 		for _, arg := range call.Args {
 			mark(arg)
 		}
+
 		return true
 	})
 	return mutables
@@ -264,14 +267,17 @@ func SourceText(pass *analysis.Pass, node ast.Node) ([]byte, bool) {
 	if tf == nil {
 		return nil, false
 	}
+
 	content, err := pass.ReadFile(tf.Name())
 	if err != nil {
 		return nil, false
 	}
+
 	start, end := tf.Offset(node.Pos()), tf.Offset(node.End())
 	if start < 0 || end > len(content) || start > end {
 		return nil, false
 	}
+
 	return content[start:end], true
 }
 
@@ -285,6 +291,7 @@ func CalledFunc(pass *analysis.Pass, call *ast.CallExpr) *types.Func {
 	case *ast.IndexListExpr:
 		fun = ix.X
 	}
+
 	var id *ast.Ident
 	switch f := fun.(type) {
 	case *ast.Ident:
@@ -294,6 +301,7 @@ func CalledFunc(pass *analysis.Pass, call *ast.CallExpr) *types.Func {
 	default:
 		return nil
 	}
+
 	fn, _ := pass.TypesInfo.Uses[id].(*types.Func)
 	return fn
 }

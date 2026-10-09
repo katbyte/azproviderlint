@@ -63,22 +63,27 @@ func run(pass *analysis.Pass) (any, error) {
 			if !ok {
 				return true
 			}
+
 			call, ok := stmt.X.(*ast.CallExpr)
 			if !ok || !isLogCall(pass, call) || len(call.Args) == 0 {
 				return true
 			}
+
 			lit, ok := call.Args[0].(*ast.BasicLit)
 			if !ok || lit.Kind != token.STRING {
 				return true
 			}
+
 			msg, err := strconv.Unquote(lit.Value)
 			if err != nil {
 				return true
 			}
+
 			msg = levelPrefix.ReplaceAllString(strings.TrimSpace(msg), "")
 			if narration.MatchString(msg) && !keep.MatchString(msg) {
 				byFile[file] = append(byFile[file], finding{stmt: stmt, call: call})
 			}
+
 			return true
 		})
 	}
@@ -115,6 +120,7 @@ func run(pass *analysis.Pass) (any, error) {
 			})
 		}
 	}
+
 	return nil, nil
 }
 

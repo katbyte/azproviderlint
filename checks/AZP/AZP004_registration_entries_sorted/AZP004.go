@@ -32,8 +32,7 @@ var checkGenerated bool
 
 func init() {
 	Analyzer.Flags.Init("AZP004", flag.ContinueOnError)
-	Analyzer.Flags.BoolVar(&checkGenerated, "generated", true,
-		"check generated registration_gen.go files (false skips them)")
+	Analyzer.Flags.BoolVar(&checkGenerated, "generated", true, "check generated registration_gen.go files (false skips them)")
 }
 
 func run(pass *analysis.Pass) (any, error) {
@@ -91,6 +90,7 @@ func analyzeRegistrationMethod(pass *analysis.Pass, file *ast.File, funcDecl *as
 	if !ok {
 		return
 	}
+
 	signature, ok := fn.Type().(*types.Signature)
 	if !ok {
 		return
@@ -110,12 +110,14 @@ func analyzeRegistrationMethod(pass *analysis.Pass, file *ast.File, funcDecl *as
 		if literalType == nil {
 			return true
 		}
+
 		for result := range signature.Results().Variables() {
 			if types.Identical(literalType, result.Type()) {
 				validateSorting(pass, file, compositeLit)
 				break
 			}
 		}
+
 		return true
 	})
 }
@@ -237,8 +239,7 @@ func sortFix(pass *analysis.Pass, file *ast.File, compositeLit *ast.CompositeLit
 		if section[0] == elts[0] && tf.Line(compositeLit.Lbrace) == tf.Line(elts[0].Pos()) {
 			return nil
 		}
-		if section[len(section)-1] == elts[len(elts)-1] &&
-			tf.Line(compositeLit.Rbrace) == tf.Line(elts[len(elts)-1].End()) {
+		if section[len(section)-1] == elts[len(elts)-1] && tf.Line(compositeLit.Rbrace) == tf.Line(elts[len(elts)-1].End()) {
 			return nil
 		}
 	}
@@ -251,6 +252,7 @@ func sortFix(pass *analysis.Pass, file *ast.File, compositeLit *ast.CompositeLit
 	if hasSpanningComment(file.Comments, tf, section) {
 		return nil
 	}
+
 	edit, ok := sortSectionEdit(tf, content, file.Comments, compositeLit, section, isMap)
 	if !ok {
 		return nil
@@ -293,9 +295,7 @@ func attachedLeadingComment(comments []*ast.CommentGroup, tf *token.File, compos
 	}
 
 	for _, comment := range comments {
-		if comment.Pos() > previousEnd && comment.End() < entry.Pos() &&
-			tf.Line(comment.Pos()) == tf.Line(previousEnd)+1 &&
-			tf.Line(entry.Pos()) == tf.Line(comment.End())+1 {
+		if comment.Pos() > previousEnd && comment.End() < entry.Pos() && tf.Line(comment.Pos()) == tf.Line(previousEnd)+1 && tf.Line(entry.Pos()) == tf.Line(comment.End())+1 {
 			return comment
 		}
 	}
@@ -324,10 +324,12 @@ func sortSectionEdit(tf *token.File, content []byte, comments []*ast.CommentGrou
 		if leadingComment := attachedLeadingComment(comments, tf, compositeLit, elt); leadingComment != nil {
 			startLine = tf.Line(leadingComment.Pos())
 		}
+
 		endLine := tf.Line(elt.End())
 		if i > 0 && startLine <= prevEndLine {
 			return analysis.TextEdit{}, false // entries share a line; not safely reorderable
 		}
+
 		prevEndLine = endLine
 
 		lineStart := tf.LineStart(startLine)
@@ -335,6 +337,7 @@ func sortSectionEdit(tf *token.File, content []byte, comments []*ast.CommentGrou
 		if i == 0 {
 			editStart = lineStart
 		}
+
 		editEnd = lineEnd
 		blocks[i] = block{key: key, text: content[tf.Offset(lineStart):tf.Offset(lineEnd)]}
 	}
