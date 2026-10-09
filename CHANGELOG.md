@@ -1,5 +1,6 @@
 ## Unreleased
 
+- add rule `AZT005`: every data source needs a `basic` acceptance test and every resource `basic` and `requiresImport`, plus `complete` and `update` when it has an Update handler; tests are found in files named after the resource file or by the resource's type name; `disable` turns a step off so the rule can be enforced one step at a time; report only, no fix ([#68](https://github.com/katbyte/azproviderlint/pull/68))
 - add rule `AZT006`: tests named for an update step must apply two different configs; one config, or the same config twice, never runs the update; report only, no fix ([#69](https://github.com/katbyte/azproviderlint/pull/69))
 - add rule `AZT007`: a `TestAcc` name must not carry `Acc` again as a word of its own (`_storageAccBehindFireWall`); `Account` and `Access` are fine; report only, no fix ([#72](https://github.com/katbyte/azproviderlint/pull/72))
 - add rule `AZT004`: test functions that run an acceptance test but are not named `TestAcc`, so acceptance runs never pick them up; report only, no fix ([#67](https://github.com/katbyte/azproviderlint/pull/67))
