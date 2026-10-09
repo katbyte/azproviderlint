@@ -17,9 +17,11 @@ import (
 
 // Analyzer computes Funcs for a package. A function runs an acceptance test when it hands
 // `t` to the Terraform test harness or the provider's own internal/acceptance package, looks
-// at TF_ACC, or calls or passes around another function of the package that does. The
-// harness's UnitTest entry point is the exception: it runs without TF_ACC by design. Packages
-// without test files have nothing to find and yield an empty result.
+// at TF_ACC from a test file, or calls or passes around another function of the package that
+// does. The harness's UnitTest entry point is the exception: it runs without TF_ACC by
+// design. Production code reading TF_ACC to pick a default does not count either, or every
+// test touching the provider would. Packages without test files have nothing to find and
+// yield an empty result.
 var Analyzer = &analysis.Analyzer{
 	Name:       "acctest",
 	Doc:        "find the functions that run an acceptance test",
@@ -45,7 +47,9 @@ func run(pass *analysis.Pass) (any, error) {
 	}
 
 	decls := map[*types.Func]*ast.FuncDecl{}
+	inTestFile := map[*types.Func]bool{}
 	for _, file := range pass.Files {
+		isTest := strings.HasSuffix(pass.Fset.Position(file.Pos()).Filename, "_test.go")
 		for _, decl := range file.Decls {
 			fd, ok := decl.(*ast.FuncDecl)
 			if !ok || fd.Body == nil {
@@ -53,6 +57,7 @@ func run(pass *analysis.Pass) (any, error) {
 			}
 			if fn, ok := pass.TypesInfo.Defs[fd.Name].(*types.Func); ok {
 				decls[fn] = fd
+				inTestFile[fn] = isTest
 			}
 		}
 	}
@@ -88,7 +93,7 @@ func run(pass *analysis.Pass) (any, error) {
 				}
 			}
 			// by value, so resource.EnvTfAcc and local constants count as well as the literal
-			if e, ok := n.(ast.Expr); ok {
+			if e, ok := n.(ast.Expr); ok && inTestFile[fn] {
 				if v := pass.TypesInfo.Types[e].Value; v != nil && v.Kind() == constant.String && constant.StringVal(v) == "TF_ACC" {
 					runs[fn] = true
 				}

@@ -83,6 +83,13 @@ func TestStorageAccount_basic(t *testing.T) { // want `TestStorageAccount_basic 
 	data.ResourceTest(t, ThingResource{}, []acceptance.TestStep{{Config: "basic"}})
 }
 
+// Should NOT be flagged: production code reading TF_ACC does not make this an acceptance test
+func TestThing_configured(t *testing.T) {
+	if !azt004.Configured() {
+		t.Skip("not configured")
+	}
+}
+
 // Should NOT be flagged: a method is not a test function, so no runner selects it
 func (r ThingResource) TestThing_receiver(t *testing.T) {
 	data := acceptance.BuildTestData(t, "azurerm_thing", "test")
