@@ -76,10 +76,10 @@ func run(pass *analysis.Pass) (any, error) {
 // testAccThing_list_update, but not TestAccThing_autoUpdate.
 func isUpdateTest(name string) bool {
 	_, rest, ok := strings.Cut(name, "_")
-	if !ok || !(strings.HasPrefix(name, "TestAcc") || strings.HasPrefix(name, "testAcc")) {
+	if !ok || (!strings.HasPrefix(name, "TestAcc") && !strings.HasPrefix(name, "testAcc")) {
 		return false
 	}
-	for _, seg := range strings.Split(rest, "_") {
+	for seg := range strings.SplitSeq(rest, "_") {
 		if strings.HasPrefix(strings.ToLower(seg), "update") {
 			return true
 		}
