@@ -1,125 +1,125 @@
-## Unreleased
+## v0.12.0 (2026-10-09)
 
-- add rule `AZT008`: an acceptance test must be in a test file named after the file declaring the resource or data source it builds test data for (`lb_probe_resource.go` pairs with `lb_probe_resource_test.go`); `suffix: false` stops accepting `lb_probe_resource_<part>_test.go`; report only, no fix ([#73](https://github.com/katbyte/azproviderlint/pull/73))
-- add rule `AZT006`: tests named for an update step must apply two different configs; one config, or the same config twice, never runs the update; report only, no fix ([#69](https://github.com/katbyte/azproviderlint/pull/69))
-- add rule `AZT007`: a `TestAcc` name must not carry `Acc` again as a word of its own (`_storageAccBehindFireWall`); `Account` and `Access` are fine; report only, no fix ([#72](https://github.com/katbyte/azproviderlint/pull/72))
-- add rule `AZT004`: test functions that run an acceptance test but are not named `TestAcc`, so acceptance runs never pick them up; report only, no fix ([#67](https://github.com/katbyte/azproviderlint/pull/67))
-- add rule `AZT003`: test functions named `TestAcc` that never run an acceptance test, so are scheduled as one without touching Azure; report only, no fix ([#64](https://github.com/katbyte/azproviderlint/pull/64))
+- add rule `AZT003`: tests named `TestAcc` that never run an acceptance test ([#64](https://github.com/katbyte/azproviderlint/pull/64))
+- add rule `AZT004`: acceptance tests not named `TestAcc`, which acceptance runs skip ([#67](https://github.com/katbyte/azproviderlint/pull/67))
+- add rule `AZT006`: update tests that never update anything ([#69](https://github.com/katbyte/azproviderlint/pull/69))
+- add rule `AZT007`: a second `Acc` in an acceptance test's name ([#72](https://github.com/katbyte/azproviderlint/pull/72))
+- add rule `AZT008`: acceptance tests in a file not named after their resource's file ([#73](https://github.com/katbyte/azproviderlint/pull/73))
 
 ## v0.11.0 (2026-09-28)
 
-- **breaking**: move the provider-wide rules into the new `AZP` category — `AZS005`→`AZP002` (resource/data source parity), `AZS006`→`AZP003` (data source properties), `AZS008`→`AZP004` (sorted registration entries), `AZR005`→`AZP005` (case-insensitive segments flag); update `//azignore:` comments and settings references ([#48](https://github.com/katbyte/azproviderlint/pull/48))
-- add rule `AZG010`: import aliases that are not needed because the package's own name does not clash; fixable with `-fix`; `ignore` skips packages whose name matches a pattern, `allow` keeps the listed aliases, `generated: true` also checks generated files ([#62](https://github.com/katbyte/azproviderlint/pull/62))
-- golangci settings: a rule option given as a list is set once per entry, for options that take several values ([#62](https://github.com/katbyte/azproviderlint/pull/62))
+- **breaking**: provider-wide rules move to a new `AZP` category: `AZS005` to `AZP002`, `AZS006` to `AZP003`, `AZS008` to `AZP004`, `AZR005` to `AZP005`; update ignore comments and settings ([#48](https://github.com/katbyte/azproviderlint/pull/48))
+- add rule `AZG010`: import aliases that are not needed ([#62](https://github.com/katbyte/azproviderlint/pull/62))
+- golangci settings: an option can take a list of values ([#62](https://github.com/katbyte/azproviderlint/pull/62))
 
 ## v0.10.0 (2026-09-24)
 
-- add rule `AZG009`: `string(pointer.From(x))` on a go-azure-sdk enum should be `pointer.FromEnum(x)`; fixable with `-fix` ([#60](https://github.com/katbyte/azproviderlint/pull/60))
+- add rule `AZG009`: enum pointers read with `pointer.From` and a cast, where `pointer.FromEnum` does both ([#60](https://github.com/katbyte/azproviderlint/pull/60))
 
 ## v0.9.0 (2026-09-22)
 
-- bump golang.org/x/mod to v0.41.0 for CVE-2026-56864 and CVE-2026-56865 azproviderlint never resolves modules, but the released binary now scans clean ([#50](https://github.com/katbyte/azproviderlint/pull/50))
-- `AZR010`: a parenthesised flatten argument (`flattenSku((props.Sku))`) is reported like a bare one
-- `AZR003`: typed Delete reads through a local alias of `metadata.ResourceData` (`d := metadata.ResourceData; d.Get(...)`) are reported
-- `AZR003`/`AZR009`: registered lifecycle functions are resolved through type information, so a same-named function in another package is no longer mistaken for the handler
-- `AZG008`: a write method held in a local variable (`m := http.MethodPut; do(ctx, m, body)`) marks the call as a request body, so no `pointer.From` fix is offered; any string constant equal to PUT/PATCH/POST counts, not only net/http's
-- `AZS009`: `ConfigMode: SchemaConfigModeBlock` is matched by value, so a cast or renamed constant is reported too; a nested `Optional`/`Required` set from a named `true` constant is now fixed
-- add rule `AZP001`: Microsoft Learn/Docs URLs in comments and strings must not carry a locale segment (`/en-us/`), so readers get their own language; fixable with `-fix`; new `AZP` category for provider-wide conventions ([#47](https://github.com/katbyte/azproviderlint/pull/47))
+- update a dependency for CVE-2026-56864 and CVE-2026-56865; the linter was not affected, but the released binary now scans clean ([#50](https://github.com/katbyte/azproviderlint/pull/50))
+- `AZR010`: an argument wrapped in extra parentheses is no longer missed
+- `AZR003`: reads made through a renamed copy of the resource data are now reported
+- `AZR003`/`AZR009`: a same-named function in another package is no longer mistaken for the resource's own
+- `AZG008`: request bodies are recognised in more cases, so fewer unsafe fixes are offered
+- `AZS009`: values set through a constant or a cast are now reported and fixed
+- add rule `AZP001`: Microsoft docs links that force a language, such as `/en-us/`; starts the `AZP` category for provider-wide conventions ([#47](https://github.com/katbyte/azproviderlint/pull/47))
 
 ## v0.8.0 (2026-09-09)
 
-- add rule `AZR010`: `flatten*` functions handle nil input themselves — callers must not nil-check the argument first; a fix drops the check when the flatten function already handles nil ([#46](https://github.com/katbyte/azproviderlint/pull/46))
-- add rule `AZS009`: computed-only schema fields must not set input-only attributes (`ValidateFunc`, `MaxItems`, `Default`, ...), and fields nested in a computed-only block must not be `Optional`/`Required`; fixable with `-fix` ([#44](https://github.com/katbyte/azproviderlint/pull/44))
-- add rule `AZR009`: no lifecycle narration logging (`log.Printf("[DEBUG] Creating %s", id)`) in Create/Read/Update/Delete; not-found, ID-rewrite and waiting messages are kept; fixable with `-fix` ([#41](https://github.com/katbyte/azproviderlint/pull/41))
-- `AZG008`: more guard shapes recognised — nil checks on an alias, `if x == nil { x = &T{} }` defaults, `err`/`ok` companions in an if-init or the same condition, `commonids` composite IDs, `pointer.From(x) != ""`; calls to functions that never return nil count as non-nil sources, proven across packages; closure pointer parameters are trusted like the function's own ([#36](https://github.com/katbyte/azproviderlint/pull/36), [#37](https://github.com/katbyte/azproviderlint/pull/37), [#45](https://github.com/katbyte/azproviderlint/pull/45))
-- `AZG008`: a write to the pointer between the check and the dereference cancels the guard unless the write is provably safe ([#37](https://github.com/katbyte/azproviderlint/pull/37))
-- `AZG008`: dereferences sent as a PUT/PATCH/POST body are reported without a fix, since `pointer.From` would send an empty request; `requestbody: false` skips them ([#36](https://github.com/katbyte/azproviderlint/pull/36))
-- `AZG008`: no report or fix where the pointee must be addressable (`(*x).F = v`, `(*x)[k] = v`, `&(*x).F`, `(*x).M()` with a pointer receiver) ([#36](https://github.com/katbyte/azproviderlint/pull/36), [#37](https://github.com/katbyte/azproviderlint/pull/37))
-- `AZG002`: `fix-pointer-copy` picks the fix for `out := *p; &out` — `none` (default), `copy`, or `share` ([#35](https://github.com/katbyte/azproviderlint/pull/35))
-- release: binaries are signed with cosign, GitHub artifact attestations (`gh attestation verify <file> -R katbyte/azproviderlint`), and SLSA provenance ([#39](https://github.com/katbyte/azproviderlint/pull/39))
+- add rule `AZR010`: nil checks made before calling a flatten function, which should handle nil itself ([#46](https://github.com/katbyte/azproviderlint/pull/46))
+- add rule `AZS009`: computed-only fields carrying settings that only apply to input ([#44](https://github.com/katbyte/azproviderlint/pull/44))
+- add rule `AZR009`: log lines that only narrate a resource being created, read, updated or deleted ([#41](https://github.com/katbyte/azproviderlint/pull/41))
+- `AZG008`: many more kinds of nil check are recognised, so fewer safe reads are reported ([#36](https://github.com/katbyte/azproviderlint/pull/36), [#37](https://github.com/katbyte/azproviderlint/pull/37), [#45](https://github.com/katbyte/azproviderlint/pull/45))
+- `AZG008`: a nil check no longer counts once the pointer has been reassigned ([#37](https://github.com/katbyte/azproviderlint/pull/37))
+- `AZG008`: values sent in a request body are reported without a fix, since the fix would send an empty value ([#36](https://github.com/katbyte/azproviderlint/pull/36))
+- `AZG008`: no report where the code needs the original value, not a copy ([#36](https://github.com/katbyte/azproviderlint/pull/36), [#37](https://github.com/katbyte/azproviderlint/pull/37))
+- `AZG002`: new `fix-pointer-copy` option chooses the fix for a copied pointer ([#35](https://github.com/katbyte/azproviderlint/pull/35))
+- release: binaries are signed and carry build provenance ([#39](https://github.com/katbyte/azproviderlint/pull/39))
 
 ## v0.7.1 (2026-09-04)
 
-- `AZG007`: an `//azignore:AZG007` on a composite literal's opening line suppresses the whole literal, nested literals included ([#33](https://github.com/katbyte/azproviderlint/pull/33))
-- `AZG002`/`AZG005`/`AZG006`: don't inline past statements that could observe or change the initializer's call side effects (pointer-like arguments/receivers, both directions); the pure `pointer` package is exempt ([#34](https://github.com/katbyte/azproviderlint/pull/34))
+- `AZG007`: an ignore comment on a literal's opening line covers the whole literal ([#33](https://github.com/katbyte/azproviderlint/pull/33))
+- `AZG002`/`AZG005`/`AZG006`: no longer report where moving a call could change what the code does ([#34](https://github.com/katbyte/azproviderlint/pull/34))
 
 ## v0.7.0 (2026-09-03)
 
-- add rule `AZG008`: pointer dereferences (`*props.Status`) must have a reachable nil guard; fixes to `pointer.From`/`pointer.FromEnum`; options `include-parameters`, `tests`, `fix-with` ([#31](https://github.com/katbyte/azproviderlint/pull/31))
-- add rule `AZG007`: struct literal fields set to their zero value should be omitted (named-constant zeros are kept); fixable with `-fix`; `tests` opts into test files ([#24](https://github.com/katbyte/azproviderlint/pull/24))
-- add rule `AZS008`: `registration.go` entries must be sorted alphabetically, checked per section; fixable with `-fix`; `generated: false` skips `registration_gen.go` ([#23](https://github.com/katbyte/azproviderlint/pull/23))
+- add rule `AZG008`: pointers read without a nil check ([#31](https://github.com/katbyte/azproviderlint/pull/31))
+- add rule `AZG007`: struct fields set to the value they would have anyway ([#24](https://github.com/katbyte/azproviderlint/pull/24))
+- add rule `AZS008`: registration entries out of alphabetical order ([#23](https://github.com/katbyte/azproviderlint/pull/23))
 
 ## v0.6.0 (2026-09-02)
 
-- add rule `AZG002`: single-use temporaries only used as `&v` should be `new(<expr>)` (go1.26; or `pointer.To` via `use`); new mode also rewrites existing `pointer.To(x)` calls unless `allow: pointer.To`; fixable with `-fix` ([#29](https://github.com/katbyte/azproviderlint/pull/29))
-- **breaking**: rename `AZG002` to `AZV001` — it polices validation error messages, so it moves to the reserved AZV category; update `//azignore:AZG002` comments and settings references ([#28](https://github.com/katbyte/azproviderlint/pull/28))
-- plugin settings: `enable`/`disable` entries can name a whole category (`enable: [AZG]`); `disable` applies after `enable`
-- build and scan with Go 1.26.8
+- add rule `AZG002`: a variable created only to take its address ([#29](https://github.com/katbyte/azproviderlint/pull/29))
+- **breaking**: the old `AZG002` is renamed `AZV001`, as it checks validation messages; update ignore comments and settings ([#28](https://github.com/katbyte/azproviderlint/pull/28))
+- plugin settings: `enable` and `disable` accept a whole category, such as `AZG`
+- built with Go 1.26.8
 
 ## v0.5.1 (2026-09-02)
 
-- `AZG005`/`AZG006`: no longer report when an intervening statement writes to, takes the address of, or shadows anything the initializer reads — the fix could change the value read
+- `AZG005`/`AZG006`: no longer report where the fix could change the value used
 
 ## v0.5.0 (2026-09-02)
 
-- `AZG005`: also flag temporaries consumed by a later statement in the same block, within `max-gap` lines (default 100) ([#25](https://github.com/katbyte/azproviderlint/pull/25))
-- `AZR008`: also cover map results, naked returns with an unassigned named result, and provably-nil variables; a provably-nil error no longer masks a finding ([#27](https://github.com/katbyte/azproviderlint/pull/27))
-- add rule `AZG006`: single-use variables only used as an argument of a later call should be inlined; tuned by `max-gap` (default 100), `only-when-literals`, and `maximum-arguments`; fixable with `-fix` ([#26](https://github.com/katbyte/azproviderlint/pull/26))
+- `AZG005`: also reports a variable used once further down the same block ([#25](https://github.com/katbyte/azproviderlint/pull/25))
+- `AZR008`: catches more ways of returning nil, maps included ([#27](https://github.com/katbyte/azproviderlint/pull/27))
+- add rule `AZG006`: a variable used once, as an argument to a later call ([#26](https://github.com/katbyte/azproviderlint/pull/26))
 
 ## v0.4.0 (2026-09-01)
 
-- add rule `AZR008`: `flatten*` functions should return `[]T{}` instead of `nil`; error paths exempt, naked returns out of scope; fixable with `-fix` ([#22](https://github.com/katbyte/azproviderlint/pull/22))
-- add rule `AZS007`: schema fields with both `Optional: true` and `Computed: true` need a `// Note: O+C because ...` comment; `exclude-packages` skips listed packages ([#20](https://github.com/katbyte/azproviderlint/pull/20))
+- add rule `AZR008`: flatten functions that return nil where an empty list is expected ([#22](https://github.com/katbyte/azproviderlint/pull/22))
+- add rule `AZS007`: optional and computed fields without a comment saying why ([#20](https://github.com/katbyte/azproviderlint/pull/20))
 
 ## v0.3.2 (2026-08-28)
 
-- `AZS004`: track-1 advice suggests `validation.StringInEnumSlice(cdn.PossibleTransformValues(), false)` when the validation package exports a generic wrapper ([azurerm#33246](https://github.com/hashicorp/terraform-provider-azurerm/pull/33246)); `pointer.FromEnumSlice(pointer.To(...))` remains the fallback ([#21](https://github.com/katbyte/azproviderlint/pull/21))
+- `AZS004`: suggests the newer validation helper where the provider has it ([azurerm#33246](https://github.com/hashicorp/terraform-provider-azurerm/pull/33246)) ([#21](https://github.com/katbyte/azproviderlint/pull/21))
 
 ## v0.3.1 (2026-08-28)
 
-- plugin settings: rule names matched case-insensitively (golangci's YAML decoding lowercases keys) ([#19](https://github.com/katbyte/azproviderlint/pull/19))
-- `AZS004`: track-1 enum advice now compiles, via `pointer.FromEnumSlice(pointer.To(...))` ([#19](https://github.com/katbyte/azproviderlint/pull/19))
+- plugin settings: rule names match in any letter case ([#19](https://github.com/katbyte/azproviderlint/pull/19))
+- `AZS004`: the suggested replacement for older SDK enums now compiles ([#19](https://github.com/katbyte/azproviderlint/pull/19))
 
 ## v0.3.0 (2026-08-27)
 
-- `//azignore` directives take an optional reason after the rule list (`//azignore:AZR001 - deliberate subset`) ([#18](https://github.com/katbyte/azproviderlint/pull/18))
-- add rule `AZG000`: report `//azignore` directives without a reason ([#18](https://github.com/katbyte/azproviderlint/pull/18))
-- `AZS004`: also report list values not in the enum; new `allow-missing-values`/`allow-extra-values` flags ([#17](https://github.com/katbyte/azproviderlint/pull/17))
-- `AZS006`: new `ignore-sensitive` flag; `//azignore:AZS006` works on individual properties ([#15](https://github.com/katbyte/azproviderlint/pull/15))
-- add rule `AZR007`: `StateChangeConf` from `helper/retry` should be a custom poller implementing `pollers.PollerType` ([#6](https://github.com/katbyte/azproviderlint/pull/6))
+- ignore comments can carry a reason: `//azignore:AZR001 - why` ([#18](https://github.com/katbyte/azproviderlint/pull/18))
+- add rule `AZG000`: ignore comments without a reason ([#18](https://github.com/katbyte/azproviderlint/pull/18))
+- `AZS004`: also reports listed values the enum does not have; new `allow-missing-values` and `allow-extra-values` options ([#17](https://github.com/katbyte/azproviderlint/pull/17))
+- `AZS006`: new `ignore-sensitive` option; ignore comments work on a single property ([#15](https://github.com/katbyte/azproviderlint/pull/15))
+- add rule `AZR007`: `StateChangeConf` used where a custom poller should be ([#6](https://github.com/katbyte/azproviderlint/pull/6))
 
 ## v0.2.0 (2026-08-18)
 
-- `AZT002`: only check `_test.go` files ([#13](https://github.com/katbyte/azproviderlint/pull/13))
-- add rule `AZG003`: `pointer.To(sdk.SomeEnum(v))` should be `pointer.ToEnum[sdk.SomeEnum](v)`; fixable with `-fix` ([#5](https://github.com/katbyte/azproviderlint/pull/5), [#10](https://github.com/katbyte/azproviderlint/pull/10))
-- add rule `AZG004`: zero-value declaration plus nil-check dereference should be `pointer.From(x)`; fixable with `-fix` ([#5](https://github.com/katbyte/azproviderlint/pull/5), [#11](https://github.com/katbyte/azproviderlint/pull/11))
-- add rule `AZG005`: single-use temporaries immediately consumed by the next statement should be inlined; fixable with `-fix` ([#12](https://github.com/katbyte/azproviderlint/pull/12))
-- add rule `AZS002`: schema `Default` values must match the declared `Type` (ports tfproviderlint [#329](https://github.com/bflad/tfproviderlint/pull/329) S038) ([#4](https://github.com/katbyte/azproviderlint/pull/4))
-- add rule `AZS003`: optional/required `TypeList` blocks must not allow empty blocks (ports tfproviderlint [#236](https://github.com/bflad/tfproviderlint/pull/236) XS003) ([#4](https://github.com/katbyte/azproviderlint/pull/4))
-- add rule `AZS004`: enum validation should use the SDK's `PossibleValuesFor<Enum>()` helper ([#7](https://github.com/katbyte/azproviderlint/pull/7))
-- add rule `AZS005`: registered resources should have a data source of the same name ([#8](https://github.com/katbyte/azproviderlint/pull/8))
-- add rule `AZS006`: data sources should not be missing properties of the same-named resource ([#9](https://github.com/katbyte/azproviderlint/pull/9))
-- build and scan with Go 1.25.13 (fixes GO-2026-6218); govulncheck honours `.go-version`
+- `AZT002`: only checks test files ([#13](https://github.com/katbyte/azproviderlint/pull/13))
+- add rule `AZG003`: enum pointers made with a cast and `pointer.To`, where `pointer.ToEnum` does both ([#5](https://github.com/katbyte/azproviderlint/pull/5), [#10](https://github.com/katbyte/azproviderlint/pull/10))
+- add rule `AZG004`: a nil check and read written out where `pointer.From` would do ([#5](https://github.com/katbyte/azproviderlint/pull/5), [#11](https://github.com/katbyte/azproviderlint/pull/11))
+- add rule `AZG005`: a variable used once, on the very next line ([#12](https://github.com/katbyte/azproviderlint/pull/12))
+- add rule `AZS002`: schema defaults of the wrong type, from tfproviderlint [#329](https://github.com/bflad/tfproviderlint/pull/329) ([#4](https://github.com/katbyte/azproviderlint/pull/4))
+- add rule `AZS003`: blocks that can be left empty, from tfproviderlint [#236](https://github.com/bflad/tfproviderlint/pull/236) ([#4](https://github.com/katbyte/azproviderlint/pull/4))
+- add rule `AZS004`: enum values listed by hand where the SDK already provides the list ([#7](https://github.com/katbyte/azproviderlint/pull/7))
+- add rule `AZS005`: resources without a data source of the same name ([#8](https://github.com/katbyte/azproviderlint/pull/8))
+- add rule `AZS006`: data sources missing properties their resource has ([#9](https://github.com/katbyte/azproviderlint/pull/9))
+- built with Go 1.25.13, which fixes GO-2026-6218
 
 ## v0.1.0 (2026-08-07)
 
 Initial release!
 
-- add rule `AZG001`: `_, err := SomeFunc()` followed by `if err != nil` should be a single `if` init statement
-- add rule `AZS001`: typed SDK model numeric fields (tagged `tfschema`) must be `int64`/`float64`
-- port the grep/sed based checks from terraform-provider-azurerm's `scripts/checks/` to AST-based rules:
-  - `AZG002`: unclear `invalid format of ...` error messages
-  - `AZR001`: `d.SetId(*ptr)` instead of a Resource ID Formatter/Parser's `id.ID()`
-  - `AZR002`: combined `CreateUpdate` methods instead of separate Create and Update
-  - `AZR003`: `d.Get`/`metadata.ResourceData.Get` inside Delete functions
-  - `AZC001`: Azure SDK clients created without an explicit resource manager endpoint
-  - `AZR004`: Resource IDs compared with `==`/`!=` instead of `resourceids.Match`
-  - `AZR005`: assignments to the unreleased `TreatUserSpecifiedSegmentsAsCaseInsensitive` feature flag
-  - `AZD001`: data sources calling `d.SetId("")` instead of returning an error
-  - `AZD002`: data sources calling `metadata.MarkAsGone` instead of returning an error
-  - `AZR006`: `ctx` assigned from `meta.(*clients.Client).StopContext` without a timeouts wrapper
-  - `AZT001`: resource/data source acceptance test files not using a `_test` package
-  - `AZT002`: tests reading `ARM_CLIENT_ID`/`ARM_CLIENT_SECRET` credentials from the environment
-- release binaries with goreleaser (linux/darwin/windows/freebsd/openbsd/solaris) on tagged releases
-- add a `version` subcommand printing the version and git commit
-- support per-rule `enable`/`disable` lists via golangci-lint plugin settings
+- add rule `AZG001`: an error assigned on one line and checked on the next, where one `if` would do
+- add rule `AZS001`: model number fields that are not 64-bit
+- the provider's script-based checks, rewritten as rules:
+  - `AZG002`: error messages that call a format invalid without saying what is expected
+  - `AZR001`: resource IDs set from a raw pointer, not a parsed ID
+  - `AZR002`: one combined create and update, where two functions are expected
+  - `AZR003`: config read inside a delete function
+  - `AZC001`: clients created without an explicit endpoint
+  - `AZR004`: resource IDs compared directly, not with `resourceids.Match`
+  - `AZR005`: use of the unreleased case-insensitive segments flag
+  - `AZD001`: data sources that clear their ID when nothing is found, where an error is expected
+  - `AZD002`: data sources that mark themselves gone, where an error is expected
+  - `AZR006`: a context taken without a timeout
+  - `AZT001`: acceptance test files not in a `_test` package
+  - `AZT002`: tests reading credentials from the environment
+- release binaries for linux, macOS, windows, freebsd, openbsd and solaris
+- a `version` command
+- rules can be turned on and off in the golangci-lint plugin settings
