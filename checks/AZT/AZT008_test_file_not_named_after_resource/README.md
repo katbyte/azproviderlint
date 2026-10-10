@@ -47,7 +47,7 @@ Not reported:
 
 - a test that builds test data for several things, when its file is right for any one of them
 - a test run through `DataSourceTest` under the bare resource name, in either the resource's or the data source's test file
-- a name nothing in the test's own package registers, ephemeral resources included
+- a name the test's own package does not register as a resource or data source; that includes actions and ephemeral resources, which register through other methods
 - a type that is not known until the test runs, such as a loop variable
 
 ## No fix
@@ -59,6 +59,8 @@ AZT008 only reports. Rename the test file, or move the test to the file it belon
 | Option | Default | Effect |
 |---|---|---|
 | `suffix` | true | also accept a part between the declaring file's name and `_test.go`, so one resource's tests can be split across files; false requires exactly `<file>_test.go` |
+
+Parts in everyday use include `_list`, `_identity_gen` and `_v0_to_v1`, so with `suffix: false` list tests, generated identity tests and state migration tests are reported as well.
 
 Set with `-AZT008.<option>` on the CLI or under the rule name in the golangci settings; see the [root README](../../../README.md#options).
 
