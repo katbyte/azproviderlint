@@ -5,6 +5,7 @@
 - add rule `AZT006`: update tests that never update anything ([#69](https://github.com/katbyte/azproviderlint/pull/69))
 - add rule `AZT007`: a second `Acc` in an acceptance test's name ([#72](https://github.com/katbyte/azproviderlint/pull/72))
 - add rule `AZT008`: acceptance tests in a file not named after their resource's file ([#73](https://github.com/katbyte/azproviderlint/pull/73))
+- built with Go 1.26.9, which fixes CVE-2026-78667, CVE-2026-78669 and CVE-2026-97031
 
 ## v0.11.0 (2026-09-28)
 
