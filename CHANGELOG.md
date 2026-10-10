@@ -1,5 +1,6 @@
 ## Unreleased
 
+- add rule `AZT008`: an acceptance test must be in a test file named after the file declaring the resource or data source it builds test data for (`lb_probe_resource.go` pairs with `lb_probe_resource_test.go`); `suffix: false` stops accepting `lb_probe_resource_<part>_test.go`; report only, no fix ([#73](https://github.com/katbyte/azproviderlint/pull/73))
 - add rule `AZT006`: tests named for an update step must apply two different configs; one config, or the same config twice, never runs the update; report only, no fix ([#69](https://github.com/katbyte/azproviderlint/pull/69))
 - add rule `AZT007`: a `TestAcc` name must not carry `Acc` again as a word of its own (`_storageAccBehindFireWall`); `Account` and `Access` are fine; report only, no fix ([#72](https://github.com/katbyte/azproviderlint/pull/72))
 - add rule `AZT004`: test functions that run an acceptance test but are not named `TestAcc`, so acceptance runs never pick them up; report only, no fix ([#67](https://github.com/katbyte/azproviderlint/pull/67))
