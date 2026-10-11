@@ -11,7 +11,7 @@ on:
       - 'go.sum'
       - 'vendor/**'
       - 'makefile'
-      - 'scripts/publish-coverage-badge.sh'
+      - '.scripts/publish-coverage-badge.sh'
       - '.github/workflows/coverage.yaml'
   workflow_dispatch:
 
@@ -59,4 +59,4 @@ jobs:
           PCT: ${{ steps.cov.outputs.pct }}
           # checkout keeps no credentials, so the push is given the token here
           GH_TOKEN: ${{ github.token }}
-        run: bash ./scripts/publish-coverage-badge.sh
+        run: bash ./.scripts/publish-coverage-badge.sh
