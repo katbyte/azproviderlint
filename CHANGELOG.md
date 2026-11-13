@@ -1,3 +1,8 @@
+## Unreleased
+
+- add rule `AZT009`: tests naming a testdata file that is not there ([#79](https://github.com/katbyte/azproviderlint/pull/79))
+- add rule `AZT010`: testdata files that no test names ([#79](https://github.com/katbyte/azproviderlint/pull/79))
+
 ## v0.12.0 (2026-10-09)
 
 - add rule `AZT003`: tests named `TestAcc` that never run an acceptance test ([#64](https://github.com/katbyte/azproviderlint/pull/64))
