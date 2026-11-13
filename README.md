@@ -59,6 +59,8 @@ Rules are named `AZ`, a category letter, and a number. The letters follow [tfpro
 | [AZP003](checks/AZP/AZP003_data_source_missing_properties) | data sources must expose their same-named resource's properties |
 | [AZP004](checks/AZP/AZP004_registration_entries_sorted) | registration entries must be sorted alphabetically |
 | [AZP005](checks/AZP/AZP005_case_insensitive_segments_feature_flag) | do not set the case-insensitive segments feature flag |
+| [AZP006](checks/AZP/AZP006_helper_package_not_named_helpers) | a service's shared code belongs in helpers, not helper |
+| [AZP007](checks/AZP/AZP007_resource_folder_file_names) | files in a resource folder must use the agreed names |
 
 ### AZR - Resource Implementation
 
