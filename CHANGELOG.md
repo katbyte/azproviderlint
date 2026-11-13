@@ -1,3 +1,7 @@
+## Unreleased
+
+- add rule `AZR011`: typed resources and data sources with no `var _ sdk.Resource = ...` line ([#82](https://github.com/katbyte/azproviderlint/pull/82))
+
 ## v0.12.0 (2026-10-09)
 
 - add rule `AZT003`: tests named `TestAcc` that never run an acceptance test ([#64](https://github.com/katbyte/azproviderlint/pull/64))
