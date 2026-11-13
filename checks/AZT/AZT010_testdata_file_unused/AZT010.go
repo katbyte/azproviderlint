@@ -161,8 +161,9 @@ func mentions(dir string) []testdatarefs.Ref {
 	var refs []testdatarefs.Ref
 	fset := token.NewFileSet()
 	_ = filepath.WalkDir(dir, func(path string, entry fs.DirEntry, err error) error {
+		// what cannot be read names nothing
 		if err != nil {
-			return nil
+			return filepath.SkipDir
 		}
 
 		if entry.IsDir() {
@@ -178,12 +179,9 @@ func mentions(dir string) []testdatarefs.Ref {
 			return nil
 		}
 
-		file, err := parser.ParseFile(fset, path, nil, parser.ParseComments|parser.SkipObjectResolution)
-		if err != nil {
-			return nil
+		if file, err := parser.ParseFile(fset, path, nil, parser.ParseComments|parser.SkipObjectResolution); err == nil {
+			refs = append(refs, testdatarefs.InFile(fset, file)...)
 		}
-
-		refs = append(refs, testdatarefs.InFile(fset, file)...)
 
 		return nil
 	})
