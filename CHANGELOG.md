@@ -1,3 +1,7 @@
+## Unreleased
+
+- add rule `AZG013`: functions that always call each other and so never return ([#80](https://github.com/katbyte/azproviderlint/pull/80))
+
 ## v0.12.0 (2026-10-09)
 
 - add rule `AZT003`: tests named `TestAcc` that never run an acceptance test ([#64](https://github.com/katbyte/azproviderlint/pull/64))
