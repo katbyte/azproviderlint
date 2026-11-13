@@ -9,6 +9,8 @@ import (
 	AZP003 "github.com/katbyte/azproviderlint/checks/AZP/AZP003_data_source_missing_properties"
 	AZP004 "github.com/katbyte/azproviderlint/checks/AZP/AZP004_registration_entries_sorted"
 	AZP005 "github.com/katbyte/azproviderlint/checks/AZP/AZP005_case_insensitive_segments_feature_flag"
+	AZP006 "github.com/katbyte/azproviderlint/checks/AZP/AZP006_helper_package_not_named_helpers"
+	AZP007 "github.com/katbyte/azproviderlint/checks/AZP/AZP007_resource_folder_file_names"
 )
 
 // Checks contains all AZP (provider-wide convention) analyzers.
@@ -18,4 +20,6 @@ var Checks = []*analysis.Analyzer{
 	AZP003.Analyzer,
 	AZP004.Analyzer,
 	AZP005.Analyzer,
+	AZP006.Analyzer,
+	AZP007.Analyzer,
 }

@@ -1,3 +1,8 @@
+## Unreleased
+
+- add rule `AZP006`: a service's shared code in a package named `helper`, where the provider uses `helpers` ([#81](https://github.com/katbyte/azproviderlint/pull/81))
+- add rule `AZP007`: files in a resource or action folder named outside the agreed set ([#81](https://github.com/katbyte/azproviderlint/pull/81))
+
 ## v0.12.0 (2026-10-09)
 
 - add rule `AZT003`: tests named `TestAcc` that never run an acceptance test ([#64](https://github.com/katbyte/azproviderlint/pull/64))
