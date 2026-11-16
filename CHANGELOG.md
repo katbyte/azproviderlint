@@ -1,6 +1,7 @@
 ## Unreleased
 
 - add rule `AZR011`: typed resources and data sources with no `var _ sdk.Resource = ...` line ([#82](https://github.com/katbyte/azproviderlint/pull/82))
+- add rule `AZP006`: a service's shared code in a package named `helper`, where the provider uses `helpers` ([#83](https://github.com/katbyte/azproviderlint/pull/83))
 
 ## v0.12.0 (2026-10-09)
 
