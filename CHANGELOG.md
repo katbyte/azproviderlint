@@ -4,6 +4,7 @@
 - add rule `AZP006`: a service's shared code in a package named `helper`, where the provider uses `helpers` ([#83](https://github.com/katbyte/azproviderlint/pull/83))
 - add rule `AZT009`: tests naming a testdata file that is not there ([#79](https://github.com/katbyte/azproviderlint/pull/79))
 - add rule `AZT010`: testdata files that no test names ([#79](https://github.com/katbyte/azproviderlint/pull/79))
+- built with Go 1.26.11, which fixes CVE-2026-111943
 
 ## v0.12.0 (2026-10-09)
 
