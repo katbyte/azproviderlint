@@ -1,7 +1,7 @@
-## Unreleased
+## v0.13.0 (2026-11-15)
 
-- add rule `AZR011`: typed resources and data sources with no `var _ sdk.Resource = ...` line ([#82](https://github.com/katbyte/azproviderlint/pull/82))
 - add rule `AZP006`: a service's shared code in a package named `helper`, where the provider uses `helpers` ([#83](https://github.com/katbyte/azproviderlint/pull/83))
+- add rule `AZR011`: typed resources and data sources with no `var _ sdk.Resource = ...` line ([#82](https://github.com/katbyte/azproviderlint/pull/82))
 - add rule `AZT009`: tests naming a testdata file that is not there ([#79](https://github.com/katbyte/azproviderlint/pull/79))
 - add rule `AZT010`: testdata files that no test names ([#79](https://github.com/katbyte/azproviderlint/pull/79))
 - built with Go 1.26.11, which fixes CVE-2026-111943
