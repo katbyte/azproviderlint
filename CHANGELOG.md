@@ -1,6 +1,7 @@
 ## Unreleased
 
 - add rule `AZR011`: typed resources and data sources with no `var _ sdk.Resource = ...` line ([#82](https://github.com/katbyte/azproviderlint/pull/82))
+- add rule `AZP007`: files in a resource or action folder named outside the agreed set ([#84](https://github.com/katbyte/azproviderlint/pull/84))
 
 ## v0.12.0 (2026-10-09)
 
