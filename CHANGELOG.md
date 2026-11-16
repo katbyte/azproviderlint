@@ -1,6 +1,7 @@
 ## Unreleased
 
 - add rule `AZR011`: typed resources and data sources with no `var _ sdk.Resource = ...` line ([#82](https://github.com/katbyte/azproviderlint/pull/82))
+- add rule `AZP006`: a service's shared code in a package named `helper`, where the provider uses `helpers` ([#83](https://github.com/katbyte/azproviderlint/pull/83))
 - add rule `AZT009`: tests naming a testdata file that is not there ([#79](https://github.com/katbyte/azproviderlint/pull/79))
 - add rule `AZT010`: testdata files that no test names ([#79](https://github.com/katbyte/azproviderlint/pull/79))
 
