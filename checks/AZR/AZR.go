@@ -13,6 +13,7 @@ import (
 	AZR008 "github.com/katbyte/azproviderlint/checks/AZR/AZR008_flatten_returns_nil_slice"
 	AZR009 "github.com/katbyte/azproviderlint/checks/AZR/AZR009_lifecycle_logging"
 	AZR010 "github.com/katbyte/azproviderlint/checks/AZR/AZR010_flatten_handles_nil_input"
+	AZR011 "github.com/katbyte/azproviderlint/checks/AZR/AZR011_typed_type_missing_sdk_assertion"
 )
 
 // Checks contains all AZR (resource implementation) analyzers.
@@ -26,4 +27,5 @@ var Checks = []*analysis.Analyzer{
 	AZR008.Analyzer,
 	AZR009.Analyzer,
 	AZR010.Analyzer,
+	AZR011.Analyzer,
 }
