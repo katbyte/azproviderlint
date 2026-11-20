@@ -32,6 +32,7 @@ A description is text written out in the code, outside test files, in one of the
 
 - `Description` on a plugin SDK schema property or resource (`pluginsdk.Schema`, `pluginsdk.Resource`)
 - `Description` or `MarkdownDescription` on a framework schema, attribute or block
+- `Description` or `MarkdownDescription` on a provider function or one of its parameters
 - what a typed resource or data source returns from `Description() string`
 
 Provider and `features` block descriptions count too. Text built when the provider runs, such as with `fmt.Sprintf`, is not checked.

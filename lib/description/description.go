@@ -11,8 +11,8 @@ import (
 	"golang.org/x/tools/go/ast/inspector"
 )
 
-// Found is one description written as text in the code: on a schema property, a resource, a framework attribute or block, or returned by a typed
-// resource's Description() method.
+// Found is one description written as text in the code: on a schema property, a resource, a framework attribute or block, a provider function or
+// its parameters, or returned by a typed resource's Description() method.
 type Found struct {
 	// Value is the expression holding the text.
 	Value ast.Expr
@@ -45,10 +45,13 @@ func All(pass *analysis.Pass, insp *inspector.Inspector) []Found {
 				t = ptr.Elem()
 			}
 
-			// the plugin sdk and the framework both keep their schema types in a package named schema; an Azure API model with a Description
-			// field is not one
+			// the plugin sdk and the framework keep their schema types in a package named schema, and a provider function's in one named
+			// function; an Azure API model with a Description field is neither
 			named, ok := types.Unalias(t).(*types.Named)
-			if !ok || named.Obj().Pkg() == nil || named.Obj().Pkg().Name() != "schema" || !strings.Contains(named.Obj().Pkg().Path(), "/terraform-plugin-") {
+			if !ok || named.Obj().Pkg() == nil || !strings.Contains(named.Obj().Pkg().Path(), "/terraform-plugin-") {
+				return
+			}
+			if name := named.Obj().Pkg().Name(); name != "schema" && name != "function" {
 				return
 			}
 
