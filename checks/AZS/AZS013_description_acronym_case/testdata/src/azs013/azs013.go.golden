@@ -1,0 +1,61 @@
+package azs013
+
+import (
+	fwschema "github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+)
+
+func flagged() *schema.Resource {
+	return &schema.Resource{
+		Description: "Manages an API Management Service.", // want `"Api" should be "API"`
+
+		Schema: map[string]*schema.Schema{
+			"subnet_id": {
+				Type:        schema.TypeString,
+				Description: "The ID of the subnet, and the IDs of its VMs.", // want `"id" should be "ID"` `"ids" should be "IDs"` `"vms" should be "VMs"`
+			},
+
+			"endpoint": {
+				Type:        schema.TypeString,
+				Description: "The URL (HTTP/HTTPS) or the IP's DNS name, as JSON.", // want `"url" should be "URL"` `"http" should be "HTTP"` `"https" should be "HTTPS"` `"ip" should be "IP"` `"Dns" should be "DNS"` `"Json" should be "JSON"`
+			},
+
+			"raw": {
+				Type:        schema.TypeString,
+				Description: `The [Client ID](https://example.com/id) for OAuth on the VNet.`, // want `"Id" should be "ID"` `"OAUTH" should be "OAuth"` `"vnet" should be "VNet"`
+			},
+		},
+	}
+}
+
+func flaggedFramework() fwschema.Attribute {
+	return fwschema.StringAttribute{
+		MarkdownDescription: "The SKU of the Thing.", // want `"Sku" should be "SKU"`
+	}
+}
+
+type ThingResource struct{}
+
+func (ThingResource) ResourceType() string { return "azurerm_thing" }
+
+func (ThingResource) Description() string {
+	return "Manages a SQL Thing." // want `"Sql" should be "SQL"`
+}
+
+func passing() *schema.Resource {
+	return &schema.Resource{
+		Description: "Manages an API Management Service.",
+
+		Schema: map[string]*schema.Schema{
+			"subnet_id": {
+				Type:        schema.TypeString,
+				Description: "The ID of the subnet, as returned by `azurerm_subnet.example.id`, with its IDs, VMs and IPv4 addresses.",
+			},
+
+			"endpoint": {
+				Type:        schema.TypeString,
+				Description: "The URL, such as https://example.com/api/id, in ssh-rsa format, made with \"ssh-keygen -t rsa\" and sent as api-version or example.id.",
+			},
+		},
+	}
+}
