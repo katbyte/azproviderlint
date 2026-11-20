@@ -27,4 +27,6 @@ decorder = "decorder"   # golangci linter name
 Implicits = "Implicits" # go/types Info field
 importas = "importas"   # golangci linter name
 intoto = "intoto"       # in-toto attestation files published by goreleaser
+rto = "rto"             # recovery time objective, an acronym AZS012 knows
+ure = "ure"             # how "urea" and "urethane" start, for AZS012
 AKS = "AKS"             # Azure Kubernetes Service, an acronym AZS013 checks
