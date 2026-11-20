@@ -2,9 +2,13 @@ package azs011
 
 import (
 	apischema "github.com/hashicorp/go-azure-sdk/resource-manager/apimanagement/2022-08-01/schema"
+	"github.com/hashicorp/terraform-plugin-framework/function"
 	fwschema "github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 )
+
+// the provider reaches the plugin sdk through aliases like this one
+type Schema = schema.Schema
 
 const empty = ""
 
@@ -32,6 +36,16 @@ func flagged() *schema.Resource {
 				Type:        schema.TypeString,
 				Description: empty, // want `description is blank - write one, or remove it`
 			},
+
+			"joined": {
+				Type:        schema.TypeString,
+				Description: empty + " " + (empty), // want `description is blank - write one, or remove it`
+			},
+
+			"aliased": &Schema{
+				Type:        schema.TypeString,
+				Description: "", // want `description is blank - write one, or remove it`
+			},
 		},
 	}
 }
@@ -40,6 +54,21 @@ func flaggedFramework() fwschema.Attribute {
 	return fwschema.StringAttribute{
 		Description:         "", // want `description is blank - write one, or remove it`
 		MarkdownDescription: "", // want `description is blank - write one, or remove it`
+	}
+}
+
+func flaggedFunction() function.Definition {
+	return function.Definition{
+		Summary:             "parse_thing_id",
+		Description:         "", // want `description is blank - write one, or remove it`
+		MarkdownDescription: "", // want `description is blank - write one, or remove it`
+
+		Parameters: []function.Parameter{
+			function.StringParameter{
+				Name:        "id",
+				Description: "", // want `description is blank - write one, or remove it`
+			},
+		},
 	}
 }
 

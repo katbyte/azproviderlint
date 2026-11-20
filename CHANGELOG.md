@@ -1,6 +1,7 @@
 ## Unreleased
 
 - add rule `AZS011`: resource and property descriptions left blank ([#87](https://github.com/katbyte/azproviderlint/pull/87))
+- `AZS011`: provider function descriptions are checked too ([#90](https://github.com/katbyte/azproviderlint/pull/90))
 
 ## v0.13.0 (2026-11-15)
 
