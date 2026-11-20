@@ -93,6 +93,7 @@ Rules are named `AZ`, a category letter, and a number. The letters follow [tfpro
 | [AZS004](checks/AZS/AZS004_enum_validation_possible_values) | enum validation must use the SDK's possible-values helper |
 | [AZS007](checks/AZS/AZS007_optional_computed_missing_comment) | optional+computed fields must have a Note: O+C comment |
 | [AZS009](checks/AZS/AZS009_computed_only_field_input_attributes) | computed-only fields must not set input-only schema attributes |
+| [AZS011](checks/AZS/AZS011_description_blank) | resource and property descriptions must not be blank |
 
 ### AZC - Clients & SDK Usage
 

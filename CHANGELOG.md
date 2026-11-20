@@ -1,3 +1,7 @@
+## Unreleased
+
+- add rule `AZS011`: resource and property descriptions left blank ([#87](https://github.com/katbyte/azproviderlint/pull/87))
+
 ## v0.13.0 (2026-11-15)
 
 - add rule `AZP006`: a service's shared code in a package named `helper`, where the provider uses `helpers` ([#83](https://github.com/katbyte/azproviderlint/pull/83))
