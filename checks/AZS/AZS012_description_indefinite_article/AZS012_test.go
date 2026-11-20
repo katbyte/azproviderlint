@@ -21,7 +21,7 @@ func TestAZS012(t *testing.T) {
 			"integer", "Automation", "API", "ID", "IP", "IPv4", "IDs", "optional", "unused", "unintended", "uninitialized", "unimportant", "unidentified", "update", "upper", "Ubuntu", "umbrella", "only", "onboarding", "iSCSI", "eDTU", "OAuth", "ETag",
 			"hour", "hourly", "hour-long", "honest", "honorary", "heir",
 			"SSL", "SSH", "HTTP", "HTTPS", "HSM", "FQDN", "FTP", "NSG", "NFS", "NVMe", "XML", "MSI", "MFA", "RBAC", "RSA", "LDAP", "SLA", "SSO", "LTR", "SLB", "HDInsight", "HBase", "HL7", "MX", "SR-IOV",
-			"http", "xml", "ssh", "nginx", "Xbox", "Xcode", "xterm", "XPath",
+			"http", "xml", "ssh", "nginx", "Xbox", "Xcode", "xterm", "XPath", "yttrium", "Yvonne", "onerous", "unable", "unassigned",
 			"S3", "x509", "X-Forwarded-For", "e-mail", "mTLS", "sFTP", "F5", "R-squared",
 			"8", "8-bit", "80", "800", "8080", "11", "18", "11th", "18-month", "11,000", "18000",
 		},
@@ -33,14 +33,14 @@ func TestAZS012(t *testing.T) {
 			"one", "one-time", "One", "once",
 			"NAT", "NIC", "SAS", "SAML", "SCSI", "LUN", "LAN", "MAC", "RAM", "REST", "RAID", "RHEL", "FHIR", "FIPS", "EULA", "NAS",
 			"VM", "VNet", "vCore", "DNS", "TLS", "TCP", "CIDR", "GUID", "JWT", "PEM", "dns", "vm", "Kubernetes", "PostgreSQL", "MySQL", "macOS",
-			".NET", "B-tree", "t-shirt", "Y-axis", "U-turn", "ui", "ux", "UX", "Xen", "Xamarin", "xylophone",
+			".NET", "B-tree", "t-shirt", "Y-axis", "U-turn", "ui", "ux", "UX", "Xen", "Xamarin", "xylophone", "unanimous", "Utah", "sap", "oneself", "YML", "year",
 			"1", "10", "100", "110", "180", "2-node", "0", "12", "17", "1,000",
 		},
 
 		// said both ways, or not something it can place
 		"": {
 			"SQL", "SQLServer", "sql", "SKU", "SKUs", "SNAT", "SHA", "sha256", "herb", "historic", "historical",
-			"NULL", "NOT", "SELECT", "MAX", "msg", "src", "svc", "mgmt", "std",
+			"NULL", "NOT", "SELECT", "MAX", "msg", "src", "svc", "mgmt", "std", "yml",
 			"1100", "1800", "$web", "<name>", "#1", "",
 		},
 	} {

@@ -162,7 +162,8 @@ func articleFor(word string) string {
 	}
 
 	for _, known := range []string{acronym, strings.TrimSuffix(acronym, "s")} {
-		if want, ok := said[known]; ok && (len(known) >= 3 || capitals >= 2 || want == "a") {
+		// sap the word is not SAP the company
+		if want, ok := said[known]; ok && (len(known) >= 3 || capitals >= 2 || want == "a") && (capitals >= 2 || known != "sap") {
 			return want
 		}
 	}
@@ -174,15 +175,15 @@ func articleFor(word string) string {
 		spoken = "an"
 
 		// "you" and "won" sounds: "a user", "a unique", "a European", "a one-time"; but "an unintended", "an unimportant"
-		if hasPrefix(acronym, "eu", "ew", "uni", "use", "usa", "usu", "usi", "uti", "uto", "ute", "ura", "ure", "uri", "uro", "uru", "ubiq", "uga", "ukr", "uku", "ufo") && (!hasPrefix(acronym, "unin", "unim", "uniden", "unill", "uniss") || hasPrefix(acronym, "unimod")) {
+		if hasPrefix(acronym, "eu", "ew", "unanim", "utah", "uni", "use", "usa", "usu", "usi", "uti", "uto", "ute", "ura", "ure", "uri", "uro", "uru", "ubiq", "uga", "ukr", "uku", "ufo") && (!hasPrefix(acronym, "unin", "unim", "uniden", "unill", "uniss") || hasPrefix(acronym, "unimod")) {
 			spoken = "a"
 		}
 		if slices.Contains([]string{"one", "once", "ones", "oneself", "oneness", "onetime"}, acronym) {
 			spoken = "a"
 		}
 
-	// an x before a consonant is said as the letter: "an Xbox", "an xterm", but "a Xen host"
-	case acronym[0] == 'x' && !strings.ContainsRune("aeiouy", rune(acronym[1])):
+	// an x or a y before a consonant starts with a vowel sound: "an Xbox", "an xterm", "an yttrium"; but "a Xen host", "a year"
+	case (acronym[0] == 'x' || acronym[0] == 'y') && !strings.ContainsRune("aeiouy", rune(acronym[1])):
 		spoken = "an"
 
 	case hasPrefix(acronym, "hour", "honest", "honor", "honour", "heir"): //nolint:misspell // both spellings of honour are words it has to know
