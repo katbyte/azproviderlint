@@ -2,7 +2,6 @@
 
 - add rule `AZS010`: resource and property descriptions with punctuation mistakes, such as no capital, no full stop or a stray space ([#91](https://github.com/katbyte/azproviderlint/pull/91))
 - add rule `AZS011`: resource and property descriptions left blank ([#87](https://github.com/katbyte/azproviderlint/pull/87))
-- `AZS011`: provider function descriptions are checked too ([#90](https://github.com/katbyte/azproviderlint/pull/90))
 - add rule `AZS012`: resource and property descriptions with `a` where `an` belongs, or the other way round ([#88](https://github.com/katbyte/azproviderlint/pull/88))
 - add rule `AZS013`: resource and property descriptions with an acronym in the wrong case, such as `id` for `ID` ([#89](https://github.com/katbyte/azproviderlint/pull/89))
 
