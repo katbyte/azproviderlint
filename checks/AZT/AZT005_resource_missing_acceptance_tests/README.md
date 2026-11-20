@@ -46,7 +46,9 @@ Every registration style is read: untyped `SupportedResources()` / `SupportedDat
 
 A resource can be updated when it declares an Update handler: an `Update`, `UpdateContext` or `UpdateWithoutTimeout` key on an untyped resource, or an `Update` method on a typed or framework one. The plugin SDK only allows an Update handler when some field is not ForceNew, so the two are the same thing. A resource without one needs only `basic` and `requiresImport`.
 
-Test files are a separate package, so they are read from disk. Every `TestAcc` or lowercase `testAcc` function counts when it is in a test file named after the file declaring the resource (`example_resource.go` covers `example_resource_test.go` and `example_resource_other_test.go`), or when its name spells the type name without `azurerm_`, ignoring case and underscores (`TestAccMsSqlServer` for `azurerm_mssql_server`, with an older `AzureRM` prefix, a `Resource` suffix, or `DataSource` at either end of a data source name also accepted).
+Test files are a separate package, so they are read from disk. Every `TestAcc` or lowercase `testAcc` function counts when it is in a test file named after the file declaring the resource (`example_resource.go` covers `example_resource_test.go` and `example_resource_other_test.go`), or when its name spells the type name without `azurerm_`, ignoring case and underscores (`TestAccMsSqlServer` for `azurerm_mssql_server`, with an older `AzureRM` prefix or a `Resource` suffix also accepted).
+
+A data source's test name has to carry `DataSource`, at either end. The bare name is the resource's, so the resource's `TestAccExample_basic` never stands in for the data source's `TestAccExampleDataSource_basic`. A test in the data source's own file counts whatever it is called.
 
 The test name's segments after the first underscore name its steps. A segment that starts with the step name counts, so `TestAccExample_completeWithTags`, `TestAccExample_updateSku` and `TestAccExample_list_basic` all cover their steps.
 

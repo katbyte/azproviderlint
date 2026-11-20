@@ -175,6 +175,9 @@ func run(pass *analysis.Pass) (any, error) {
 
 		if prefix == "" {
 			prefix = camel(typeName)
+			if e.dataSource {
+				prefix += "DataSource"
+			}
 		}
 
 		var missing []string
@@ -283,13 +286,14 @@ func acceptanceTests(dir string) []testFunc {
 
 // spells reports whether a test name prefix spells the terraform type name (without its
 // provider prefix), ignoring case and underscores: TestAccMsSqlServer for mssql_server. A
-// leading AzureRM, as older tests carry, and a Resource suffix are allowed; a data source
-// may carry DataSource at either end.
+// leading AzureRM, as older tests carry, and a Resource suffix are allowed. A data source's
+// name has to carry DataSource, at either end: the bare name is the resource's, whose tests
+// do not stand in for the data source's.
 func spells(prefix, typeName string, dataSource bool) bool {
 	p := strings.TrimPrefix(strings.ToLower(prefix), "azurerm")
 	want := strings.ReplaceAll(typeName, "_", "")
 	if dataSource {
-		return p == want || p == "datasource"+want || p == want+"datasource"
+		return p == "datasource"+want || p == want+"datasource"
 	}
 	return p == want || p == want+"resource"
 }

@@ -29,7 +29,10 @@ func (r Registration) SupportedResources() map[string]*pluginsdk.Resource {
 func (r Registration) SupportedDataSources() map[string]*pluginsdk.Resource {
 	return map[string]*pluginsdk.Resource{
 		"azurerm_thing":  dataSourceThing(),
-		"azurerm_orphan": dataSourceOrphan(), // want `data source "azurerm_orphan" is missing acceptance tests: TestAccOrphan_basic`
+		"azurerm_orphan": dataSourceOrphan(), // want `data source "azurerm_orphan" is missing acceptance tests: TestAccOrphanDataSource_basic`
+		"azurerm_legacy": dataSourceLegacy(), // a bare name counts in the data source's own test file
+		"azurerm_fixed":  dataSourceFixed(),  // want `data source "azurerm_fixed" is missing acceptance tests: TestAccFixedDataSource_basic`
+		"azurerm_split":  dataSourceSplit(),  // want `data source "azurerm_split" is missing acceptance tests: TestAccSplitDataSource_basic`
 	}
 }
 
