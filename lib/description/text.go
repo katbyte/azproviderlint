@@ -2,6 +2,7 @@ package description
 
 import (
 	"regexp"
+	"slices"
 	"strings"
 )
 
@@ -73,6 +74,39 @@ func Words(masked string) []Word {
 	}
 
 	return words
+}
+
+// short forms that end in a full stop without ending the sentence
+var shortForms = []string{"e.g.", "i.e.", "etc.", "vs.", "cf.", "approx.", "incl.", "excl.", "viz.", "no.", "min.", "max.", "a.m.", "p.m."}
+
+// Sentences splits masked text into its sentences, each from its first word to its closing mark. A full stop after a short form such as "e.g.",
+// an initial or the number of a list item does not end one.
+func Sentences(masked string) []Word {
+	var sentences []Word
+	start := -1
+	for _, word := range Words(masked) {
+		if start < 0 {
+			start = word.Start
+		}
+
+		stem := strings.ToLower(strings.Trim(word.Text, "()[]{}\"'*_"))
+		if stem == "" || !strings.ContainsRune(".?!", rune(stem[len(stem)-1])) || strings.HasSuffix(stem, "..") {
+			continue
+		}
+		if slices.Contains(shortForms, stem) || len(stem) == 2 || strings.Trim(stem[:len(stem)-1], "0123456789") == "" {
+			continue
+		}
+
+		sentences = append(sentences, Word{Start: start, End: word.End, Text: masked[start:word.End]})
+		start = -1
+	}
+
+	if start >= 0 {
+		end := len(strings.TrimRight(masked, " \t\n\r"))
+		sentences = append(sentences, Word{Start: start, End: end, Text: masked[start:end]})
+	}
+
+	return sentences
 }
 
 // Trim returns the word without the brackets, quotes and emphasis marks opening it, and without any of the given characters closing it.
