@@ -46,7 +46,7 @@ Only prose is checked. These are left alone, since there the case is part of a n
 
 A value that happens to be an acronym belongs in backticks: `` Defaults to `http`. ``
 
-A description is text written out in the code, outside test files: `Description` on a plugin SDK schema property or resource, `Description` or `MarkdownDescription` on a framework schema, attribute or block, or on a provider function or one of its parameters, and what a typed resource or data source returns from `Description() string`. Provider and `features` block descriptions count too.
+A description is text written out in the code, outside test files: `Description` on a plugin SDK schema property, block or resource, `Description` or `MarkdownDescription` on a framework schema, attribute or block, or on a provider function or one of its parameters, and what a typed resource or data source returns from `Description() string`. Provider and `features` block descriptions count too.
 
 ## Fix
 

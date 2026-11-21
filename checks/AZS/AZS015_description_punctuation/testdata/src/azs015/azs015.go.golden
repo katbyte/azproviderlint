@@ -1,4 +1,4 @@
-package azs010
+package azs015
 
 import (
 	apischema "github.com/hashicorp/go-azure-sdk/resource-manager/apimanagement/2022-08-01/schema"
@@ -178,3 +178,21 @@ func model() apischema.SchemaContractProperties {
 type notAResource struct{}
 
 func (notAResource) Description() string { return "describes something else" }
+
+// a block is described like any other property, and what is inside it too
+func flaggedBlocks() (*schema.Schema, fwschema.Block) {
+	return &schema.Schema{
+		Type:        schema.TypeList,
+		Description: "A SKU block.", // want `description should start with a capital letter`
+		Elem: &schema.Resource{
+			Schema: map[string]*schema.Schema{
+				"tier": {
+					Type:        schema.TypeString,
+					Description: "The tier of the SKU.", // want `description should end with a full stop`
+				},
+			},
+		},
+	}, fwschema.ListNestedBlock{
+		MarkdownDescription: "A rule block.", // want `description has a space before '\.'`
+	}
+}

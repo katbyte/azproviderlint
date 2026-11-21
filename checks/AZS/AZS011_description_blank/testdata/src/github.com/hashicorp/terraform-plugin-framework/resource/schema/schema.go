@@ -3,10 +3,13 @@ package schema
 
 type Attribute interface{ isAttribute() }
 
+type Block interface{ isBlock() }
+
 type Schema struct {
 	Description         string
 	MarkdownDescription string
 	Attributes          map[string]Attribute
+	Blocks              map[string]Block
 }
 
 type StringAttribute struct {
@@ -16,3 +19,10 @@ type StringAttribute struct {
 }
 
 func (StringAttribute) isAttribute() {}
+
+type ListNestedBlock struct {
+	Description         string
+	MarkdownDescription string
+}
+
+func (ListNestedBlock) isBlock() {}
