@@ -57,7 +57,7 @@ It only reports where it is sure. These are left alone:
 
 A description is text written out in the code, outside test files, in one of these places:
 
-- `Description` on a plugin SDK schema property or resource (`pluginsdk.Schema`, `pluginsdk.Resource`)
+- `Description` on a plugin SDK schema property, block or resource (`pluginsdk.Schema`, `pluginsdk.Resource`)
 - `Description` or `MarkdownDescription` on a framework schema, attribute or block
 - `Description` or `MarkdownDescription` on a provider function or one of its parameters
 - what a typed resource or data source returns from `Description() string`

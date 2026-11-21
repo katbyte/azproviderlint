@@ -106,3 +106,21 @@ func model() apischema.SchemaContractProperties {
 type notAResource struct{}
 
 func (notAResource) Description() string { return "" }
+
+// a block is described like any other property, and what is inside it too
+func flaggedBlocks() (*schema.Schema, fwschema.Block) {
+	return &schema.Schema{
+		Type:        schema.TypeList,
+		Description: "", // want `description is blank - write one, or remove it`
+		Elem: &schema.Resource{
+			Schema: map[string]*schema.Schema{
+				"tier": {
+					Type:        schema.TypeString,
+					Description: " ", // want `description is blank - write one, or remove it`
+				},
+			},
+		},
+	}, fwschema.ListNestedBlock{
+		MarkdownDescription: "", // want `description is blank - write one, or remove it`
+	}
+}

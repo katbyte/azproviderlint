@@ -1,4 +1,4 @@
-package azs010
+package azs015
 
 import "github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 
