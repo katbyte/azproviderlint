@@ -76,7 +76,7 @@ func flagged() *schema.Resource {
 						},
 					},
 				},
-				Description: "A `sku` block as defined below. Conflicts with `tier`.", // want `description points at the docs page with "as defined below" - a description has no page around it` `description says what it conflicts with - the schema's ConflictsWith already does`
+				Description: "A `sku` block as defined below. Conflicts with `tier`.", // want `description points at the docs page with "as defined below" - a description has no page around it` `description says what it conflicts with - the schema's ConflictsWith or ExactlyOneOf already does`
 			},
 
 			"only": {
@@ -157,6 +157,34 @@ func flagged() *schema.Resource {
 				Optional:     true,
 				ValidateFunc: validation.StringLenBetween(1, 80),
 				Description:  "The alias of the Thing, letters and dashes up to 80 characters in length.", // want `description says how long it can be - the schema's validation already does`
+			},
+
+			"repository_url": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				RequiredWith: []string{"repository_branch", "repository_token"},
+				Description:  "The repository to deploy from. `repository_branch` and `repository_token` must also be set.", // want `description says what else must be set - the schema's RequiredWith already does`
+			},
+
+			"client_secret": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ExactlyOneOf: []string{"client_secret", "client_secret_setting_name"},
+				Description:  "The client secret. Cannot be used with `client_secret_setting_name`.", // want `description says what it conflicts with - the schema's ConflictsWith or ExactlyOneOf already does`
+			},
+
+			"tls": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: validation.StringInSlice([]string{"1.2", "1.3"}, false),
+				Description:  "The minimum version of TLS for the site Possible values include: `1.2` and `1.3`.", // want `description lists the values it can take - the schema's validation already does`
+			},
+
+			"runbook_type": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: validation.StringInSlice([]string{"Graph", "Script"}, false),
+				Description:  "The type of the runbook - can be either `Graph` or `Script`.", // want `description lists the values it can take - the schema's validation already does`
 			},
 
 			"shared": {

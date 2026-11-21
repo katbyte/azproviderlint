@@ -25,6 +25,7 @@ type Schema struct {
 	ConflictsWith []string
 	ExactlyOneOf  []string
 	AtLeastOneOf  []string
+	RequiredWith  []string
 	MaxItems      int
 	MinItems      int
 	Description   string

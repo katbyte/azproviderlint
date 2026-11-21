@@ -1,6 +1,6 @@
 # AZS014 - resource and property descriptions must not repeat what the schema says
 
-AZS014 reports text in a resource or property description that the schema already states: a tag such as `(Optional)` or `(Boolean)`, the default, the values it can take, how long or how many it can be, that a change forces a new resource.
+AZS014 reports text in a resource or property description that the schema already states: a tag such as `(Optional)` or `(Boolean)`, the default, the values it can take, how long or how many it can be, what it conflicts with or needs, that a change forces a new resource.
 
 The docs take those from the schema. A description that repeats them says it twice, and the copy goes stale when the schema changes.
 
@@ -44,11 +44,12 @@ Each kind of repeat has a name, and can be switched off by it.
 | Kind | Reports | When | Example |
 |---|---|---|---|
 | `tag` | a tag copied from the docs | always | `(Optional)`, `(Boolean)`, `(Optional, Sensitive)` |
-| `possible-values` | a sentence listing the values a property takes | its validation lists or bounds them, or it is a bool | `Possible values are...`, `Valid options are...`, `Can be a or b.`, `Must be between...` |
+| `possible-values` | a sentence listing the values a property takes, or the list at the end of one | its validation lists or bounds them, or it is a bool | `Possible values are...`, `Valid options are...`, `Can be a or b.`, `Only a is supported.`, `Must be between...`, `... - can be either a or b.` |
 | `default` | a sentence giving the default, or the default at the end of one or in brackets | the property sets `Default` | `Defaults to...`, `If blank, defaults to...`, `..., which defaults to Fast.`, `(defaults to Fast)` |
 | `force-new` | a sentence saying a change forces a new resource | the property is `ForceNew` | `Changing this forces a new resource.`, `Changing the name forces a new Thing to be created.` |
-| `conflicts-with` | a sentence saying what the property conflicts with | the property sets `ConflictsWith` | `Conflicts with...`, `Only one of a or b can be specified.` |
+| `conflicts-with` | a sentence saying what the property conflicts with | the property sets `ConflictsWith` or `ExactlyOneOf` | `Conflicts with...`, `Cannot be specified with...`, `Only one of a or b can be specified.` |
 | `one-of` | a sentence saying one of several properties must be set | the property sets `ExactlyOneOf` or `AtLeastOneOf` | `Exactly one of a or b must be specified.` |
+| `required-with` | a sentence saying what else must be set | the property sets `RequiredWith` | `Required with a.`, `Requires a to be set.`, `a and b must also be set.`, `Only valid in conjunction with a.` |
 | `item-count` | a sentence saying how many items or blocks there can be | the property sets `MaxItems` or `MinItems` | `A maximum of 100 rule blocks may be defined.` |
 | `length` | how long a value can be, as a sentence or inside one | its validation gives a length | `Must be between 1 and 80 characters.`, `...up to 80 characters in length` |
 | `defined-below` | words or a sentence that point at the docs page | always | `as defined below`, `Each rule block supports fields defined below.` |
@@ -57,7 +58,7 @@ The tags are `Required`, `Optional`, `Computed`, `Sensitive`, `Deprecated`, `For
 
 The validation that counts is a list or a range: `StringInSlice`, `IntInSlice`, `FloatInSlice`, `IntBetween`, `IntAtLeast`, `IntAtMost` and the `Float` ones, on the property or on the element of its list, and the framework's `OneOf`, `Between`, `AtLeast` and `AtMost`. A length comes from `StringLenBetween`, or the framework's `LengthBetween`, `LengthAtLeast` and `LengthAtMost`.
 
-In the framework a property is `ForceNew` when a plan modifier is `RequiresReplace`, and its item count and one-of rules are the `SizeAtMost`, `SizeAtLeast`, `SizeBetween`, `ExactlyOneOf` and `AtLeastOneOf` validators.
+In the framework a property is `ForceNew` when a plan modifier is `RequiresReplace`, and its item count, one-of and required-with rules are the `SizeAtMost`, `SizeAtLeast`, `SizeBetween`, `ExactlyOneOf`, `AtLeastOneOf` and `AlsoRequires` validators.
 
 These pass, because the description is the only place it is written down:
 
@@ -66,6 +67,7 @@ These pass, because the description is the only place it is written down:
 - `Changing this forces...` on a property that is not `ForceNew`
 - `A maximum of 100 rule blocks...`, `Exactly one of...` and a length on a property whose schema does not set them
 - a sentence that says more than the schema does: `Only one rule block can be specified unless mode is Fast.`
+- something needed only for some values, which the schema cannot say: `Required when mode is Fast.`
 
 ## What counts
 
