@@ -25,6 +25,7 @@ func (StringAttribute) isAttribute() {}
 
 type BoolAttribute struct {
 	Optional            bool
+	Default             any
 	Description         string
 	MarkdownDescription string
 }

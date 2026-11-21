@@ -45,7 +45,7 @@ Each kind of repeat has a name, and can be switched off by it.
 |---|---|---|---|
 | `tag` | a tag copied from the docs | always | `(Optional)`, `(Boolean)`, `(Optional, Sensitive)` |
 | `possible-values` | a sentence listing the values a property takes, or the list at the end of one | its validation lists or bounds them, or it is a bool | `Possible values are...`, `Valid options are...`, `Can be a or b.`, `Only a is supported.`, `Must be between...`, `... - can be either a or b.` |
-| `default` | a sentence giving the default, or the default at the end of one or in brackets | the property sets `Default` | `Defaults to...`, `If blank, defaults to...`, `..., which defaults to Fast.`, `(defaults to Fast)` |
+| `default` | a sentence giving the default, or the default at the end of one or in brackets | always; it is taken out only when the property sets `Default` | `Defaults to...`, `If blank, defaults to...`, `..., which defaults to Fast.`, `(defaults to Fast)` |
 | `force-new` | a sentence saying a change forces a new resource | the property is `ForceNew` | `Changing this forces a new resource.`, `Changing the name forces a new Thing to be created.` |
 | `conflicts-with` | a sentence saying what the property conflicts with | the property sets `ConflictsWith` or `ExactlyOneOf` | `Conflicts with...`, `Cannot be specified with...`, `Only one of a or b can be specified.` |
 | `one-of` | a sentence saying one of several properties must be set | the property sets `ExactlyOneOf` or `AtLeastOneOf` | `Exactly one of a or b must be specified.` |
@@ -60,9 +60,10 @@ The validation that counts is a list or a range: `StringInSlice`, `IntInSlice`, 
 
 In the framework a property is `ForceNew` when a plan modifier is `RequiresReplace`, and its item count, one-of and required-with rules are the `SizeAtMost`, `SizeAtLeast`, `SizeBetween`, `ExactlyOneOf`, `AtLeastOneOf` and `AlsoRequires` validators.
 
+A default is the schema's to give, so one written in a description is always reported. When the property sets `Default` the fix takes it out. When it does not, the report has no fix: set `Default` in the schema, or drop the sentence.
+
 These pass, because the description is the only place it is written down:
 
-- `Defaults to...` on a property with no `Default`, such as one the API fills in
 - `Possible values are...` on a property with no validation, or with validation that is not a list or a range
 - `Changing this forces...` on a property that is not `ForceNew`
 - `A maximum of 100 rule blocks...`, `Exactly one of...` and a length on a property whose schema does not set them
@@ -86,6 +87,7 @@ The tag, the words or the whole sentence is removed. There is no fix when:
 
 - every sentence of the description repeats the schema, so nothing would be left
 - a length sits inside a sentence that says more, which has to be reworded by hand
+- the property sets no `Default`, so the description is the only place the default is written down
 - the description is a constant or is joined from parts, which is reported as a whole
 
 ## Options
