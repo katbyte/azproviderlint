@@ -34,13 +34,13 @@ func init() {
 	for _, kind := range [][2]string{
 		{"tag", "a tag copied from the docs, such as (Optional) or (Boolean)"},
 		{possible, "a sentence listing the values a property takes, when its validation or its type already does"},
-		{"default", "a sentence giving the default, when the property sets one"},
+		{"default", "a sentence or words giving the default, when the property sets one"},
 		{"force-new", "a sentence saying a change forces a new resource, when the property is ForceNew"},
 		{"conflicts-with", "a sentence saying what a property conflicts with, when it sets ConflictsWith"},
 		{"one-of", "a sentence saying one of several properties must be set, when it sets ExactlyOneOf or AtLeastOneOf"},
 		{"item-count", "a sentence saying how many items or blocks there can be, when it sets MaxItems or MinItems"},
-		{length, "words giving how long a value can be, when its validation already does"},
-		{below, "words that point at the docs page, such as \"as defined below\""},
+		{length, "a sentence or words giving how long a value can be, when its validation already does"},
+		{below, "a sentence or words that point at the docs page, such as \"as defined below\""},
 	} {
 		enabled[kind[0]] = Analyzer.Flags.Bool(kind[0], true, "report "+kind[1]+" (false leaves it alone)")
 	}
@@ -88,7 +88,7 @@ var (
 	lengthClause   = regexp.MustCompile(span)
 )
 
-// the validation that pins a property to a list or a range of values, by the name of the function that builds it
+// the validation that pins a property to a length, and to a list or a range of values, by the name of the function that builds it
 var (
 	lengths    = []string{"StringLenBetween", "LengthBetween", "LengthAtLeast", "LengthAtMost", "UTF8LengthBetween", "UTF8LengthAtLeast", "UTF8LengthAtMost"}
 	valueLists = []string{"StringInSlice", "IntInSlice", "FloatInSlice", "IntBetween", "IntAtLeast", "IntAtMost", "FloatBetween", "FloatAtLeast", "FloatAtMost", "OneOf", "OneOfCaseInsensitive", "Between", "AtLeast", "AtMost"}
@@ -266,7 +266,13 @@ func check(text string, known facts) []description.Finding {
 
 	if known.hasDefault {
 		for _, at := range defaultBracket.FindAllStringIndex(masked, -1) {
-			add("default", description.Finding{Start: at[0], End: at[1], Message: givesDefault, Fix: removeWords})
+			finding := description.Finding{Start: at[0], End: at[1], Message: givesDefault, Fix: removeWords}
+
+			// at the very start there is no space in front to take, so the one behind goes
+			if at[0] == 0 {
+				finding.End = len(masked) - len(strings.TrimLeft(masked[at[1]:], " "))
+			}
+			add("default", finding)
 		}
 	}
 

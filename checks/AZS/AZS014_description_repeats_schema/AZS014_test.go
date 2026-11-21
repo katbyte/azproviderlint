@@ -118,6 +118,24 @@ func TestAZS014(t *testing.T) {
 		}
 	}
 
+	// what is taken out goes with one space, so none is left doubled or leading
+	for text, want := range map[string]string{
+		"(Defaults to `a`) The mode.":                                                   "The mode.",
+		"The mode (defaults to `a`) of the Thing.":                                      "The mode of the Thing.",
+		"The mode, which defaults to `a`.":                                              "The mode.",
+		"The mode; defaults to `a`. Used by the API.":                                   "The mode. Used by the API.",
+		"The rules. Each `rule` block supports fields defined below. Applied in order.": "The rules. Applied in order.",
+	} {
+		got := text
+		for _, finding := range slices.Backward(check(text, all)) {
+			got = got[:finding.Start] + finding.New + got[finding.End:]
+		}
+
+		if got != want {
+			t.Errorf("%q: fixed to %q, want %q", text, got, want)
+		}
+	}
+
 	if got := check("Is it on? Possible values are `true` and `false`.", facts{isBool: true}); len(got) != 1 || got[0].Message != byType {
 		t.Errorf("a bool's values: got %v", got)
 	}
