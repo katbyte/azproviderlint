@@ -1,6 +1,7 @@
 package azs014
 
 import (
+	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	fwschema "github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
@@ -92,6 +93,72 @@ func flagged() *schema.Resource {
 				Description: `The raw one. The default is "a".`, // want `description gives the default - the schema's Default already does`
 			},
 
+			"label": {
+				Type:        schema.TypeString,
+				Optional:    true,
+				ForceNew:    true,
+				Description: "The label of the Thing. Changing this forces a new resource.", // want `description says a change forces a new resource - the schema's ForceNew already does`
+			},
+
+			"protocol": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: validation.StringInSlice([]string{"Http", "Https"}, false),
+				Description:  "The protocol to use. Can be `Http` or `Https`.", // want `description lists the values it can take - the schema's validation already does`
+			},
+
+			"verb": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: validation.StringInSlice([]string{"GET", "POST", "PUT"}, false),
+				Description:  "Which HTTP verb to use. Options are 'GET', 'POST', and 'PUT'.", // want `description lists the values it can take - the schema's validation already does`
+			},
+
+			"owner": {
+				Type:        schema.TypeString,
+				Optional:    true,
+				Default:     "none",
+				Description: "The owner, a user or a group, which defaults to `none`.", // want `description gives the default - the schema's Default already does`
+			},
+
+			"site": {
+				Type:        schema.TypeString,
+				Optional:    true,
+				Default:     "Default-First-Site-Name",
+				Description: "The site to use (defaults to 'Default-First-Site-Name') for discovery. If blank, defaults to 'Default-First-Site-Name'.", // want `description gives the default - the schema's Default already does` `description gives the default - the schema's Default already does`
+			},
+
+			"key": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ExactlyOneOf: []string{"key", "secret"},
+				Description:  "The key to sign with. Exactly one of `key` or `secret` must be specified.", // want `description says one of several must be set - the schema's ExactlyOneOf or AtLeastOneOf already does`
+			},
+
+			"rule": {
+				Type:     schema.TypeList,
+				Optional: true,
+				MaxItems: 100,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{},
+				},
+				Description: "The rules to apply. Each `rule` block supports fields defined below. A maximum of `100` `rule` blocks may be defined.", // want `description points at the docs page - a description has no page around it` `description says how many there can be - the schema's MaxItems or MinItems already does`
+			},
+
+			"title": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: validation.StringLenBetween(1, 80),
+				Description:  "The title of the Thing. Must be between 1 and 80 characters.", // want `description says how long it can be - the schema's validation already does`
+			},
+
+			"alias": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: validation.StringLenBetween(1, 80),
+				Description:  "The alias of the Thing, letters and dashes up to 80 characters in length.", // want `description says how long it can be - the schema's validation already does`
+			},
+
 			"shared": {
 				Type:        schema.TypeString,
 				Optional:    true,
@@ -118,9 +185,20 @@ func flaggedFramework() fwschema.Schema {
 				Optional:    true,
 				Description: "Is the Thing on? Possible values are `true` or `false`.", // want `description lists the values it can take - a bool is always true or false`
 			},
+
+			"title": fwschema.StringAttribute{
+				Optional:    true,
+				Description: "The title of the Thing. Cannot exceed 80 characters in length.", // want `description says how long it can be - the schema's validation already does`
+				Validators:  []any{stringvalidator.LengthBetween(1, 80)},
+			},
 		},
 
 		Blocks: map[string]fwschema.Block{
+			"filter": fwschema.ListNestedBlock{
+				Description: "The filters to apply. Can support up to `5` `filter` blocks.", // want `description says how many there can be - the schema's MaxItems or MinItems already does`
+				Validators:  []any{listvalidator.SizeAtMost(5)},
+			},
+
 			"rule": fwschema.ListNestedBlock{
 				Description: "One or more `rule` blocks as defined below.", // want `description points at the docs page with "as defined below" - a description has no page around it`
 			},
@@ -150,11 +228,29 @@ func passing() *schema.Resource {
 				Description:  "The mode of the Thing. Possible values are `Fast` and `Slow`. Defaults to `Fast`. Changing this forces a new Thing to be created. Conflicts with `speed`.",
 			},
 
-			"owner": {
+			"plain": {
 				Type:        schema.TypeString,
 				Optional:    true,
-				Default:     "none",
-				Description: "The owner, a user (optional) or a group, which defaults to nobody. A String of up to 64 characters.",
+				Description: "The plain one, which defaults to `a`. Can be `a` or `b`. Changing this forces a new resource. Must be between 1 and 80 characters. Exactly one of `plain` or `mode` must be specified.",
+			},
+
+			"rule": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{},
+				},
+				Description: "The rules to apply. A maximum of `100` `rule` blocks may be defined.",
+			},
+
+			// said in a way that tells the reader more than the schema does
+			"owner": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				Default:      "none",
+				MaxItems:     1,
+				ValidateFunc: validation.StringLenBetween(1, 64),
+				Description:  "The owner, a user (optional) or a group, who by default is nobody. Limit it to 64 characters to avoid collisions. Only one owner can be set unless `mode` is `Fast`.",
 			},
 
 			"sku": {

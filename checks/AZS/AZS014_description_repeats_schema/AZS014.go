@@ -37,31 +37,66 @@ func init() {
 		{"default", "a sentence giving the default, when the property sets one"},
 		{"force-new", "a sentence saying a change forces a new resource, when the property is ForceNew"},
 		{"conflicts-with", "a sentence saying what a property conflicts with, when it sets ConflictsWith"},
-		{"defined-below", "words that point at the docs page, such as \"as defined below\""},
+		{"one-of", "a sentence saying one of several properties must be set, when it sets ExactlyOneOf or AtLeastOneOf"},
+		{"item-count", "a sentence saying how many items or blocks there can be, when it sets MaxItems or MinItems"},
+		{length, "words giving how long a value can be, when its validation already does"},
+		{below, "words that point at the docs page, such as \"as defined below\""},
 	} {
 		enabled[kind[0]] = Analyzer.Flags.Bool(kind[0], true, "report "+kind[1]+" (false leaves it alone)")
 	}
 }
 
-const possible = "possible-values"
+const (
+	possible = "possible-values"
+	length   = "length"
+	below    = "defined-below"
+
+	givesDefault = "description gives the default - the schema's Default already does"
+	givesLength  = "description says how long it can be - the schema's validation already does"
+
+	removeSentence = "Remove the sentence"
+	removeWords    = "Remove the words"
+)
+
+// what a value, a list of them and a count look like once the code in backticks is blanked out
+const (
+	value  = `(?:\x01+|'[^']*'|"[^"]*"|[\w-]+)`
+	values = value + `(?:(?:, and |, or |, | and | or )` + value + `)+`
+	count  = `(?:\x01+|\d+|one|two|three|four|five|six|seven|eight|nine|ten)`
+	span   = `(?:between ` + count + ` and ` + count + `|\d+-\d+|up to ` + count + `|at most ` + count + `|at least ` + count + `|a maximum of ` + count + `|a minimum of ` + count + `|no (?:more|longer) than ` + count + `) characters(?: in length| long)?`
+)
 
 const tagWord = `(?:Required|Optional|Computed|Sensitive|Deprecated|ForceNew|Read-Only|Write-Only|Boolean|Bool|String|Number|Integer|Int|Float|List|Set|Map|Block|Object)`
 
 var (
-	tag            = regexp.MustCompile(`\(` + tagWord + `(?:(?:, | and | or |/| )` + tagWord + `)*\)`)
-	definedBelow   = regexp.MustCompile(`[ \t]*\b(?:as )?(?:defined|documented|described|detailed|specified|outlined) (?:below|above)\b`)
-	possibleValues = regexp.MustCompile(`^(?:(?:The )?(?i:possible|valid|allowed|accepted|supported|available) values? (?:are|is|include|includes|range)\b|(?:Must|Should|Can) be (?:one of|either|between|at least|at most)\b)`)
-	defaults       = regexp.MustCompile(`^(?:The )?[Dd]efaults? (?:value )?(?:to|is)\b`)
-	forceNew       = regexp.MustCompile(`^Changing this (?:\w+ )?forces a new .+ to be created`)
-	conflictsWith  = regexp.MustCompile(`^(?:Conflicts with|Cannot be (?:set|used|specified|configured|defined) (?:together |along |alongside )?with)\b`)
+	tag          = regexp.MustCompile(`\(` + tagWord + `(?:(?:, | and | or |/| )` + tagWord + `)*\)`)
+	definedBelow = regexp.MustCompile(`[ \t]*\b(?:as )?(?:defined|documented|described|detailed|specified|outlined) (?:below|above)\b`)
+
+	// whole sentences
+	blockBelow     = regexp.MustCompile(`^(?:The|Each|Every|An?) (?:\x01+ )?blocks? (?:supports?|exports?|contains?|has|have)(?: the)?(?: following)?(?: fields| arguments| attributes| properties)?(?: as)? (?:defined|documented|described|detailed|specified|outlined|listed) (?:below|above)\.?$`)
+	possibleValues = regexp.MustCompile(`^(?:(?:The )?(?i:possible|valid|allowed|accepted|supported|available) (?:values?|options) (?:are|is|include|includes|range)\b|(?:Possible|Valid|Allowed|Accepted|Supported|Available) (?:values|options):|Options (?:are|include)\b|(?:Must|Should|Can) be (?:one of|either|between|at least|at most)\b|(?:Can be (?:set to )?|One of |Either )` + values + `\.?$)`)
+	defaults       = regexp.MustCompile(`^(?:(?:(?:If|When) (?:blank|omitted|unspecified|unset|not specified|not set|not provided|left blank|left empty),? )?(?:(?:This|this|It|it)(?: value| field| property)? |The |the )?[Dd]efaults? (?:value )?(?:to|is)\b|By default,? (?:this|it) is (?:set to )?` + value + `\.?$)`)
+	forceNew       = regexp.MustCompile(`^Changing (?:this|the|it)\b(?: [\w\x01]+){0,3}? (?:forces|will force) a new\b`)
+	oneOf          = regexp.MustCompile(`^(?:(?:Exactly |At least |Only )?[Oo]ne of (?:either )?|Either )` + values + ` (?:is required|(?:must|should|has to|have to|needs to|need to|can) be (?:specified|set|provided|configured|defined|used))\.?$`)
+	conflictsWith  = regexp.MustCompile(`^(?:Conflicts with\b|Cannot be (?:set|used|specified|configured|defined) (?:together |along |alongside )?with\b|Only one of (?:either )?` + values + ` can be (?:specified|set|provided|configured|defined|used)\.?$)`)
+	itemCount      = regexp.MustCompile(`^(?:(?:A |The )?(?i:maximum|minimum) of|(?:Can (?:support|have) |Supports )?(?i:up to|at most|at least|no more than)|Only) ` + count + ` (?:\x01+ )?(?:blocks?|items?|entries|elements?|values?)(?: (?:may|can|must|should) be (?:defined|specified|added|set|provided|configured)| (?:is|are) (?:allowed|supported))?\.?$`)
+	lengthIs       = regexp.MustCompile(`^(?:(?:(?:It|This|The value|The name) )?(?i:must|should|can|may) be (?:a string )?` + span + `|Cannot exceed ` + count + ` characters(?: in length)?|Max(?:imum)? length(?: is|:) ` + count + ` characters|The maximum (?:allowed )?length (?:for this field )?is ` + count + ` characters|Length is limited to ` + count + ` characters|Restricted to ` + count + ` characters)\.?$`)
+
+	// words inside a sentence that says more
+	defaultClause  = regexp.MustCompile(`[,;] (?:which |and |it |this |otherwise )?defaults? to ` + value + `(\.?)$`)
+	defaultBracket = regexp.MustCompile(` ?\((?:which |this |it )?[Dd]efaults? to ` + value + `\)`)
+	lengthClause   = regexp.MustCompile(span)
 )
 
 // the validation that pins a property to a list or a range of values, by the name of the function that builds it
-var valueLists = []string{"StringInSlice", "IntInSlice", "FloatInSlice", "IntBetween", "IntAtLeast", "IntAtMost", "FloatBetween", "FloatAtLeast", "FloatAtMost", "OneOf", "OneOfCaseInsensitive", "Between", "AtLeast", "AtMost"}
+var (
+	lengths    = []string{"StringLenBetween", "LengthBetween", "LengthAtLeast", "LengthAtMost", "UTF8LengthBetween", "UTF8LengthAtLeast", "UTF8LengthAtMost"}
+	valueLists = []string{"StringInSlice", "IntInSlice", "FloatInSlice", "IntBetween", "IntAtLeast", "IntAtMost", "FloatBetween", "FloatAtLeast", "FloatAtMost", "OneOf", "OneOfCaseInsensitive", "Between", "AtLeast", "AtMost"}
+)
 
 // facts is what a property's schema says about it that a description might repeat.
 type facts struct {
-	values, isBool, hasDefault, forceNew, conflicts bool
+	values, isBool, hasDefault, forceNew, conflicts, oneOf, items, length bool
 }
 
 func run(pass *analysis.Pass) (any, error) {
@@ -118,7 +153,10 @@ func run(pass *analysis.Pass) (any, error) {
 			}
 
 			known.values = calls(valueLists, validation...)
+			known.length = calls(lengths, validation...)
 			known.conflicts = fields["ConflictsWith"] != nil || calls([]string{"ConflictsWith"}, fields["Validators"])
+			known.oneOf = fields["ExactlyOneOf"] != nil || fields["AtLeastOneOf"] != nil || calls([]string{"ExactlyOneOf", "AtLeastOneOf"}, fields["Validators"])
+			known.items = fields["MaxItems"] != nil || fields["MinItems"] != nil || calls([]string{"SizeAtMost", "SizeAtLeast", "SizeBetween"}, fields["Validators"])
 			known.forceNew = astx.IsTrueConstant(pass, fields["ForceNew"]) || calls([]string{"RequiresReplace"}, fields["PlanModifiers"])
 			known.hasDefault = fields["Default"] != nil && !astx.IsNilValue(pass, fields["Default"])
 
@@ -162,26 +200,35 @@ func check(text string, known facts) []description.Finding {
 		findings = append(findings, finding)
 	}
 
-	// what a sentence repeats, and what in the schema already says it
+	// what a whole sentence can repeat, and whether the schema already says it
+	repeated := []struct {
+		kind, message string
+		says          *regexp.Regexp
+		known         bool
+	}{
+		{below, "description points at the docs page - a description has no page around it", blockBelow, true},
+		{"one-of", "description says one of several must be set - the schema's ExactlyOneOf or AtLeastOneOf already does", oneOf, known.oneOf},
+		{length, givesLength, lengthIs, known.length},
+		{possible, "description lists the values it can take - the schema's validation already does", possibleValues, known.values},
+		{possible, "description lists the values it can take - a bool is always true or false", possibleValues, known.isBool},
+		{"default", givesDefault, defaults, known.hasDefault},
+		{"force-new", "description says a change forces a new resource - the schema's ForceNew already does", forceNew, known.forceNew},
+		{"conflicts-with", "description says what it conflicts with - the schema's ConflictsWith already does", conflictsWith, known.conflicts},
+		{"item-count", "description says how many there can be - the schema's MaxItems or MinItems already does", itemCount, known.items},
+	}
+
 	sentences := description.Sentences(masked)
 	repeats := make([][2]string, len(sentences))
 	kept := 0
 	for i, sentence := range sentences {
-		switch {
-		case possibleValues.MatchString(sentence.Text) && known.values:
-			repeats[i] = [2]string{possible, "description lists the values it can take - the schema's validation already does"}
-		case possibleValues.MatchString(sentence.Text) && known.isBool:
-			repeats[i] = [2]string{possible, "description lists the values it can take - a bool is always true or false"}
-		case defaults.MatchString(sentence.Text) && known.hasDefault:
-			repeats[i] = [2]string{"default", "description gives the default - the schema's Default already does"}
-		case forceNew.MatchString(sentence.Text) && known.forceNew:
-			repeats[i] = [2]string{"force-new", "description says a change forces a new resource - the schema's ForceNew already does"}
-		case conflictsWith.MatchString(sentence.Text) && known.conflicts:
-			repeats[i] = [2]string{"conflicts-with", "description says what it conflicts with - the schema's ConflictsWith already does"}
+		for _, repeat := range repeated {
+			if repeat.known && *enabled[repeat.kind] && repeat.says.MatchString(sentence.Text) {
+				repeats[i] = [2]string{repeat.kind, repeat.message}
+				break
+			}
 		}
 
-		if repeats[i][0] == "" || !*enabled[repeats[i][0]] {
-			repeats[i] = [2]string{}
+		if repeats[i][0] == "" {
 			kept++
 		}
 	}
@@ -190,20 +237,37 @@ func check(text string, known facts) []description.Finding {
 	// to fix it to
 	before := false
 	for i, sentence := range sentences {
-		if repeats[i][0] == "" {
-			before = true
+		if repeats[i][0] != "" {
+			finding := description.Finding{Start: sentence.Start, End: sentence.End, Message: repeats[i][1]}
+			switch {
+			case kept == 0:
+			case before:
+				finding.Start, finding.Fix = sentences[i-1].End, removeSentence
+			case i+1 < len(sentences):
+				finding.End, finding.Fix = sentences[i+1].Start, removeSentence
+			}
+			add(repeats[i][0], finding)
+
 			continue
 		}
 
-		finding := description.Finding{Start: sentence.Start, End: sentence.End, Message: repeats[i][1]}
-		switch {
-		case kept == 0:
-		case before:
-			finding.Start, finding.Fix = sentences[i-1].End, "Remove the sentence"
-		case i+1 < len(sentences):
-			finding.End, finding.Fix = sentences[i+1].Start, "Remove the sentence"
+		before = true
+
+		// a sentence that is kept can still end with the default, which goes and leaves the full stop
+		if at := defaultClause.FindStringSubmatchIndex(sentence.Text); at != nil && known.hasDefault {
+			add("default", description.Finding{Start: sentence.Start + at[0], End: sentence.Start + at[2], Message: givesDefault, Fix: removeWords})
 		}
-		add(repeats[i][0], finding)
+
+		// a length in the middle of a sentence has no clean way out, so it is only pointed at
+		if at := lengthClause.FindStringIndex(sentence.Text); at != nil && known.length {
+			add(length, description.Finding{Start: sentence.Start + at[0], End: sentence.Start + at[1], Message: givesLength})
+		}
+	}
+
+	if known.hasDefault {
+		for _, at := range defaultBracket.FindAllStringIndex(masked, -1) {
+			add("default", description.Finding{Start: at[0], End: at[1], Message: givesDefault, Fix: removeWords})
+		}
 	}
 
 	for _, at := range tag.FindAllStringIndex(masked, -1) {
@@ -220,7 +284,7 @@ func check(text string, known facts) []description.Finding {
 	}
 
 	for _, at := range definedBelow.FindAllStringIndex(masked, -1) {
-		add("defined-below", description.Finding{Start: at[0], End: at[1], Message: fmt.Sprintf("description points at the docs page with %q - a description has no page around it", strings.TrimSpace(masked[at[0]:at[1]])), Fix: "Remove the words"})
+		add(below, description.Finding{Start: at[0], End: at[1], Message: fmt.Sprintf("description points at the docs page with %q - a description has no page around it", strings.TrimSpace(masked[at[0]:at[1]])), Fix: removeWords})
 	}
 
 	slices.SortStableFunc(findings, func(a, b description.Finding) int { return cmp.Compare(a.Start, b.Start) })

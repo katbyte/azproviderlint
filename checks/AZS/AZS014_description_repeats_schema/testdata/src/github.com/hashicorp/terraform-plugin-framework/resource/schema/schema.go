@@ -34,6 +34,7 @@ func (BoolAttribute) isAttribute() {}
 type ListNestedBlock struct {
 	Description         string
 	MarkdownDescription string
+	Validators          []any
 }
 
 func (ListNestedBlock) isBlock() {}

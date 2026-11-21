@@ -23,6 +23,10 @@ type Schema struct {
 	Default       any
 	ValidateFunc  SchemaValidateFunc
 	ConflictsWith []string
+	ExactlyOneOf  []string
+	AtLeastOneOf  []string
+	MaxItems      int
+	MinItems      int
 	Description   string
 	Elem          any
 }

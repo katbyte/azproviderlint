@@ -15,13 +15,17 @@ func TestAZS014(t *testing.T) {
 	_, filename, _, _ := runtime.Caller(0)
 	analysistest.RunWithSuggestedFixes(t, filepath.Join(filepath.Dir(filename), "testdata"), Analyzer, "azs014")
 
-	all := facts{values: true, isBool: true, hasDefault: true, forceNew: true, conflicts: true}
+	all := facts{values: true, isBool: true, hasDefault: true, forceNew: true, conflicts: true, oneOf: true, items: true, length: true}
 
 	for _, text := range []string{
 		"The name of the Thing.",
 		"The owner, a user (optional) or a group.",
-		"A String of up to 64 characters, or a List of them.",
-		"The mode, which defaults to `Fast`.",
+		"Limit the name to 64 characters to avoid collisions.",
+		"The mode, which by default follows the `speed`.",
+		"By default only routing information is allowed.",
+		"Only one `rule` block can be specified unless `mode` is `Fast`.",
+		"One of the `rule` blocks is used first.",
+		"Unsetting this after configuring it will force a new resource to be created.",
 		"The value set by default is `Fast`.",
 		"Changing this is fine.",
 		"The values possible are many.",
@@ -38,6 +42,11 @@ func TestAZS014(t *testing.T) {
 		"The mode. Defaults to `a`.",
 		"The mode. Changing this forces a new resource to be created.",
 		"The mode. Conflicts with `speed`.",
+		"The mode, which defaults to `a`.",
+		"The mode. Can be `a` or `b`.",
+		"The key. Exactly one of `key` or `secret` must be specified.",
+		"The rules. A maximum of `100` `rule` blocks may be defined.",
+		"The name. Must be between 1 and 80 characters.",
 	} {
 		if got := check(text, facts{}); len(got) > 0 {
 			t.Errorf("%q with no facts: unexpected %q", text, got[0].Message)
@@ -50,25 +59,54 @@ func TestAZS014(t *testing.T) {
 		byValue  = "description gives the default - the schema's Default already does"
 		replaced = "description says a change forces a new resource - the schema's ForceNew already does"
 		clashes  = "description says what it conflicts with - the schema's ConflictsWith already does"
+		either   = "description says one of several must be set - the schema's ExactlyOneOf or AtLeastOneOf already does"
+		counted  = "description says how many there can be - the schema's MaxItems or MinItems already does"
+		long     = "description says how long it can be - the schema's validation already does"
+		page     = "description points at the docs page - a description has no page around it"
 	)
 
 	for text, want := range map[string][]string{
-		"(Optional) The name.":                                            {`description has the tag "(Optional)" - the schema already says so`},
-		"The name. (Computed)":                                            {`description has the tag "(Computed)" - the schema already says so`},
-		"(Optional/Computed) The name.":                                   {`description has the tag "(Optional/Computed)" - the schema already says so`},
-		"(List) The names (String).":                                      {`description has the tag "(List)" - the schema already says so`, `description has the tag "(String)" - the schema already says so`},
-		"The mode. Possible values are `a` and `b`.":                      {values},
-		"The mode. Allowed values include `a`.":                           {values},
-		"The mode. Must be one of `a` or `b`.":                            {values},
-		"The size. Should be between 1 and 5.":                            {values},
-		"The mode. Default is `a`.":                                       {byValue},
-		"The mode. The default value is `a`.":                             {byValue},
-		"The mode. Defaults to `a`. Possible values are `a`.":             {byValue, values},
-		"The mode. Changing this forces a new Thing to be created.":       {replaced},
-		"The mode. Changing this value forces a new Thing to be created.": {replaced},
-		"The mode. Cannot be used together with `speed`.":                 {clashes},
-		"A `sku` block as defined below.":                                 {`description points at the docs page with "as defined below" - a description has no page around it`},
-		"One or more `sku` blocks, described above.":                      {`description points at the docs page with "described above" - a description has no page around it`},
+		"(Optional) The name.":                                             {`description has the tag "(Optional)" - the schema already says so`},
+		"The name. (Computed)":                                             {`description has the tag "(Computed)" - the schema already says so`},
+		"(Optional/Computed) The name.":                                    {`description has the tag "(Optional/Computed)" - the schema already says so`},
+		"(List) The names (String).":                                       {`description has the tag "(List)" - the schema already says so`, `description has the tag "(String)" - the schema already says so`},
+		"The mode. Possible values are `a` and `b`.":                       {values},
+		"The mode. Allowed values include `a`.":                            {values},
+		"The mode. Must be one of `a` or `b`.":                             {values},
+		"The size. Should be between 1 and 5.":                             {values},
+		"The mode. Default is `a`.":                                        {byValue},
+		"The mode. The default value is `a`.":                              {byValue},
+		"The mode. Defaults to `a`. Possible values are `a`.":              {byValue, values},
+		"The mode. Changing this forces a new Thing to be created.":        {replaced},
+		"The mode. Changing this value forces a new Thing to be created.":  {replaced},
+		"The mode. Cannot be used together with `speed`.":                  {clashes},
+		"The key. Only one of `key` or `secret` can be specified.":         {either},
+		"The mode. Changing this forces a new resource.":                   {replaced},
+		"The name. Changing the name forces a new resource to be created.": {replaced},
+		"The mode. Valid options are `a` or `b`.":                          {values},
+		"The verb. Options are 'GET', 'POST', and 'PUT'.":                  {values},
+		"The mode. Allowed values: `a`, `b`.":                              {values},
+		"The mode. Can be `a` or `b`.":                                     {values},
+		"The mode. Either `a` or `b`.":                                     {values},
+		"The mode. One of `a`, `b` or `c`.":                                {values},
+		"The mode, which defaults to `Fast`.":                              {byValue},
+		"The mode (defaults to `Fast`) of the Thing.":                      {byValue},
+		"The site. If blank, defaults to 'Default-First-Site-Name'.":       {byValue},
+		"The mode. This defaults to `a` if not specified.":                 {byValue},
+		"Is it on? By default, this is set to false.":                      {byValue},
+		"The key. Exactly one of `key` or `secret` must be specified.":     {either},
+		"The key. One of either `key` or `secret` is required.":            {either},
+		"The key. At least one of `key`, `secret` or `token` must be set.": {either},
+		"The rules. A maximum of `100` `rule` blocks may be defined.":      {counted},
+		"The rules. Can support up to `5` `rule` blocks.":                  {counted},
+		"A `rule` block. Only one `rule` block can be specified.":          {counted},
+		"The name. Must be between 1 and 80 characters.":                   {long},
+		"The name. Cannot exceed 80 characters in length.":                 {long},
+		"The name, letters and dashes up to 80 characters in length.":      {long},
+		"The rules. Each `rule` block supports fields defined below.":      {page},
+		"The `sku` block supports the fields documented below. The SKU.":   {page},
+		"A `sku` block as defined below.":                                  {`description points at the docs page with "as defined below" - a description has no page around it`},
+		"One or more `sku` blocks, described above.":                       {`description points at the docs page with "described above" - a description has no page around it`},
 	} {
 		var got []string
 		for _, finding := range check(text, all) {
@@ -92,6 +130,9 @@ func TestAZS014(t *testing.T) {
 		"force-new":       "The mode. Changing this forces a new resource to be created.",
 		"conflicts-with":  "The mode. Conflicts with `speed`.",
 		"defined-below":   "A `sku` block as defined below.",
+		"one-of":          "The key. Exactly one of `key` or `secret` must be specified.",
+		"item-count":      "The rules. A maximum of `100` `rule` blocks may be defined.",
+		"length":          "The name, letters and dashes up to 80 characters in length.",
 	} {
 		if len(check(text, all)) == 0 {
 			t.Errorf("%s: %q should be reported", kind, text)
@@ -104,7 +145,7 @@ func TestAZS014(t *testing.T) {
 		*enabled[kind] = true
 	}
 
-	if len(enabled) != 6 {
-		t.Errorf("%d kinds can be switched off, and the test covers 6", len(enabled))
+	if len(enabled) != 9 {
+		t.Errorf("%d kinds can be switched off, and the test covers 9", len(enabled))
 	}
 }

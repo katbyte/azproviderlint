@@ -7,4 +7,6 @@ func StringInSlice(valid []string, ignoreCase bool) schema.SchemaValidateFunc { 
 
 func IntBetween(lowest, highest int) schema.SchemaValidateFunc { return nil }
 
+func StringLenBetween(shortest, longest int) schema.SchemaValidateFunc { return nil }
+
 func StringIsNotEmpty(any, string) ([]string, []error) { return nil, nil }

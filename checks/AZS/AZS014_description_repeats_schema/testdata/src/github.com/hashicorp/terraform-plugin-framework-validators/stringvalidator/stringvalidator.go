@@ -3,4 +3,6 @@ package stringvalidator
 
 func OneOf(values ...string) any { return nil }
 
+func LengthBetween(shortest, longest int) any { return nil }
+
 func LengthAtLeast(length int) any { return nil }
