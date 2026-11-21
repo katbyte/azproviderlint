@@ -100,6 +100,7 @@ Rules are named `AZ`, a category letter, and a number. The letters follow [tfpro
 | [AZS013](checks/AZS/AZS013_description_acronym_case) | acronyms in resource and property descriptions must be written in their usual case |
 | [AZS014](checks/AZS/AZS014_description_repeats_schema) | resource and property descriptions must not repeat what the schema says |
 | [AZS015](checks/AZS/AZS015_description_punctuation) | resource and property descriptions must be punctuated properly |
+| [AZS017](checks/AZS/AZS017_description_opens_with_specifies) | resource and property descriptions must not open with "Specifies" |
 
 ### AZC - Clients & SDK Usage
 
