@@ -43,10 +43,8 @@ func TestAZS014(t *testing.T) {
 	// with nothing in the schema to repeat, only what is never right in a description is left
 	for _, text := range []string{
 		"The mode. Possible values are `a` and `b`.",
-		"The mode. Defaults to `a`.",
 		"The mode. Changing this forces a new resource to be created.",
 		"The mode. Conflicts with `speed`.",
-		"The mode, which defaults to `a`.",
 		"The mode. Can be `a` or `b`.",
 		"The key. Exactly one of `key` or `secret` must be specified.",
 		"The rules. A maximum of `100` `rule` blocks may be defined.",
@@ -162,6 +160,23 @@ func TestAZS014(t *testing.T) {
 
 	if got := check("Is it on? Possible values are `true` and `false`.", facts{isBool: true}); len(got) != 1 || got[0].Message != byType {
 		t.Errorf("a bool's values: got %v", got)
+	}
+
+	// a default the schema does not set is still called out where it is written, and left there
+	for text, want := range map[string]string{
+		"Is it on? Defaults to `false`.":           "Defaults to `false`.",
+		"The mode, which defaults to `a`.":         ", which defaults to `a`",
+		"The mode (defaults to `a`) of the Thing.": " (defaults to `a`)",
+		"If blank, defaults to 'x'. The site.":     "If blank, defaults to 'x'.",
+	} {
+		got := check(text, facts{})
+		if len(got) != 1 || got[0].Message != unsetDefault || got[0].Fix != "" || text[got[0].Start:got[0].End] != want {
+			t.Errorf("%q with no Default in the schema: got %v", text, got)
+		}
+	}
+
+	if got := check("The value set by default is `Fast`.", facts{}); len(got) > 0 {
+		t.Errorf("prose about a default: got %v", got)
 	}
 
 	// each kind of repeat can be switched off on its own; the kinds are package state, so this cannot run beside anything else

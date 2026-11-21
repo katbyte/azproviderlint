@@ -187,6 +187,27 @@ func flagged() *schema.Resource {
 				Description:  "The type of the runbook - can be either `Graph` or `Script`.", // want `description lists the values it can take - the schema's validation already does`
 			},
 
+			// with no default in the schema the sentence is called out and left, as the only place it is written down
+			"always_on": {
+				Type:        schema.TypeBool,
+				Optional:    true,
+				Description: "Should the Thing always be on? Defaults to `false`.", // want `description gives the default - set Default in the schema instead`
+			},
+
+			"transport": {
+				Type:        schema.TypeString,
+				Optional:    true,
+				Computed:    true,
+				Description: "The transport to use, which defaults to `auto`.", // want `description gives the default - set Default in the schema instead`
+			},
+
+			"retries": {
+				Type:        schema.TypeInt,
+				Optional:    true,
+				Default:     nil,
+				Description: "The number of retries (defaults to 3) before giving up.", // want `description gives the default - set Default in the schema instead`
+			},
+
 			"shared": {
 				Type:        schema.TypeString,
 				Optional:    true,
@@ -218,6 +239,11 @@ func flaggedFramework() fwschema.Schema {
 				Optional:    true,
 				Description: "The title of the Thing. Cannot exceed 80 characters in length.", // want `description says how long it can be - the schema's validation already does`
 				Validators:  []any{stringvalidator.LengthBetween(1, 80)},
+			},
+
+			"quiet": fwschema.BoolAttribute{
+				Optional:    true,
+				Description: "Is the Thing quiet? Defaults to `false`.", // want `description gives the default - set Default in the schema instead`
 			},
 		},
 
@@ -253,13 +279,13 @@ func passing() *schema.Resource {
 				Optional:     true,
 				Computed:     true,
 				ValidateFunc: validation.StringIsNotEmpty,
-				Description:  "The mode of the Thing. Possible values are `Fast` and `Slow`. Defaults to `Fast`. Changing this forces a new Thing to be created. Conflicts with `speed`.",
+				Description:  "The mode of the Thing. Possible values are `Fast` and `Slow`. Changing this forces a new Thing to be created. Conflicts with `speed`.",
 			},
 
 			"plain": {
 				Type:        schema.TypeString,
 				Optional:    true,
-				Description: "The plain one, which defaults to `a`. Can be `a` or `b`. Changing this forces a new resource. Must be between 1 and 80 characters. Exactly one of `plain` or `mode` must be specified.",
+				Description: "The plain one. Can be `a` or `b`. Changing this forces a new resource. Must be between 1 and 80 characters. Exactly one of `plain` or `mode` must be specified.",
 			},
 
 			"rule": {

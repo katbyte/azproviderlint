@@ -34,7 +34,7 @@ func init() {
 	for _, kind := range [][2]string{
 		{"tag", "a tag copied from the docs, such as (Optional) or (Boolean)"},
 		{possible, "a sentence listing the values a property takes, when its validation or its type already does"},
-		{"default", "a sentence or words giving the default, when the property sets one"},
+		{"default", "a sentence or words giving the default, which is the schema's to say"},
 		{"force-new", "a sentence saying a change forces a new resource, when the property is ForceNew"},
 		{"conflicts-with", "a sentence saying what a property conflicts with, when it sets ConflictsWith"},
 		{"one-of", "a sentence saying one of several properties must be set, when it sets ExactlyOneOf or AtLeastOneOf"},
@@ -54,6 +54,7 @@ const (
 
 	listsValues  = "description lists the values it can take - the schema's validation already does"
 	givesDefault = "description gives the default - the schema's Default already does"
+	unsetDefault = "description gives the default - set Default in the schema instead"
 	givesLength  = "description says how long it can be - the schema's validation already does"
 
 	removeSentence = "Remove the sentence"
@@ -275,9 +276,17 @@ func check(text string, known facts) []description.Finding {
 			}
 		}
 
-		// or with the default, which goes and leaves the full stop
-		if at := defaultClause.FindStringSubmatchIndex(sentence.Text); at != nil && known.hasDefault {
+		// a default is called out wherever it is written, but only taken out when the schema gives it too: with no Default there, taking it out
+		// would lose the only place it is written down
+		switch at := defaultClause.FindStringSubmatchIndex(sentence.Text); {
+		case !known.hasDefault && defaults.MatchString(sentence.Text):
+			add("default", description.Finding{Start: sentence.Start, End: sentence.End, Message: unsetDefault})
+
+		case at != nil && known.hasDefault:
 			add("default", description.Finding{Start: sentence.Start + at[0], End: sentence.Start + at[2], Message: givesDefault, Fix: removeWords})
+
+		case at != nil:
+			add("default", description.Finding{Start: sentence.Start + at[0], End: sentence.Start + at[2], Message: unsetDefault})
 		}
 
 		// a length in the middle of a sentence has no clean way out, so it is only pointed at
@@ -286,16 +295,19 @@ func check(text string, known facts) []description.Finding {
 		}
 	}
 
-	if known.hasDefault {
-		for _, at := range defaultBracket.FindAllStringIndex(masked, -1) {
-			finding := description.Finding{Start: at[0], End: at[1], Message: givesDefault, Fix: removeWords}
+	for _, at := range defaultBracket.FindAllStringIndex(masked, -1) {
+		if !known.hasDefault {
+			add("default", description.Finding{Start: at[0], End: at[1], Message: unsetDefault})
 
-			// at the very start there is no space in front to take, so the one behind goes
-			if at[0] == 0 {
-				finding.End = len(masked) - len(strings.TrimLeft(masked[at[1]:], " "))
-			}
-			add("default", finding)
+			continue
 		}
+
+		// at the very start there is no space in front to take, so the one behind goes
+		finding := description.Finding{Start: at[0], End: at[1], Message: givesDefault, Fix: removeWords}
+		if at[0] == 0 {
+			finding.End = len(masked) - len(strings.TrimLeft(masked[at[1]:], " "))
+		}
+		add("default", finding)
 	}
 
 	for _, at := range tag.FindAllStringIndex(masked, -1) {
