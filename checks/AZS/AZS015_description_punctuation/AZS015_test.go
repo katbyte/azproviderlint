@@ -1,4 +1,4 @@
-package AZS010
+package AZS015
 
 import (
 	"path/filepath"
@@ -9,11 +9,11 @@ import (
 	"golang.org/x/tools/go/analysis/analysistest"
 )
 
-func TestAZS010(t *testing.T) {
+func TestAZS015(t *testing.T) {
 	t.Parallel()
 
 	_, filename, _, _ := runtime.Caller(0)
-	analysistest.RunWithSuggestedFixes(t, filepath.Join(filepath.Dir(filename), "testdata"), Analyzer, "azs010")
+	analysistest.RunWithSuggestedFixes(t, filepath.Join(filepath.Dir(filename), "testdata"), Analyzer, "azs015")
 
 	for _, text := range []string{
 		"The name of the Thing.",

@@ -1,5 +1,5 @@
-// Package AZS010 defines an analyzer that reports punctuation mistakes in resource and property descriptions.
-package AZS010
+// Package AZS015 defines an analyzer that reports punctuation mistakes in resource and property descriptions.
+package AZS015
 
 import (
 	"cmp"
@@ -19,9 +19,9 @@ import (
 // Analyzer checks how descriptions are punctuated: the capital they start with, the full stop they end with, and the spaces and marks in between.
 // The descriptions become the provider's documentation, so a slip here is a slip on the page.
 var Analyzer = &analysis.Analyzer{
-	Name:     "AZS010",
+	Name:     "AZS015",
 	Doc:      "check that resource and property descriptions are punctuated properly",
-	URL:      "https://github.com/katbyte/azproviderlint/blob/main/checks/AZS/AZS010_description_punctuation/README.md",
+	URL:      "https://github.com/katbyte/azproviderlint/blob/main/checks/AZS/AZS015_description_punctuation/README.md",
 	Requires: []*analysis.Analyzer{inspect.Analyzer},
 	Run:      run,
 }

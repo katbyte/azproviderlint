@@ -1,6 +1,6 @@
-# AZS010 - resource and property descriptions must be punctuated properly
+# AZS015 - resource and property descriptions must be punctuated properly
 
-AZS010 reports punctuation mistakes in resource and property descriptions: no capital at the start, no full stop at the end, and stray or missing spaces and marks in between.
+AZS015 reports punctuation mistakes in resource and property descriptions: no capital at the start, no full stop at the end, and stray or missing spaces and marks in between.
 
 The descriptions are what the provider's documentation is made from, so a slip here is a slip on the page.
 
@@ -74,7 +74,7 @@ A description ending in code or a link is reported as missing its full stop, sin
 
 A description is text written out in the code, outside test files, in one of these places:
 
-- `Description` on a plugin SDK schema property or resource (`pluginsdk.Schema`, `pluginsdk.Resource`)
+- `Description` on a plugin SDK schema property, block or resource (`pluginsdk.Schema`, `pluginsdk.Resource`)
 - `Description` or `MarkdownDescription` on a framework schema, attribute or block
 - `Description` or `MarkdownDescription` on a provider function or one of its parameters
 - what a typed resource or data source returns from `Description() string`
@@ -100,23 +100,23 @@ Most kinds have a fix that changes only the characters involved. There is none w
 | each kind in the table above | `true` | `false` stops reporting that kind |
 
 ```yaml
-          AZS010:
+          AZS015:
             question-mark: false
             pasted-characters: false
 ```
 
 ```bash
-azproviderlint -AZS010 -AZS010.question-mark=false -AZS010.pasted-characters=false ./...
+azproviderlint -AZS015 -AZS015.question-mark=false -AZS015.pasted-characters=false ./...
 ```
 
 See the [root README](../../../README.md#options) for where the settings go.
 
 ## Ignoring Reports
 
-Put `//azignore:AZS010 - <reason>` at the end of the description's line, or on the line above it. The reason is required.
+Put `//azignore:AZS015 - <reason>` at the end of the description's line, or on the line above it. The reason is required.
 
 ```go
-Description: "The paths to skip, separated by ;", //azignore:AZS010 - <reason>
+Description: "The paths to skip, separated by ;", //azignore:AZS015 - <reason>
 ```
 
 Under golangci-lint, `//nolint:azproviderlint` in the same place also works, but it silences every azproviderlint check on that line.

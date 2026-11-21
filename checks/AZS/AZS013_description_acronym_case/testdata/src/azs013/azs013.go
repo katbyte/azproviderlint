@@ -59,3 +59,21 @@ func passing() *schema.Resource {
 		},
 	}
 }
+
+// a block is described like any other property, and what is inside it too
+func flaggedBlocks() (*schema.Schema, fwschema.Block) {
+	return &schema.Schema{
+		Type:        schema.TypeList,
+		Description: "A Sku block.", // want `"Sku" should be "SKU"`
+		Elem: &schema.Resource{
+			Schema: map[string]*schema.Schema{
+				"tier": {
+					Type:        schema.TypeString,
+					Description: "The id of the tier.", // want `"id" should be "ID"`
+				},
+			},
+		},
+	}, fwschema.ListNestedBlock{
+		MarkdownDescription: "A rule block for an ip range.", // want `"ip" should be "IP"`
+	}
+}
