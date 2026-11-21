@@ -24,6 +24,9 @@ type Found struct {
 	// Text is what it says.
 	Text string
 
+	// Owner is the schema value the description is set on, whose other fields say what the property is. It is nil for a typed resource's method.
+	Owner *ast.CompositeLit
+
 	// where each byte of Text sits in the source, counted from the literal's opening quote; nil when Value is not one string literal
 	offsets []int
 
@@ -45,13 +48,13 @@ type Finding struct {
 // All returns every description in the package, outside its test files, that is text the compiler can read: a string, or constants joined together.
 func All(pass *analysis.Pass, insp *inspector.Inspector) []Found {
 	var found []Found
-	add := func(value ast.Expr) {
+	add := func(value ast.Expr, owner *ast.CompositeLit) {
 		tv, ok := pass.TypesInfo.Types[value]
 		if !ok || tv.Value == nil || tv.Value.Kind() != constant.String {
 			return
 		}
 
-		f := Found{Value: value, Text: constant.StringVal(tv.Value)}
+		f := Found{Value: value, Text: constant.StringVal(tv.Value), Owner: owner}
 		lit, ok := ast.Unparen(value).(*ast.BasicLit)
 		if !ok || lit.Kind != token.STRING || len(lit.Value) < 2 {
 			found = append(found, f)
@@ -131,7 +134,7 @@ func All(pass *analysis.Pass, insp *inspector.Inspector) []Found {
 				}
 
 				if key, ok := kv.Key.(*ast.Ident); ok && (key.Name == "Description" || key.Name == "MarkdownDescription") {
-					add(kv.Value)
+					add(kv.Value, n)
 				}
 			}
 
@@ -156,7 +159,7 @@ func All(pass *analysis.Pass, insp *inspector.Inspector) []Found {
 			}
 
 			if ret, ok := n.Body.List[0].(*ast.ReturnStmt); ok && len(ret.Results) == 1 {
-				add(ret.Results[0])
+				add(ret.Results[0], nil)
 			}
 		}
 	})

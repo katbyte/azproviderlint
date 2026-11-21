@@ -14,6 +14,7 @@ import (
 	AZS011 "github.com/katbyte/azproviderlint/checks/AZS/AZS011_description_blank"
 	AZS012 "github.com/katbyte/azproviderlint/checks/AZS/AZS012_description_indefinite_article"
 	AZS013 "github.com/katbyte/azproviderlint/checks/AZS/AZS013_description_acronym_case"
+	AZS014 "github.com/katbyte/azproviderlint/checks/AZS/AZS014_description_repeats_schema"
 	AZS015 "github.com/katbyte/azproviderlint/checks/AZS/AZS015_description_punctuation"
 )
 
@@ -29,5 +30,6 @@ var Checks = []*analysis.Analyzer{
 	AZS011.Analyzer,
 	AZS012.Analyzer,
 	AZS013.Analyzer,
+	AZS014.Analyzer,
 	AZS015.Analyzer,
 }

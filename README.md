@@ -97,6 +97,7 @@ Rules are named `AZ`, a category letter, and a number. The letters follow [tfpro
 | [AZS011](checks/AZS/AZS011_description_blank) | resource and property descriptions must not be blank |
 | [AZS012](checks/AZS/AZS012_description_indefinite_article) | resource and property descriptions must use the right one of "a" and "an" |
 | [AZS013](checks/AZS/AZS013_description_acronym_case) | acronyms in resource and property descriptions must be written in their usual case |
+| [AZS014](checks/AZS/AZS014_description_repeats_schema) | resource and property descriptions must not repeat what the schema says |
 | [AZS015](checks/AZS/AZS015_description_punctuation) | resource and property descriptions must be punctuated properly |
 
 ### AZC - Clients & SDK Usage

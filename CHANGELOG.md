@@ -4,6 +4,7 @@
 - add rule `AZS011`: resource and property descriptions left blank ([#87](https://github.com/katbyte/azproviderlint/pull/87))
 - add rule `AZS012`: resource and property descriptions with `a` where `an` belongs, or the other way round ([#88](https://github.com/katbyte/azproviderlint/pull/88))
 - add rule `AZS013`: resource and property descriptions with an acronym in the wrong case, such as `id` for `ID` ([#89](https://github.com/katbyte/azproviderlint/pull/89))
+- add rule `AZS014`: resource and property descriptions that repeat the schema, such as `(Optional)`, the default or the possible values ([#92](https://github.com/katbyte/azproviderlint/pull/92))
 - add rule `AZS015`: resource and property descriptions with punctuation mistakes, such as no capital, no full stop or a stray space ([#91](https://github.com/katbyte/azproviderlint/pull/91))
 
 ## v0.13.0 (2026-11-15)
