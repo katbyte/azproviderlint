@@ -1,0 +1,27 @@
+package azp007
+
+// the Microsoft docs moved host and kept their paths, in a comment as in a string
+// See https://learn.microsoft.com/rest/api/automation/webhook/generate-uri for details. // want "URL starts with `docs.microsoft.com/`, which has moved - use `learn.microsoft.com/`"
+const firewall = "See [the docs](https://learn.microsoft.com/azure/cosmos-db/how-to-configure-firewall) for more." // want "URL starts with `docs.microsoft.com/`, which has moved - use `learn.microsoft.com/`"
+
+// a provider's docs moved to the registry
+const resource = "The name of an [OAuth2 Authorization Server](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/api_management_authorization_server)." // want "URL starts with `www.terraform.io/docs/providers/azurerm/r/api_management_authorization_server.html`, which has moved - use `registry.terraform.io/providers/hashicorp/azurerm/latest/docs/resources/api_management_authorization_server`"
+const dataSource = "https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/data-sources/client_config#tenant_id"                                                       // want "URL starts with `www.terraform.io/docs/providers/azurerm/d/client_config.html`, which has moved - use `registry.terraform.io/providers/hashicorp/azurerm/latest/docs/data-sources/client_config`"
+
+// the Terraform language docs moved to developer.hashicorp.com
+const function = `Terraform's [file function](https://developer.hashicorp.com/terraform/language/functions/file) and https://developer.hashicorp.com/terraform/language/resources/syntax#operation-timeouts` // want "URL starts with `www.terraform.io/docs/configuration/functions/file.html`, which has moved - use `developer.hashicorp.com/terraform/language/functions/file`" "URL starts with `www.terraform.io/language/`, which has moved - use `developer.hashicorp.com/terraform/language/`"
+
+// the provider's repository moved organisation
+/* https://github.com/hashicorp/terraform-provider-azurerm/issues/1234 */ // want "URL starts with `github.com/terraform-providers/terraform-provider-azurerm`, which has moved - use `github.com/hashicorp/terraform-provider-azurerm`"
+
+// moved, but not to somewhere the old address gives away
+const commands = "https://www.terraform.io/docs/commands/import.html" // want "URL starts with `www.terraform.io/docs/`, a page that has moved - look up where it lives now"
+
+// where the pages live now
+// https://learn.microsoft.com/azure/azure-arc/kubernetes/conceptual-agent-overview
+const current = "https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs and https://developer.hashicorp.com/terraform/language/functions/file and https://github.com/hashicorp/terraform-provider-azurerm"
+
+// not a moved address: no scheme, a host that only ends the same way, and the site's front page
+const prose = "docs.microsoft.com and https://mydocs.microsoft.com/azure/ and https://www.terraform.io"
+
+func use() string { return firewall + resource + dataSource + function + commands + current + prose }
