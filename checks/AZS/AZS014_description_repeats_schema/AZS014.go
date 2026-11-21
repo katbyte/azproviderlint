@@ -38,6 +38,7 @@ func init() {
 		{"force-new", "a sentence saying a change forces a new resource, when the property is ForceNew"},
 		{"conflicts-with", "a sentence saying what a property conflicts with, when it sets ConflictsWith"},
 		{"one-of", "a sentence saying one of several properties must be set, when it sets ExactlyOneOf or AtLeastOneOf"},
+		{"required-with", "a sentence saying what else must be set, when it sets RequiredWith"},
 		{"item-count", "a sentence saying how many items or blocks there can be, when it sets MaxItems or MinItems"},
 		{length, "a sentence or words giving how long a value can be, when its validation already does"},
 		{below, "a sentence or words that point at the docs page, such as \"as defined below\""},
@@ -51,6 +52,7 @@ const (
 	length   = "length"
 	below    = "defined-below"
 
+	listsValues  = "description lists the values it can take - the schema's validation already does"
 	givesDefault = "description gives the default - the schema's Default already does"
 	givesLength  = "description says how long it can be - the schema's validation already does"
 
@@ -62,6 +64,9 @@ const (
 const (
 	value  = `(?:\x01+|'[^']*'|"[^"]*"|[\w-]+)`
 	values = value + `(?:(?:, and |, or |, | and | or )` + value + `)+`
+	quoted = `(?:\x01+|'[^']*'|"[^"]*")`
+	names  = `\x01+(?:(?:, and |, or |, | and | or )\x01+)*`
+	listed = `(?i:possibles?|valid|allowed|accepted|supported|permitted|available) (?:values?|options)`
 	count  = `(?:\x01+|\d+|one|two|three|four|five|six|seven|eight|nine|ten)`
 	span   = `(?:between ` + count + ` and ` + count + `|\d+-\d+|up to ` + count + `|at most ` + count + `|at least ` + count + `|a maximum of ` + count + `|a minimum of ` + count + `|no (?:more|longer) than ` + count + `) characters(?: in length| long)?`
 )
@@ -74,15 +79,18 @@ var (
 
 	// whole sentences
 	blockBelow     = regexp.MustCompile(`^(?:The|Each|Every|An?) (?:\x01+ )?blocks? (?:supports?|exports?|contains?|has|have)(?: the)?(?: following)?(?: fields| arguments| attributes| properties)?(?: as)? (?:defined|documented|described|detailed|specified|outlined|listed) (?:below|above)\.?$`)
-	possibleValues = regexp.MustCompile(`^(?:(?:The )?(?i:possible|valid|allowed|accepted|supported|available) (?:values?|options) (?:are|is|include|includes|range)\b|(?:Possible|Valid|Allowed|Accepted|Supported|Available) (?:values|options):|Options (?:are|include)\b|(?:Must|Should|Can) be (?:one of|either|between|at least|at most)\b|(?:Can be (?:set to )?|One of |Either )` + values + `\.?$)`)
+	possibleValues = regexp.MustCompile(`^(?:(?:The )?` + listed + `(?::| (?:are|is|include|includes|range)\b)|Options (?:are|include)\b|(?:(?:This|It|The)(?: value| number| field| property)? )?(?i:must|should|can) be (?:one of|either|between|at least|at most)\b|(?:Can be (?:set to )?|One of |Either )` + values + `\.?$|(?:Currently,? )?(?i:only) ` + quoted + ` (?:is|are) (?:currently )?(?:supported|allowed|valid|accepted)(?: currently| at this time)?\.?$)`)
 	defaults       = regexp.MustCompile(`^(?:(?:(?:If|When) (?:blank|omitted|unspecified|unset|not specified|not set|not provided|left blank|left empty),? )?(?:(?:This|this|It|it)(?: value| field| property)? |The |the )?[Dd]efaults? (?:value )?(?:to|is)\b|By default,? (?:this|it) is (?:set to )?` + value + `\.?$)`)
 	forceNew       = regexp.MustCompile(`^Changing (?:this|the|it)\b(?: [\w\x01]+){0,3}? (?:forces|will force) a new\b`)
+	requiredWith   = regexp.MustCompile(`^(?:(?:(?:This|It)(?: value| field| property| argument)? is )?(?i:required) (?:with|when|if) ` + names + `(?: (?:is|are) (?:set|specified|provided|configured|defined))?|Requires ` + names + `(?: to be (?:set|specified|provided|configured|defined))?|` + names + ` must also be (?:set|specified|provided|configured|defined)|(?:Only valid|Can only be (?:set|used|specified)) (?:in conjunction |together |along )?with ` + names + `)\.?$`)
 	oneOf          = regexp.MustCompile(`^(?:(?:Exactly |At least |Only )?[Oo]ne of (?:either )?|Either )` + values + ` (?:is required|(?:must|should|has to|have to|needs to|need to|can) be (?:specified|set|provided|configured|defined|used))\.?$`)
 	conflictsWith  = regexp.MustCompile(`^(?:Conflicts with\b|Cannot be (?:set|used|specified|configured|defined) (?:together |along |alongside )?with\b|Only one of (?:either )?` + values + ` can be (?:specified|set|provided|configured|defined|used)\.?$)`)
 	itemCount      = regexp.MustCompile(`^(?:(?:A |The )?(?i:maximum|minimum) of|(?:Can (?:support|have) |Supports )?(?i:up to|at most|at least|no more than)|Only) ` + count + ` (?:\x01+ )?(?:blocks?|items?|entries|elements?|values?)(?: (?:may|can|must|should) be (?:defined|specified|added|set|provided|configured)| (?:is|are) (?:allowed|supported))?\.?$`)
 	lengthIs       = regexp.MustCompile(`^(?:(?:(?:It|This|The value|The name) )?(?i:must|should|can|may) be (?:a string )?` + span + `|Cannot exceed ` + count + ` characters(?: in length)?|Max(?:imum)? length(?: is|:) ` + count + ` characters|The maximum (?:allowed )?length (?:for this field )?is ` + count + ` characters|Length is limited to ` + count + ` characters|Restricted to ` + count + ` characters)\.?$`)
 
 	// words inside a sentence that says more
+	valuesUnended  = regexp.MustCompile(`[^\s.?!,;:]( (?:Possibles?|Valid|Allowed|Accepted|Supported|Permitted|Available) (?:values?|options)(?::| (?:are|is|include|includes)\b).*?)\.?$`)
+	valuesClause   = regexp.MustCompile(`(?:,| -| –|;) (?:it )?can be (?:either |one of )?` + values + `(\.?)$`)
 	defaultClause  = regexp.MustCompile(`[,;] (?:which |and |it |this |otherwise )?defaults? to ` + value + `(\.?)$`)
 	defaultBracket = regexp.MustCompile(` ?\((?:which |this |it )?[Dd]efaults? to ` + value + `\)`)
 	lengthClause   = regexp.MustCompile(span)
@@ -96,7 +104,7 @@ var (
 
 // facts is what a property's schema says about it that a description might repeat.
 type facts struct {
-	values, isBool, hasDefault, forceNew, conflicts, oneOf, items, length bool
+	values, isBool, hasDefault, forceNew, conflicts, oneOf, requires, items, length bool
 }
 
 func run(pass *analysis.Pass) (any, error) {
@@ -154,7 +162,9 @@ func run(pass *analysis.Pass) (any, error) {
 
 			known.values = calls(valueLists, validation...)
 			known.length = calls(lengths, validation...)
-			known.conflicts = fields["ConflictsWith"] != nil || calls([]string{"ConflictsWith"}, fields["Validators"])
+			// exactly one of several also means no two of them together
+			known.conflicts = fields["ConflictsWith"] != nil || fields["ExactlyOneOf"] != nil || calls([]string{"ConflictsWith", "ExactlyOneOf"}, fields["Validators"])
+			known.requires = fields["RequiredWith"] != nil || calls([]string{"AlsoRequires"}, fields["Validators"])
 			known.oneOf = fields["ExactlyOneOf"] != nil || fields["AtLeastOneOf"] != nil || calls([]string{"ExactlyOneOf", "AtLeastOneOf"}, fields["Validators"])
 			known.items = fields["MaxItems"] != nil || fields["MinItems"] != nil || calls([]string{"SizeAtMost", "SizeAtLeast", "SizeBetween"}, fields["Validators"])
 			known.forceNew = astx.IsTrueConstant(pass, fields["ForceNew"]) || calls([]string{"RequiresReplace"}, fields["PlanModifiers"])
@@ -209,11 +219,12 @@ func check(text string, known facts) []description.Finding {
 		{below, "description points at the docs page - a description has no page around it", blockBelow, true},
 		{"one-of", "description says one of several must be set - the schema's ExactlyOneOf or AtLeastOneOf already does", oneOf, known.oneOf},
 		{length, givesLength, lengthIs, known.length},
-		{possible, "description lists the values it can take - the schema's validation already does", possibleValues, known.values},
+		{possible, listsValues, possibleValues, known.values},
 		{possible, "description lists the values it can take - a bool is always true or false", possibleValues, known.isBool},
 		{"default", givesDefault, defaults, known.hasDefault},
 		{"force-new", "description says a change forces a new resource - the schema's ForceNew already does", forceNew, known.forceNew},
-		{"conflicts-with", "description says what it conflicts with - the schema's ConflictsWith already does", conflictsWith, known.conflicts},
+		{"conflicts-with", "description says what it conflicts with - the schema's ConflictsWith or ExactlyOneOf already does", conflictsWith, known.conflicts},
+		{"required-with", "description says what else must be set - the schema's RequiredWith already does", requiredWith, known.requires},
 		{"item-count", "description says how many there can be - the schema's MaxItems or MinItems already does", itemCount, known.items},
 	}
 
@@ -253,7 +264,18 @@ func check(text string, known facts) []description.Finding {
 
 		before = true
 
-		// a sentence that is kept can still end with the default, which goes and leaves the full stop
+		// a sentence that is kept can still end with the values, after a comma or where a full stop was left out
+		if known.values {
+			if at := valuesClause.FindStringSubmatchIndex(sentence.Text); at != nil {
+				add(possible, description.Finding{Start: sentence.Start + at[0], End: sentence.Start + at[2], Message: listsValues, Fix: removeWords})
+			}
+
+			if at := valuesUnended.FindStringSubmatchIndex(sentence.Text); at != nil {
+				add(possible, description.Finding{Start: sentence.Start + at[2], End: sentence.Start + at[3], Message: listsValues, Fix: removeWords})
+			}
+		}
+
+		// or with the default, which goes and leaves the full stop
 		if at := defaultClause.FindStringSubmatchIndex(sentence.Text); at != nil && known.hasDefault {
 			add("default", description.Finding{Start: sentence.Start + at[0], End: sentence.Start + at[2], Message: givesDefault, Fix: removeWords})
 		}

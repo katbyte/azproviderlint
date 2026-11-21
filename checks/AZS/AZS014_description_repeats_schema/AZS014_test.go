@@ -15,7 +15,7 @@ func TestAZS014(t *testing.T) {
 	_, filename, _, _ := runtime.Caller(0)
 	analysistest.RunWithSuggestedFixes(t, filepath.Join(filepath.Dir(filename), "testdata"), Analyzer, "azs014")
 
-	all := facts{values: true, isBool: true, hasDefault: true, forceNew: true, conflicts: true, oneOf: true, items: true, length: true}
+	all := facts{values: true, isBool: true, hasDefault: true, forceNew: true, conflicts: true, oneOf: true, requires: true, items: true, length: true}
 
 	for _, text := range []string{
 		"The name of the Thing.",
@@ -26,6 +26,10 @@ func TestAZS014(t *testing.T) {
 		"Only one `rule` block can be specified unless `mode` is `Fast`.",
 		"One of the `rule` blocks is used first.",
 		"Unsetting this after configuring it will force a new resource to be created.",
+		"The URL. Required if `mode` is `Fast`.",
+		"If specified, `secret` must also be set to `true`.",
+		"Only one is supported at a time.",
+		"The range, where valid values are checked by the API.",
 		"The value set by default is `Fast`.",
 		"Changing this is fine.",
 		"The values possible are many.",
@@ -47,6 +51,8 @@ func TestAZS014(t *testing.T) {
 		"The key. Exactly one of `key` or `secret` must be specified.",
 		"The rules. A maximum of `100` `rule` blocks may be defined.",
 		"The name. Must be between 1 and 80 characters.",
+		"The URL. `branch` and `token` must also be set.",
+		"The type of the runbook - can be either `a`, `b` or `c`.",
 	} {
 		if got := check(text, facts{}); len(got) > 0 {
 			t.Errorf("%q with no facts: unexpected %q", text, got[0].Message)
@@ -58,7 +64,8 @@ func TestAZS014(t *testing.T) {
 		byType   = "description lists the values it can take - a bool is always true or false"
 		byValue  = "description gives the default - the schema's Default already does"
 		replaced = "description says a change forces a new resource - the schema's ForceNew already does"
-		clashes  = "description says what it conflicts with - the schema's ConflictsWith already does"
+		clashes  = "description says what it conflicts with - the schema's ConflictsWith or ExactlyOneOf already does"
+		needs    = "description says what else must be set - the schema's RequiredWith already does"
 		either   = "description says one of several must be set - the schema's ExactlyOneOf or AtLeastOneOf already does"
 		counted  = "description says how many there can be - the schema's MaxItems or MinItems already does"
 		long     = "description says how long it can be - the schema's validation already does"
@@ -84,6 +91,20 @@ func TestAZS014(t *testing.T) {
 		"The mode. Changing this forces a new resource.":                   {replaced},
 		"The name. Changing the name forces a new resource to be created.": {replaced},
 		"The mode. Valid options are `a` or `b`.":                          {values},
+		"The mode. Permitted values: `a`, `b`, or `c`.":                    {values},
+		"The mode. Possibles values are `a` and `b`.":                      {values},
+		"The mode. Currently only `a` is supported.":                       {values},
+		"The mode. Only `a` is supported currently.":                       {values},
+		"The size. This value can be between `1` and `7` days.":            {values},
+		"The size. This number should be between 1 and 365.":               {values},
+		"The mode of the site Possible values include: `a` and `b`.":       {values},
+		"The type of the runbook - can be either `a`, `b` or `c`.":         {values},
+		"The URL. `branch` and `token` must also be set.":                  {needs},
+		"The URL. Required with `branch`.":                                 {needs},
+		"The URL. This is required with `branch`.":                         {needs},
+		"The URL. Requires `branch` to be set.":                            {needs},
+		"The URL. Required if `branch` is set.":                            {needs},
+		"The path. Only valid in conjunction with `health_check_path`.":    {needs},
 		"The verb. Options are 'GET', 'POST', and 'PUT'.":                  {values},
 		"The mode. Allowed values: `a`, `b`.":                              {values},
 		"The mode. Can be `a` or `b`.":                                     {values},
@@ -120,11 +141,14 @@ func TestAZS014(t *testing.T) {
 
 	// what is taken out goes with one space, so none is left doubled or leading
 	for text, want := range map[string]string{
-		"(Defaults to `a`) The mode.":                                                   "The mode.",
-		"The mode (defaults to `a`) of the Thing.":                                      "The mode of the Thing.",
-		"The mode, which defaults to `a`.":                                              "The mode.",
-		"The mode; defaults to `a`. Used by the API.":                                   "The mode. Used by the API.",
-		"The rules. Each `rule` block supports fields defined below. Applied in order.": "The rules. Applied in order.",
+		"(Defaults to `a`) The mode.":                                                                                   "The mode.",
+		"The mode (defaults to `a`) of the Thing.":                                                                      "The mode of the Thing.",
+		"The mode, which defaults to `a`.":                                                                              "The mode.",
+		"The mode; defaults to `a`. Used by the API.":                                                                   "The mode. Used by the API.",
+		"The mode of the site Possible values include: `a` and `b`. Used by the API.":                                   "The mode of the site. Used by the API.",
+		"The type of the runbook - can be either `a`, `b` or `c`.":                                                      "The type of the runbook.",
+		"The minimum TLS version for the SCM site Possible values include: `1.0`, `1.1` and  `1.2`. Defaults to `1.2`.": "The minimum TLS version for the SCM site.",
+		"The rules. Each `rule` block supports fields defined below. Applied in order.":                                 "The rules. Applied in order.",
 	} {
 		got := text
 		for _, finding := range slices.Backward(check(text, all)) {
@@ -149,6 +173,7 @@ func TestAZS014(t *testing.T) {
 		"conflicts-with":  "The mode. Conflicts with `speed`.",
 		"defined-below":   "A `sku` block as defined below.",
 		"one-of":          "The key. Exactly one of `key` or `secret` must be specified.",
+		"required-with":   "The URL. `branch` and `token` must also be set.",
 		"item-count":      "The rules. A maximum of `100` `rule` blocks may be defined.",
 		"length":          "The name, letters and dashes up to 80 characters in length.",
 	} {
@@ -163,7 +188,7 @@ func TestAZS014(t *testing.T) {
 		*enabled[kind] = true
 	}
 
-	if len(enabled) != 9 {
-		t.Errorf("%d kinds can be switched off, and the test covers 9", len(enabled))
+	if len(enabled) != 10 {
+		t.Errorf("%d kinds can be switched off, and the test covers 10", len(enabled))
 	}
 }
