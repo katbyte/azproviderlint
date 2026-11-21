@@ -16,6 +16,7 @@ import (
 	AZS013 "github.com/katbyte/azproviderlint/checks/AZS/AZS013_description_acronym_case"
 	AZS014 "github.com/katbyte/azproviderlint/checks/AZS/AZS014_description_repeats_schema"
 	AZS015 "github.com/katbyte/azproviderlint/checks/AZS/AZS015_description_punctuation"
+	AZS016 "github.com/katbyte/azproviderlint/checks/AZS/AZS016_description_product_name_case"
 )
 
 // Checks contains all AZS (schema & typed SDK model) analyzers.
@@ -32,4 +33,5 @@ var Checks = []*analysis.Analyzer{
 	AZS013.Analyzer,
 	AZS014.Analyzer,
 	AZS015.Analyzer,
+	AZS016.Analyzer,
 }
