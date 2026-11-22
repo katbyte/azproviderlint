@@ -30,6 +30,7 @@ func TestAZS016(t *testing.T) {
 	}
 
 	for text, want := range map[string][]string{
+		"The automation runbook of the linux web app slot.":                  {`"automation runbook" should be "Automation Runbook"`, `"linux web app slot" should be "Linux Web App Slot"`},
 		"The storage account.":                                               {`"storage account" should be "Storage Account"`},
 		"Function app or FUNCTION APPS in a Web app":                         {`"Function app" should be "Function App"`, `"FUNCTION APPS" should be "Function Apps"`, `"Web app" should be "Web App"`},
 		"An app service plan, not an app service.":                           {`"app service plan" should be "App Service Plan"`, `"app service" should be "App Service"`},

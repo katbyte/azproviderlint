@@ -90,6 +90,10 @@ linters:
       - path: '_test\.go'
         linters:
           - goconst
+      # a product is spelled the way its maker spells it: "Dev Center", not "Dev Centre"
+      - path: 'checks/AZS/AZS016_description_product_name_case/products\.go'
+        linters:
+          - misspell
 
   settings:
     custom:

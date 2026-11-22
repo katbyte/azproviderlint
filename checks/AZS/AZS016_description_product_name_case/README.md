@@ -28,9 +28,10 @@ AZS016 reports the name of an Azure product in a resource or property descriptio
 
 ## What counts
 
-These names are checked, in any other case than the one shown:
+400 names are checked, in any other case than the one shown. They are listed in [products.go](products.go):
 
-`Function App` `Web App` `Static Web App` `Logic App` `Container App` `Container App Environment` `App Service` `App Service Plan` `App Service Environment` `Service Plan` `App Configuration` `Application Insights` `Application Gateway` `Key Vault` `Key Vault Key` `Key Vault Secret` `Key Vault Certificate` `Storage Account` `Storage Container` `Storage Share` `Storage Queue` `Storage Table` `Resource Group` `Management Group` `Resource Manager` `Resource Provider` `Virtual Network` `Virtual Network Gateway` `Local Network Gateway` `Virtual Machine` `Virtual Machine Scale Set` `Virtual Hub` `Network Security Group` `Network Watcher` `Private Endpoint` `Private Link` `Front Door` `Traffic Manager` `Managed Identity` `Managed Service Identity` `User Assigned Identity` `User Assigned Managed Identity` `System Assigned Identity` `System Assigned Managed Identity` `Service Principal` `Role Assignment` `Role Definition` `Active Directory` `Log Analytics` `Log Analytics Workspace` `Service Bus` `Event Hub` `Event Grid` `Notification Hub` `Data Factory` `Data Lake` `Container Group` `Automation Account` `Batch Account` `Cognitive Account` `Recovery Services Vault` `Backup Vault` `Site Recovery` `Managed Disk` `Disk Encryption Set` `Availability Zone` `Availability Set` `Dedicated Host` `Proximity Placement Group` `Shared Image Gallery` `Redis Cache` `Search Service` `Machine Learning Workspace` `Stream Analytics Job` `Digital Twins` `Spring Cloud` `Service Fabric` `Synapse Workspace` `Databricks Workspace` `Deployment Slot`
+- the Azure services and ideas that descriptions name most, picked by hand: `Function App`, `Storage Account`, `Resource Group`, `Virtual Network`, `Managed Identity`, `Role Assignment` and 74 more
+- every azurerm resource whose name is two plain words or more, as its documentation gives it: `Linux Web App Slot`, `Key Vault Access Policy`, `Automation Runbook` and 317 more
 
 A plural counts too: `function apps` should be `Function Apps`, `managed identities` should be `Managed Identities`.
 
@@ -39,6 +40,7 @@ Each name is two plain words or more. These are left out, and can be added with 
 - a name of one word, such as `Subscription` or `Subnet`, which is too often an everyday word
 - a name with an acronym in it, such as `API Management` or `Public IP`, where [AZS013](../AZS013_description_acronym_case) already reports the acronym
 - a name that is also a general term, such as `Load Balancer`, `Network Interface` or `Container Registry`, which a description often uses for something that is not the Azure product
+- a resource whose documentation writes its name another way than its type, such as `azurerm_lb_rule`, a `Load Balancer Rule`
 
 Only prose is checked. These are left alone, since there the case is part of a name or a value:
 

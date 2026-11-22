@@ -33,42 +33,6 @@ var names = map[string]string{}
 // find matches any of the names, in any case.
 var find *regexp.Regexp
 
-// products are the names checked from the start, written the way they should be.
-var products = []string{
-	// apps
-	"Function App", "Web App", "Static Web App", "Logic App", "Container App", "Container App Environment", "Container Group", "Deployment Slot",
-
-	// app service
-	"App Service", "App Service Plan", "App Service Environment", "Service Plan", "App Configuration", "Application Insights", "Application Gateway",
-
-	// key vault
-	"Key Vault", "Key Vault Key", "Key Vault Secret", "Key Vault Certificate",
-
-	// storage
-	"Storage Account", "Storage Container", "Storage Share", "Storage Queue", "Storage Table", "Managed Disk", "Disk Encryption Set",
-
-	// where resources live
-	"Resource Group", "Management Group", "Resource Manager", "Resource Provider", "Availability Zone", "Availability Set",
-
-	// networking
-	"Virtual Network", "Virtual Network Gateway", "Local Network Gateway", "Virtual Hub", "Network Security Group", "Network Watcher", "Private Endpoint", "Private Link", "Front Door", "Traffic Manager",
-
-	// compute
-	"Virtual Machine", "Virtual Machine Scale Set", "Dedicated Host", "Proximity Placement Group", "Shared Image Gallery", "Service Fabric", "Spring Cloud",
-
-	// identity and access
-	"Managed Identity", "Managed Service Identity", "User Assigned Identity", "User Assigned Managed Identity", "System Assigned Identity", "System Assigned Managed Identity", "Service Principal", "Role Assignment", "Role Definition", "Active Directory",
-
-	// monitoring and messaging
-	"Log Analytics", "Log Analytics Workspace", "Service Bus", "Event Hub", "Event Grid", "Notification Hub",
-
-	// data
-	"Data Factory", "Data Lake", "Redis Cache", "Search Service", "Machine Learning Workspace", "Stream Analytics Job", "Digital Twins", "Synapse Workspace", "Databricks Workspace",
-
-	// accounts, backup and recovery
-	"Automation Account", "Batch Account", "Cognitive Account", "Recovery Services Vault", "Backup Vault", "Site Recovery",
-}
-
 func init() {
 	list(true, products...)
 
