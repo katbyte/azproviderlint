@@ -191,21 +191,21 @@ func flagged() *schema.Resource {
 			"always_on": {
 				Type:        schema.TypeBool,
 				Optional:    true,
-				Description: "Should the Thing always be on? Defaults to `false`.", // want `description gives the default - set Default in the schema instead`
+				Description: "Should the Thing always be on? Defaults to `false`.", // want `description gives the default - set Default in the schema or take it out; if it has to stay, say why in an //azignore`
 			},
 
 			"transport": {
 				Type:        schema.TypeString,
 				Optional:    true,
 				Computed:    true,
-				Description: "The transport to use, which defaults to `auto`.", // want `description gives the default - set Default in the schema instead`
+				Description: "The transport to use, which defaults to `auto`.", // want `description gives the default - set Default in the schema or take it out; if it has to stay, say why in an //azignore`
 			},
 
 			"retries": {
 				Type:        schema.TypeInt,
 				Optional:    true,
 				Default:     nil,
-				Description: "The number of retries (defaults to 3) before giving up.", // want `description gives the default - set Default in the schema instead`
+				Description: "The number of retries (defaults to 3) before giving up.", // want `description gives the default - set Default in the schema or take it out; if it has to stay, say why in an //azignore`
 			},
 
 			"shared": {
@@ -243,7 +243,7 @@ func flaggedFramework() fwschema.Schema {
 
 			"quiet": fwschema.BoolAttribute{
 				Optional:    true,
-				Description: "Is the Thing quiet? Defaults to `false`.", // want `description gives the default - set Default in the schema instead`
+				Description: "Is the Thing quiet? Defaults to `false`.", // want `description gives the default - set Default in the schema or take it out; if it has to stay, say why in an //azignore`
 			},
 		},
 
