@@ -78,9 +78,3 @@ signs:
       - '--yes' # keyless signing via the workflow's OIDC token, no prompt in CI
       - '${artifact}'
     output: true
-
-changelog:
-  filters:
-    exclude:
-      - '^Bump '
-      - 'merge main'

@@ -1,4 +1,4 @@
-## Unreleased
+## v0.14.0 (2026-11-22)
 
 - add rule `AZP007`: links to pages that have moved, such as `docs.microsoft.com` to `learn.microsoft.com` ([#96](https://github.com/katbyte/azproviderlint/pull/96))
 - add rule `AZS010`: resources, properties and blocks with no description ([#93](https://github.com/katbyte/azproviderlint/pull/93))
