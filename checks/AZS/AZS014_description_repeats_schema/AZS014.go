@@ -54,7 +54,7 @@ const (
 
 	listsValues  = "description lists the values it can take - the schema's validation already does"
 	givesDefault = "description gives the default - the schema's Default already does"
-	unsetDefault = "description gives the default - set Default in the schema instead"
+	unsetDefault = "description gives the default - set Default in the schema or take it out; if it has to stay, say why in an //azignore"
 	givesLength  = "description says how long it can be - the schema's validation already does"
 
 	removeSentence = "Remove the sentence"
