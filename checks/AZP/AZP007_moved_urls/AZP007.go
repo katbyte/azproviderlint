@@ -42,9 +42,8 @@ var moves = []move{
 	{regexp.MustCompile(`^(?:www\.)?terraform\.io/docs/providers/(azurerm|azuread|azurestack)/r/([a-z0-9_]+)\.html`), "registry.terraform.io/providers/hashicorp/$1/latest/docs/resources/$2"},
 	{regexp.MustCompile(`^(?:www\.)?terraform\.io/docs/providers/(azurerm|azuread|azurestack)/d/([a-z0-9_]+)\.html`), "registry.terraform.io/providers/hashicorp/$1/latest/docs/data-sources/$2"},
 	{regexp.MustCompile(`^(?:www\.)?terraform\.io/docs/configuration/functions/([a-z0-9_]+)\.html`), "developer.hashicorp.com/terraform/language/functions/$1"},
-	{regexp.MustCompile(`^(?:www\.)?terraform\.io/language/`), "developer.hashicorp.com/terraform/language/"},
 	{regexp.MustCompile(`^github\.com/terraform-providers/terraform-provider-(azurerm|azuread|azurestack)\b`), "github.com/hashicorp/terraform-provider-$1"},
-	{regexp.MustCompile(`^(?:www\.)?terraform\.io/docs/`), ""},
+	{regexp.MustCompile(`^(?:www\.)?terraform\.io/(?:docs|language)/`), ""},
 }
 
 var scheme = regexp.MustCompile(`https?://`)

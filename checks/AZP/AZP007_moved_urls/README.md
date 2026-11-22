@@ -31,9 +31,8 @@ Description: "The name of an [Authorization Server](https://registry.terraform.i
 | `www.terraform.io/docs/providers/<provider>/r/<name>.html` | `registry.terraform.io/providers/hashicorp/<provider>/latest/docs/resources/<name>` |
 | `www.terraform.io/docs/providers/<provider>/d/<name>.html` | `registry.terraform.io/providers/hashicorp/<provider>/latest/docs/data-sources/<name>` |
 | `www.terraform.io/docs/configuration/functions/<name>.html` | `developer.hashicorp.com/terraform/language/functions/<name>` |
-| `www.terraform.io/language/...` | `developer.hashicorp.com/terraform/language/...` |
 | `github.com/terraform-providers/terraform-provider-<provider>` | `github.com/hashicorp/terraform-provider-<provider>` |
-| `www.terraform.io/docs/...`, anything else | reported with no fix |
+| `www.terraform.io/docs/...`, anything else, and `www.terraform.io/language/...` | reported with no fix |
 
 `<provider>` is `azurerm`, `azuread` or `azurestack`. `terraform.io` without the `www.` counts too. Whatever follows the part that moved, such as the rest of the path or a `#section`, is kept.
 
