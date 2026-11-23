@@ -28,27 +28,23 @@ AZS016 reports the name of an Azure product in a resource or property descriptio
 
 ## What counts
 
-400 names are checked, in any other case than the one shown. They are listed in [products.go](products.go):
+The names checked are listed in [products.go](products.go), each in the case it should have:
 
-- the Azure services and ideas that descriptions name most, picked by hand: `Function App`, `Storage Account`, `Resource Group`, `Virtual Network`, `Managed Identity`, `Role Assignment` and 74 more
-- every azurerm resource whose name is two plain words or more, as its documentation gives it: `Linux Web App Slot`, `Key Vault Access Policy`, `Automation Runbook` and 317 more
+- the Azure services and ideas that descriptions name most, picked by hand: `Function App`, `Storage Account`, `Resource Group`
+- every azurerm resource whose name is two plain words or more: `Linux Web App Slot`, `Key Vault Access Policy`
 
-A plural counts too: `function apps` should be `Function Apps`, `managed identities` should be `Managed Identities`.
+A plural counts too: `function apps` should be `Function Apps`.
 
-Each name is two plain words or more. These are left out, and can be added with the `name` option:
+These are left out, and can be added with the `name` option:
 
-- a name of one word, such as `Subscription` or `Subnet`, which is too often an everyday word
-- a name with an acronym in it, such as `API Management` or `Public IP`, where [AZS013](../AZS013_description_acronym_case) already reports the acronym
-- a name that is also a general term, such as `Load Balancer`, `Network Interface` or `Container Registry`, which a description often uses for something that is not the Azure product
-- a resource whose documentation writes its name another way than its type, such as `azurerm_lb_rule`, a `Load Balancer Rule`
+- a name of one word, such as `Subscription`, which is too often an everyday word
+- a name with an acronym in it, such as `Public IP`, which [AZS013](../AZS013_description_acronym_case) already reports
+- a name that is also a general term, such as `Load Balancer` or `Container Registry`
+- a resource whose documentation names it differently from its type, such as `azurerm_lb_rule`, a `Load Balancer Rule`
 
-Only prose is checked. These are left alone, since there the case is part of a name or a value:
+Only prose is checked. Code in backticks, web addresses and a name joined to something else by a hyphen, such as `my-function app`, are left alone.
 
-- code in backticks: `` `function app` ``
-- web addresses, and the address a link points to
-- a name joined to something else by a hyphen: `my-function app`
-
-A description is text written out in the code, outside test files: `Description` on a plugin SDK schema property, block or resource, `Description` or `MarkdownDescription` on a framework schema, attribute or block, or on a provider function or one of its parameters, and what a typed resource or data source returns from `Description() string`. Provider and `features` block descriptions count too.
+The same descriptions are read as by [AZS011](../AZS011_description_blank#what-counts).
 
 ## Fix
 
