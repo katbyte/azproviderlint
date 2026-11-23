@@ -214,6 +214,19 @@ func flagged() *schema.Resource {
 				Default:     "a",
 				Description: shared, // want `description gives the default - the schema's Default already does`
 			},
+
+			// nothing is set on a read-only property, so these go whether or not the schema says them too
+			"state": {
+				Type:        schema.TypeString,
+				Computed:    true,
+				Description: "The state of the Thing. Possible values include `Running` and `Stopped`. Defaults to `Running`.", // want `description lists the values it can take - a read-only property cannot be set` `description gives the default - a read-only property cannot be set`
+			},
+
+			"endpoint": {
+				Type:        schema.TypeString,
+				Computed:    true,
+				Description: "(Computed) The endpoint of the Thing. Changing this forces a new Thing to be created. A `sku` block as defined below.", // want `description has the tag "\(Computed\)" - the schema already says so` `description says a change forces a new resource - a read-only property cannot be set` `description points at the docs page with "as defined below" - a description has no page around it`
+			},
 		},
 	}
 }
@@ -244,6 +257,11 @@ func flaggedFramework() fwschema.Schema {
 			"quiet": fwschema.BoolAttribute{
 				Optional:    true,
 				Description: "Is the Thing quiet? Defaults to `false`.", // want `description gives the default - set Default in the schema or take it out; if it has to stay, say why in an //azignore`
+			},
+
+			"status": fwschema.StringAttribute{
+				Computed:            true,
+				MarkdownDescription: "The status of the Thing. Can be `a` or `b`.", // want `description lists the values it can take - a read-only property cannot be set`
 			},
 		},
 

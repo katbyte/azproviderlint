@@ -18,7 +18,8 @@ import (
 )
 
 // Analyzer checks descriptions for what the schema already states: the type, the default, the allowed values, that a change forces a new
-// resource. The docs take those from the schema, so a description that repeats them says it twice and goes stale when the schema changes.
+// resource. The docs take those from the schema, so a description that repeats them says it twice and goes stale when the schema changes. On a
+// read-only property there is nothing to set, so those are reported whatever the schema says.
 var Analyzer = &analysis.Analyzer{
 	Name:     "AZS014",
 	Doc:      "check that resource and property descriptions do not repeat what the schema says",
@@ -56,6 +57,7 @@ const (
 	givesDefault = "description gives the default - the schema's Default already does"
 	unsetDefault = "description gives the default - set Default in the schema or take it out; if it has to stay, say why in an //azignore"
 	givesLength  = "description says how long it can be - the schema's validation already does"
+	neverSet     = " - a read-only property cannot be set"
 
 	removeSentence = "Remove the sentence"
 	removeWords    = "Remove the words"
@@ -106,6 +108,9 @@ var (
 // facts is what a property's schema says about it that a description might repeat.
 type facts struct {
 	values, isBool, hasDefault, forceNew, conflicts, oneOf, requires, items, length bool
+
+	// readOnly is whether the provider fills the property in and the user cannot set it: Computed, and neither Optional nor Required.
+	readOnly bool
 }
 
 func run(pass *analysis.Pass) (any, error) {
@@ -170,6 +175,7 @@ func run(pass *analysis.Pass) (any, error) {
 			known.items = fields["MaxItems"] != nil || fields["MinItems"] != nil || calls([]string{"SizeAtMost", "SizeAtLeast", "SizeBetween"}, fields["Validators"])
 			known.forceNew = astx.IsTrueConstant(pass, fields["ForceNew"]) || calls([]string{"RequiresReplace"}, fields["PlanModifiers"])
 			known.hasDefault = fields["Default"] != nil && !astx.IsNilValue(pass, fields["Default"])
+			known.readOnly = astx.IsTrueConstant(pass, fields["Computed"]) && fields["Optional"] == nil && fields["Required"] == nil
 
 			if sel, ok := ast.Unparen(fields["Type"]).(*ast.SelectorExpr); ok && sel.Sel.Name == "TypeBool" {
 				known.isBool = true
@@ -196,11 +202,20 @@ func run(pass *analysis.Pass) (any, error) {
 func check(text string, known facts) []description.Finding {
 	masked := description.Mask(text)
 
+	// nothing is set on a read-only property, so what a description says can be set on it is reported and taken out as if the schema said it too
+	if known.readOnly {
+		known = facts{readOnly: true, values: true, hasDefault: true, forceNew: true, conflicts: true, oneOf: true, requires: true, items: true, length: true}
+	}
+
 	// a later finding that overlaps an earlier one is dropped, so no two fixes rewrite the same bytes
 	var findings []description.Finding
 	add := func(kind string, finding description.Finding) {
 		if !*enabled[kind] {
 			return
+		}
+
+		if what, _, ok := strings.Cut(finding.Message, " - "); ok && known.readOnly && kind != "tag" && kind != below {
+			finding.Message = what + neverSet
 		}
 
 		for _, f := range findings {

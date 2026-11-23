@@ -4,6 +4,8 @@ AZS014 reports text in a resource or property description that the schema alread
 
 The docs take those from the schema. A description that repeats them says it twice, and the copy goes stale when the schema changes.
 
+On a read-only property nothing can be set, so the values it can take, a default and the rest are reported whether or not the schema says them.
+
 ## Flagged Code
 
 ```go
@@ -24,6 +26,19 @@ description gives the default - the schema's Default already does
 description says a change forces a new resource - the schema's ForceNew already does
 ```
 
+```go
+"state": {
+	Type:        pluginsdk.TypeString,
+	Computed:    true,
+	Description: "The state of the Thing. Possible values include `Running` and `Stopped`. Defaults to `Running`.",
+},
+```
+
+```text
+description lists the values it can take - a read-only property cannot be set
+description gives the default - a read-only property cannot be set
+```
+
 ## Passing Code
 
 ```go
@@ -34,6 +49,12 @@ description says a change forces a new resource - the schema's ForceNew already 
 	Default:      "Fast",
 	ValidateFunc: validation.StringInSlice([]string{"Fast", "Slow"}, false),
 	Description:  "The mode of the Thing.",
+},
+
+"state": {
+	Type:        pluginsdk.TypeString,
+	Computed:    true,
+	Description: "The state of the Thing.",
 },
 ```
 
@@ -56,30 +77,23 @@ Each kind of repeat has a name, and can be switched off by it.
 
 The tags are `Required`, `Optional`, `Computed`, `Sensitive`, `Deprecated`, `ForceNew`, `Read-Only`, `Write-Only`, `Boolean`, `Bool`, `String`, `Number`, `Integer`, `Int`, `Float`, `List`, `Set`, `Map`, `Block` and `Object`, in brackets and capitalised, alone or several together.
 
-The validation that counts is a list or a range: `StringInSlice`, `IntInSlice`, `FloatInSlice`, `IntBetween`, `IntAtLeast`, `IntAtMost` and the `Float` ones, on the property or on the element of its list, and the framework's `OneOf`, `Between`, `AtLeast` and `AtMost`. A length comes from `StringLenBetween`, or the framework's `LengthBetween`, `LengthAtLeast` and `LengthAtMost`.
+Validation counts when it is a list or a range, such as `StringInSlice` or `IntBetween`, on the property or on the element of its list, or a length, such as `StringLenBetween`. The framework's validators and plan modifiers that say the same things count too.
 
-In the framework a property is `ForceNew` when a plan modifier is `RequiresReplace`, and its item count, one-of and required-with rules are the `SizeAtMost`, `SizeAtLeast`, `SizeBetween`, `ExactlyOneOf`, `AtLeastOneOf` and `AlsoRequires` validators.
+A read-only property is `Computed` and neither `Optional` nor `Required`. Every kind but `tag` and `defined-below` is reported on it and taken out, whatever its schema says.
 
-A default is the schema's to give, so one written in a description is always reported. When the property sets `Default` the fix takes it out. When it does not, the report has no fix: set `Default` in the schema, or take the sentence out. Some schemas cannot hold a default, such as a read-only property or an action's; if the default has to stay in the description there, ignore the report and give the reason.
+A default is always reported. The fix takes it out when the property sets `Default`. When it does not, set `Default`, take the sentence out, or ignore the report with the reason it has to stay.
 
-These pass, because the description is the only place it is written down:
+These pass on a property that can be set, because the description is the only place it is written down:
 
-- `Possible values are...` on a property with no validation, or with validation that is not a list or a range
-- `Changing this forces...` on a property that is not `ForceNew`
-- `A maximum of 100 rule blocks...`, `Exactly one of...` and a length on a property whose schema does not set them
+- `Possible values are...`, `Changing this forces...`, a count, a length or `Exactly one of...` on a property whose schema does not say it
 - a sentence that says more than the schema does: `Only one rule block can be specified unless mode is Fast.`
 - something needed only for some values, which the schema cannot say: `Required when mode is Fast.`
 
 ## What counts
 
-A description is text written out in the code, outside test files, in one of these places:
+The same descriptions are read as by [AZS011](../AZS011_description_blank#what-counts).
 
-- `Description` on a plugin SDK schema property, block or resource (`pluginsdk.Schema`, `pluginsdk.Resource`)
-- `Description` or `MarkdownDescription` on a framework schema, attribute or block
-- `Description` or `MarkdownDescription` on a provider function or one of its parameters
-- what a typed resource or data source returns from `Description() string`
-
-Only the first two have a schema beside them to repeat. The others are checked for tags and for words that point at the docs page.
+Only a property has a schema beside it to repeat. Anything else is checked just for tags and for words that point at the docs page.
 
 ## Fix
 
@@ -87,7 +101,7 @@ The tag, the words or the whole sentence is removed. There is no fix when:
 
 - every sentence of the description repeats the schema, so nothing would be left
 - a length sits inside a sentence that says more, which has to be reworded by hand
-- the property sets no `Default`, so the description is the only place the default is written down; set `Default`, take the default out, or ignore the report with the reason it has to stay
+- the property can be set and sets no `Default`
 - the description is a constant or is joined from parts, which is reported as a whole
 
 ## Options

@@ -175,6 +175,32 @@ func TestAZS014(t *testing.T) {
 		}
 	}
 
+	// on a read-only property each of them is reported and taken out with nothing in the schema to repeat; a tag and a pointer at the docs page
+	// are reported as they are anywhere
+	for text, want := range map[string][2]string{
+		"The state. Possible values include `a` and `b`.":               {"description lists the values it can take" + neverSet, "The state."},
+		"The state. Defaults to `a`.":                                   {"description gives the default" + neverSet, "The state."},
+		"The state, which defaults to `a`.":                             {"description gives the default" + neverSet, "The state."},
+		"The state (defaults to `a`) of the Thing.":                     {"description gives the default" + neverSet, "The state of the Thing."},
+		"The state. Changing this forces a new resource to be created.": {"description says a change forces a new resource" + neverSet, "The state."},
+		"The state. Conflicts with `mode`.":                             {"description says what it conflicts with" + neverSet, "The state."},
+		"The state. Required with `mode`.":                              {"description says what else must be set" + neverSet, "The state."},
+		"The key. Exactly one of `key` or `secret` must be specified.":  {"description says one of several must be set" + neverSet, "The key."},
+		"The rules. A maximum of `100` `rule` blocks may be defined.":   {"description says how many there can be" + neverSet, "The rules."},
+		"The name. Must be between 1 and 80 characters.":                {"description says how long it can be" + neverSet, "The name."},
+		"(Computed) The state.":                                         {`description has the tag "(Computed)" - the schema already says so`, "The state."},
+		"The rules. Each `rule` block supports fields defined below.":   {page, "The rules."},
+	} {
+		got := check(text, facts{readOnly: true})
+		if len(got) != 1 || got[0].Message != want[0] || text[:got[0].Start]+got[0].New+text[got[0].End:] != want[1] {
+			t.Errorf("%q on a read-only property: got %v", text, got)
+		}
+	}
+
+	if got := check("The state of the Thing, as last read.", facts{readOnly: true}); len(got) > 0 {
+		t.Errorf("prose on a read-only property: got %v", got)
+	}
+
 	if got := check("The value set by default is `Fast`.", facts{}); len(got) > 0 {
 		t.Errorf("prose about a default: got %v", got)
 	}
