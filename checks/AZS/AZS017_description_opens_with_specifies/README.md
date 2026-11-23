@@ -43,7 +43,7 @@ A description whose first word is one of these verbs, in any case:
 
 Only the opening is checked: `The name of the Thing. Specifies the Thing to use.` passes. A verb that says what the property does, such as `Configures`, is not on the list.
 
-A description is text written out in the code, outside test files: `Description` on a plugin SDK schema property, block or resource, `Description` or `MarkdownDescription` on a framework schema, attribute or block, or on a provider function or one of its parameters, and what a typed resource or data source returns from `Description() string`. Provider and `features` block descriptions count too.
+The same descriptions are read as by [AZS011](../AZS011_description_blank#what-counts).
 
 ## Fix
 
