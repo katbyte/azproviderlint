@@ -102,6 +102,7 @@ Rules are named `AZ`, a category letter, and a number. The letters follow [tfpro
 | [AZS015](checks/AZS/AZS015_description_punctuation) | resource and property descriptions must be punctuated properly |
 | [AZS016](checks/AZS/AZS016_description_product_name_case) | Azure product names in resource and property descriptions must be capitalised |
 | [AZS017](checks/AZS/AZS017_description_opens_with_specifies) | resource and property descriptions must not open with "Specifies" |
+| [AZS018](checks/AZS/AZS018_description_note) | resource and property descriptions must not have a note in them |
 
 ### AZC - Clients & SDK Usage
 

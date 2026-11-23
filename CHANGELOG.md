@@ -1,3 +1,7 @@
+## Unreleased
+
+- add rule `AZS018`: resource and property descriptions with a note in them, such as `**Note:** ...` ([#105](https://github.com/katbyte/azproviderlint/pull/105))
+
 ## v0.15.1 (2026-11-23)
 
 - re-release of v0.15.0, whose binaries were published without their build provenance ([#104](https://github.com/katbyte/azproviderlint/pull/104))
