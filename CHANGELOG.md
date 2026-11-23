@@ -1,3 +1,7 @@
+## v0.14.1 (2026-11-23)
+
+- `AZS014`: possible values, defaults and the like in the description of a read-only property are now reported and removed ([#102](https://github.com/katbyte/azproviderlint/pull/102))
+
 ## v0.14.0 (2026-11-22)
 
 - add rule `AZP007`: links to pages that have moved, such as `docs.microsoft.com` to `learn.microsoft.com` ([#96](https://github.com/katbyte/azproviderlint/pull/96))

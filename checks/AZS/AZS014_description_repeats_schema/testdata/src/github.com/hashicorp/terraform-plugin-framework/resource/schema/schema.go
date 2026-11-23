@@ -14,6 +14,7 @@ type Schema struct {
 
 type StringAttribute struct {
 	Optional            bool
+	Computed            bool
 	Description         string
 	MarkdownDescription string
 	Default             any

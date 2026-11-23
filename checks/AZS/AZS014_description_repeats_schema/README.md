@@ -4,6 +4,8 @@ AZS014 reports text in a resource or property description that the schema alread
 
 The docs take those from the schema. A description that repeats them says it twice, and the copy goes stale when the schema changes.
 
+On a read-only property nothing can be set, so the values it can take, a default and the rest are reported whether or not the schema says them.
+
 ## Flagged Code
 
 ```go
@@ -24,6 +26,19 @@ description gives the default - the schema's Default already does
 description says a change forces a new resource - the schema's ForceNew already does
 ```
 
+```go
+"state": {
+	Type:        pluginsdk.TypeString,
+	Computed:    true,
+	Description: "The state of the Thing. Possible values include `Running` and `Stopped`. Defaults to `Running`.",
+},
+```
+
+```text
+description lists the values it can take - a read-only property cannot be set
+description gives the default - a read-only property cannot be set
+```
+
 ## Passing Code
 
 ```go
@@ -34,6 +49,12 @@ description says a change forces a new resource - the schema's ForceNew already 
 	Default:      "Fast",
 	ValidateFunc: validation.StringInSlice([]string{"Fast", "Slow"}, false),
 	Description:  "The mode of the Thing.",
+},
+
+"state": {
+	Type:        pluginsdk.TypeString,
+	Computed:    true,
+	Description: "The state of the Thing.",
 },
 ```
 
@@ -60,9 +81,11 @@ The validation that counts is a list or a range: `StringInSlice`, `IntInSlice`, 
 
 In the framework a property is `ForceNew` when a plan modifier is `RequiresReplace`, and its item count, one-of and required-with rules are the `SizeAtMost`, `SizeAtLeast`, `SizeBetween`, `ExactlyOneOf`, `AtLeastOneOf` and `AlsoRequires` validators.
 
-A default is the schema's to give, so one written in a description is always reported. When the property sets `Default` the fix takes it out. When it does not, the report has no fix: set `Default` in the schema, or take the sentence out. Some schemas cannot hold a default, such as a read-only property or an action's; if the default has to stay in the description there, ignore the report and give the reason.
+A read-only property is one that is `Computed` and neither `Optional` nor `Required`. The user sets nothing on it, so every kind but `tag` and `defined-below` is reported and taken out whatever its schema says.
 
-These pass, because the description is the only place it is written down:
+A default is the schema's to give, so one written in a description is always reported. When the property sets `Default` the fix takes it out. When it does not, the report has no fix: set `Default` in the schema, or take the sentence out. Some schemas cannot hold a default, such as an action's; if the default has to stay in the description there, ignore the report and give the reason.
+
+These pass on a property that can be set, because the description is the only place it is written down:
 
 - `Possible values are...` on a property with no validation, or with validation that is not a list or a range
 - `Changing this forces...` on a property that is not `ForceNew`
@@ -87,7 +110,7 @@ The tag, the words or the whole sentence is removed. There is no fix when:
 
 - every sentence of the description repeats the schema, so nothing would be left
 - a length sits inside a sentence that says more, which has to be reworded by hand
-- the property sets no `Default`, so the description is the only place the default is written down; set `Default`, take the default out, or ignore the report with the reason it has to stay
+- the property can be set and sets no `Default`, so the description is the only place the default is written down; set `Default`, take the default out, or ignore the report with the reason it has to stay
 - the description is a constant or is joined from parts, which is reported as a whole
 
 ## Options
