@@ -8,6 +8,7 @@
 - add rule `AZS014`: resource and property descriptions that repeat the schema, such as `(Optional)`, the default or the possible values ([#92](https://github.com/katbyte/azproviderlint/pull/92))
 - add rule `AZS015`: resource and property descriptions with punctuation mistakes, such as no capital, no full stop or a stray space ([#91](https://github.com/katbyte/azproviderlint/pull/91))
 - add rule `AZS016`: resource and property descriptions with an Azure product name in lowercase, such as `function app` for `Function App` ([#97](https://github.com/katbyte/azproviderlint/pull/97))
+- add rule `AZS017`: resource and property descriptions that open with `Specifies`, such as `Specifies the name` for `The name` ([#98](https://github.com/katbyte/azproviderlint/pull/98))
 
 ## v0.13.0 (2026-11-15)
 
