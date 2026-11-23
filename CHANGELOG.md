@@ -1,5 +1,6 @@
-## v0.14.1 (2026-11-23)
+## v0.15.0 (2026-11-23)
 
+- add rule `AZS017`: resource and property descriptions that open with `Specifies`, such as `Specifies the name` for `The name` ([#98](https://github.com/katbyte/azproviderlint/pull/98))
 - `AZS014`: possible values, defaults and the like in the description of a read-only property are now reported and removed ([#102](https://github.com/katbyte/azproviderlint/pull/102))
 
 ## v0.14.0 (2026-11-22)
