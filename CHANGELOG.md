@@ -1,3 +1,7 @@
+## v0.15.1 (2026-11-23)
+
+- re-release of v0.15.0, whose binaries were published without their build provenance ([#104](https://github.com/katbyte/azproviderlint/pull/104))
+
 ## v0.15.0 (2026-11-23)
 
 - add rule `AZS017`: resource and property descriptions that open with `Specifies`, such as `Specifies the name` for `The name` ([#98](https://github.com/katbyte/azproviderlint/pull/98))
