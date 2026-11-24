@@ -12,8 +12,6 @@ import (
 
 	"github.com/katbyte/azproviderlint/lib/description"
 	"golang.org/x/tools/go/analysis"
-	"golang.org/x/tools/go/analysis/passes/inspect"
-	"golang.org/x/tools/go/ast/inspector"
 )
 
 // Analyzer checks how descriptions are punctuated: the capital they start with, the full stop they end with, and the spaces and marks in between.
@@ -22,7 +20,7 @@ var Analyzer = &analysis.Analyzer{
 	Name:     "AZS015",
 	Doc:      "check that resource and property descriptions are punctuated properly",
 	URL:      "https://github.com/katbyte/azproviderlint/blob/main/checks/AZS/AZS015_description_punctuation/README.md",
-	Requires: []*analysis.Analyzer{inspect.Analyzer},
+	Requires: []*analysis.Analyzer{description.Analyzer},
 	Run:      run,
 }
 
@@ -47,6 +45,7 @@ func init() {
 		{"unbalanced", "a backtick, quote or bracket with no partner"},
 		{"abbreviation", "e.g., i.e. and etc. written without their full stops"},
 		{"pasted-characters", "curly quotes, odd spaces and dashes that come from pasting"},
+		{"quoted-value", "a value in quotes where the docs use backticks"},
 	} {
 		enabled[kind[0]] = Analyzer.Flags.Bool(kind[0], true, "report "+kind[1]+" (false leaves it alone)")
 	}
@@ -66,6 +65,7 @@ var (
 	marks        = regexp.MustCompile(`[,.;:?!]{2,}`)
 	listMarker   = regexp.MustCompile(`(?:^|\s)[A-Za-z0-9]{1,2}$`)
 	entity       = regexp.MustCompile(`&#?\w+$`)
+	quotedValue  = regexp.MustCompile(`(?:^|[\s(\[])("[^"\s]+"|'[^'\s]+')(?:$|[\s)\].,;:?!])`)
 )
 
 // the word after "Is", "Must" or "Can" that makes a rule of it, not a question: "Must be between 1 and 5.", "Is required when..."
@@ -102,12 +102,7 @@ var pasted = map[rune][2]string{
 }
 
 func run(pass *analysis.Pass) (any, error) {
-	insp, ok := pass.ResultOf[inspect.Analyzer].(*inspector.Inspector)
-	if !ok {
-		return nil, nil
-	}
-
-	for _, found := range description.All(pass, insp) {
+	for _, found := range description.All(pass) {
 		for _, finding := range check(found.Text) {
 			found.Report(pass, finding)
 		}
@@ -305,6 +300,15 @@ func check(text string) []description.Finding {
 			finding.Fix, finding.New = "Leave one mark", found[:1]
 		}
 		add("doubled-punctuation", finding)
+	}
+
+	// one word in quotes is a value or a name, which the docs put in backticks; a quoted phrase is prose
+	if strings.Count(masked, `"`)%2 == 0 {
+		for _, at := range quotedValue.FindAllStringSubmatchIndex(masked, -1) {
+			if said := text[at[2]:at[3]]; !strings.Contains(said, "`") {
+				add("quoted-value", description.Finding{Start: at[2], End: at[3], Message: fmt.Sprintf("description has %s in quotes - a value goes in backticks", said), Fix: "Use backticks", New: "`" + said[1:len(said)-1] + "`"})
+			}
+		}
 	}
 
 	if strings.Count(text, "`")%2 == 1 {

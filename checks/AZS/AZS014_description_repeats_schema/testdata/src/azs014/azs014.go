@@ -7,6 +7,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
 	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/validation"
+
+	"azs014/helpers"
 )
 
 const shared = "The shared one. Defaults to `a`."
@@ -439,6 +441,55 @@ func ranges() *schema.Resource {
 					ValidateFunc: validation.StringInSlice([]string{"Backup", "Delete", "Get"}, false),
 				},
 				Description: "List of secret permissions, must be one or more from the following: `Backup`, `Delete` and `Get`.", // want `description lists the values it can take - the schema's validation already does`
+			},
+		},
+	}
+}
+
+// a helper of this package, with the schema its description ends up on in reach
+func modeSchema(description string) *schema.Schema { // want modeSchema:`schema\(1\)`
+	return &schema.Schema{
+		Type:         schema.TypeString,
+		Optional:     true,
+		ValidateFunc: validation.StringInSlice([]string{"Fast", "Slow"}, false),
+		Description:  description,
+	}
+}
+
+// a description handed to a helper is checked where it is written, against the schema the helper sets it on
+func throughHelpers() *schema.Resource {
+	return &schema.Resource{
+		Schema: map[string]*schema.Schema{
+			"name": helpers.NameSchema("The name of the Thing. Changing this forces a new Thing to be created."), // want `description says a change forces a new resource - the schema's ForceNew already does`
+
+			"mode": modeSchema("The mode of the Thing, possible values are `Fast` and `Slow`."), // want `description lists the values it can take - the schema's validation already does`
+
+			"label": helpers.NameSchema("The label of the Thing."),
+		},
+	}
+}
+
+// what the provider fills in is described as what it holds, not as something to set
+func readOnly() *schema.Resource {
+	return &schema.Resource{
+		Schema: map[string]*schema.Schema{
+			"preserve_unmatched_path_enabled": {
+				Type:        schema.TypeBool,
+				Computed:    true,
+				Description: "Whether to preserve the unmatched part of the path.", // want `description reads as something to set with "Whether to" - a read-only property cannot be set, say what it holds`
+			},
+
+			"https_only": {
+				Type:        schema.TypeBool,
+				Computed:    true,
+				Description: "Whether the Web App requires HTTPS connections.",
+			},
+
+			"uid": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				RequiredWith: []string{"gid"},
+				Description:  "The user ID. The `uid` and `gid` properties must be specified together or not at all.", // want `description says what else must be set - the schema's RequiredWith already does`
 			},
 		},
 	}

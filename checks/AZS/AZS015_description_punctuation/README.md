@@ -53,6 +53,7 @@ Each kind of mistake has a name, and can be switched off by it.
 | `unbalanced` | a backtick, double quote or bracket with no partner | `` one of `v1` or `v2 `` |
 | `abbreviation` | `e.g.`, `i.e.` and `etc.` without their full stops | `eg`, `i.e`, `etc` |
 | `pasted-characters` | curly quotes, non-breaking and invisible spaces, `…`, and en and em dashes | `“Enabled”` |
+| `quoted-value` | one word in single or double quotes, which the docs put in backticks | `only "TemporaryDisk" is supported`, `such as 'ubuntu'` |
 
 Code in backticks, the address a link points to, and web addresses are skipped, so their dots, colons and commas are never punctuation.
 
@@ -64,6 +65,7 @@ These pass:
 - `...`, `::`, `.NET`, `1,000`, `10:30`, and `a)` or `1)` numbering the points of a list
 - a plural made from code, `` `subnet`s ``, and a space that is the whole value, `` ` ` ``
 - a plural in brackets, `value(s)`, and a call, `now()`
+- a phrase in quotes, `known as "bring your own key"`
 
 A description is a question when it opens with `Should`, `Is`, `Are`, `Does`, `Do`, `Can`, `Must`, `Has`, `Have`, `Will`, `Was` or `Were`. Its first sentence is the question, so `Should the Thing be enabled. Defaults to true.` is reported too, and so is one behind a tag such as `(Boolean)`.
 

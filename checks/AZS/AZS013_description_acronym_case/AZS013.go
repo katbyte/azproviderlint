@@ -9,8 +9,6 @@ import (
 
 	"github.com/katbyte/azproviderlint/lib/description"
 	"golang.org/x/tools/go/analysis"
-	"golang.org/x/tools/go/analysis/passes/inspect"
-	"golang.org/x/tools/go/ast/inspector"
 )
 
 // Analyzer checks that an acronym in a description is written the way it is everywhere else: "ID", not "id" or "Id". Code in backticks and web
@@ -19,7 +17,7 @@ var Analyzer = &analysis.Analyzer{
 	Name:     "AZS013",
 	Doc:      "check that acronyms in resource and property descriptions are written in their usual case",
 	URL:      "https://github.com/katbyte/azproviderlint/blob/main/checks/AZS/AZS013_description_acronym_case/README.md",
-	Requires: []*analysis.Analyzer{inspect.Analyzer},
+	Requires: []*analysis.Analyzer{description.Analyzer},
 	Run:      run,
 }
 
@@ -45,12 +43,7 @@ func init() {
 var quoted = regexp.MustCompile(`"[^"]*"`)
 
 func run(pass *analysis.Pass) (any, error) {
-	insp, ok := pass.ResultOf[inspect.Analyzer].(*inspector.Inspector)
-	if !ok {
-		return nil, nil
-	}
-
-	for _, found := range description.All(pass, insp) {
+	for _, found := range description.All(pass) {
 		for _, finding := range check(found.Text) {
 			found.Report(pass, finding)
 		}

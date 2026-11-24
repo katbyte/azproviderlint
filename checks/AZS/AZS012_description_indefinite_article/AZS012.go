@@ -9,8 +9,6 @@ import (
 
 	"github.com/katbyte/azproviderlint/lib/description"
 	"golang.org/x/tools/go/analysis"
-	"golang.org/x/tools/go/analysis/passes/inspect"
-	"golang.org/x/tools/go/ast/inspector"
 )
 
 // Analyzer checks each "a" and "an" in a description against how the next word is said: "an integer", "a user", "an SSL certificate", "a URL".
@@ -19,7 +17,7 @@ var Analyzer = &analysis.Analyzer{
 	Name:     "AZS012",
 	Doc:      `check that resource and property descriptions use the right one of "a" and "an"`,
 	URL:      "https://github.com/katbyte/azproviderlint/blob/main/checks/AZS/AZS012_description_indefinite_article/README.md",
-	Requires: []*analysis.Analyzer{inspect.Analyzer},
+	Requires: []*analysis.Analyzer{description.Analyzer},
 	Run:      run,
 }
 
@@ -58,12 +56,7 @@ func init() {
 var notNouns = strings.Fields("or and is are was be to of in on at for with as by from nor but if then vs")
 
 func run(pass *analysis.Pass) (any, error) {
-	insp, ok := pass.ResultOf[inspect.Analyzer].(*inspector.Inspector)
-	if !ok {
-		return nil, nil
-	}
-
-	for _, found := range description.All(pass, insp) {
+	for _, found := range description.All(pass) {
 		for _, finding := range check(found.Text) {
 			found.Report(pass, finding)
 		}

@@ -43,8 +43,16 @@ func flagged() *schema.Resource {
 
 			"note": {
 				Type:        schema.TypeString,
-				Description: "A note ( free text ), eg \"hello\" , etc", // want `description has a space just inside a bracket` `description has a space just inside a bracket` `"eg" should be "e\.g\."` `description has a space before ','` `"etc" should be "etc\."`
+				Description: "A note ( free text ), eg \"hello\" , etc", // want `description has a space just inside a bracket` `description has a space just inside a bracket` `"eg" should be "e\.g\."` `description has "hello" in quotes - a value goes in backticks` `description has a space before ','` `"etc" should be "etc\."`
 			},
+
+			"os_disk_placement": {
+				Type:        schema.TypeString,
+				Description: "On a Linux pool, only \"TemporaryDisk\" is supported.", // want `description has "TemporaryDisk" in quotes - a value goes in backticks`
+			},
+
+			// a description handed to a helper is read where it is written
+			"child_name": nameSchema("the name of the child"), // want `description should start with a capital letter` `description should end with a full stop`
 
 			"size": {
 				Type:        schema.TypeString,
@@ -199,5 +207,12 @@ func flaggedBlocks() (*schema.Schema, fwschema.Block) {
 		},
 	}, fwschema.ListNestedBlock{
 		MarkdownDescription: "A rule block .", // want `description has a space before '\.'`
+	}
+}
+
+func nameSchema(description string) *schema.Schema {
+	return &schema.Schema{
+		Type:        schema.TypeString,
+		Description: description,
 	}
 }
