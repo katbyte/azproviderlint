@@ -28,12 +28,12 @@ var Analyzer = &analysis.Analyzer{
 	Run:      run,
 }
 
-// order is the order the fields of a plugin SDK schema are written in, and frameworkOrder that of a framework attribute or block. Each is the
-// order most properties in the azurerm, azuread and aws providers already use, with what the property holds last. A field in neither stays where
-// it is.
+// order is the order the fields of a plugin SDK schema are written in: the one most properties in the azurerm, azuread and aws providers already
+// use, with what the property holds last. frameworkOrder is the same order for a framework attribute or block, whose fields have other names. A
+// field in neither stays where it is.
 var (
 	order          = []string{"Description", "Type", "Required", "Optional", computed, "ForceNew", "Default", "DefaultFunc", "InputDefault", "Sensitive", "WriteOnly", "MinItems", "MaxItems", "ConfigMode", "ValidateFunc", "ValidateDiagFunc", "StateFunc", "DiffSuppressFunc", "DiffSuppressOnRefresh", "Set", "RequiredWith", "ConflictsWith", "ExactlyOneOf", "AtLeastOneOf", "Deprecated", "Elem"}
-	frameworkOrder = []string{"CustomType", "ElementType", "AttributeTypes", "Required", "Optional", computed, "Sensitive", "WriteOnly", "Description", "MarkdownDescription", "DeprecationMessage", "Default", "Validators", "PlanModifiers", "NestedObject", "Attributes", "Blocks"}
+	frameworkOrder = []string{"Description", "MarkdownDescription", "CustomType", "ElementType", "AttributeTypes", "Required", "Optional", computed, "Default", "Sensitive", "WriteOnly", "Validators", "PlanModifiers", "DeprecationMessage", "NestedObject", "Attributes", "Blocks"}
 )
 
 const computed = "Computed"

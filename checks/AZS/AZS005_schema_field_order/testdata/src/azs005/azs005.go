@@ -88,14 +88,14 @@ func framework() fwschema.Schema {
 		Attributes: map[string]fwschema.Attribute{
 			// in order
 			"name": fwschema.StringAttribute{
-				Required:    true,
 				Description: "The name of the Thing.",
+				Required:    true,
 				Validators:  []any{},
 			},
 
 			"sku": fwschema.StringAttribute{
-				Description: "The SKU of the Thing.",
-				Optional:    true, // want `schema field Optional should come before Description`
+				Optional:    true,
+				Description: "The SKU of the Thing.", // want `schema field Description should come before Optional`
 				Computed:    true,
 			},
 

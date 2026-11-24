@@ -54,11 +54,11 @@ For a plugin SDK schema:
 
 `Description`, `Type`, `Required`, `Optional`, `Computed`, `ForceNew`, `Default`, `DefaultFunc`, `InputDefault`, `Sensitive`, `WriteOnly`, `MinItems`, `MaxItems`, `ConfigMode`, `ValidateFunc`, `ValidateDiagFunc`, `StateFunc`, `DiffSuppressFunc`, `DiffSuppressOnRefresh`, `Set`, `RequiredWith`, `ConflictsWith`, `ExactlyOneOf`, `AtLeastOneOf`, `Deprecated`, `Elem`
 
-For a framework attribute or block:
+For a framework attribute or block, the same order with its own field names:
 
-`CustomType`, `ElementType`, `AttributeTypes`, `Required`, `Optional`, `Computed`, `Sensitive`, `WriteOnly`, `Description`, `MarkdownDescription`, `DeprecationMessage`, `Default`, `Validators`, `PlanModifiers`, `NestedObject`, `Attributes`, `Blocks`
+`Description`, `MarkdownDescription`, `CustomType`, `ElementType`, `AttributeTypes`, `Required`, `Optional`, `Computed`, `Default`, `Sensitive`, `WriteOnly`, `Validators`, `PlanModifiers`, `DeprecationMessage`, `NestedObject`, `Attributes`, `Blocks`
 
-Each is the order most properties in the azurerm, azuread and aws providers already use, with what the property holds, such as `Elem`, last. About nine in ten plugin SDK properties in each of the three already fit.
+The plugin SDK order is the one most properties in the azurerm, azuread and aws providers already use, with what the property holds, such as `Elem`, last. About nine in ten in each of the three already fit.
 
 A property that is both set and read back is `Optional`, then `Computed`.
 
