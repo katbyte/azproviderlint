@@ -92,6 +92,7 @@ Rules are named `AZ`, a category letter, and a number. The letters follow [tfpro
 | [AZS002](checks/AZS/AZS002_schema_default_type_mismatch) | schema Default values must match the declared Type |
 | [AZS003](checks/AZS/AZS003_schema_allows_empty_block) | TypeList blocks must not allow empty blocks |
 | [AZS004](checks/AZS/AZS004_enum_validation_possible_values) | enum validation must use the SDK's possible-values helper |
+| [AZS005](checks/AZS/AZS005_schema_field_order) | the fields of a schema property must be written in the agreed order |
 | [AZS007](checks/AZS/AZS007_optional_computed_missing_comment) | optional+computed fields must have a Note: O+C comment |
 | [AZS009](checks/AZS/AZS009_computed_only_field_input_attributes) | computed-only fields must not set input-only schema attributes |
 | [AZS010](checks/AZS/AZS010_description_missing) | resources, properties and blocks must have a **description** |

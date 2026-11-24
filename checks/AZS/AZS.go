@@ -8,6 +8,7 @@ import (
 	AZS002 "github.com/katbyte/azproviderlint/checks/AZS/AZS002_schema_default_type_mismatch"
 	AZS003 "github.com/katbyte/azproviderlint/checks/AZS/AZS003_schema_allows_empty_block"
 	AZS004 "github.com/katbyte/azproviderlint/checks/AZS/AZS004_enum_validation_possible_values"
+	AZS005 "github.com/katbyte/azproviderlint/checks/AZS/AZS005_schema_field_order"
 	AZS007 "github.com/katbyte/azproviderlint/checks/AZS/AZS007_optional_computed_missing_comment"
 	AZS009 "github.com/katbyte/azproviderlint/checks/AZS/AZS009_computed_only_field_input_attributes"
 	AZS010 "github.com/katbyte/azproviderlint/checks/AZS/AZS010_description_missing"
@@ -29,6 +30,7 @@ var Checks = []*analysis.Analyzer{
 	AZS002.Analyzer,
 	AZS003.Analyzer,
 	AZS004.Analyzer,
+	AZS005.Analyzer,
 	AZS007.Analyzer,
 	AZS009.Analyzer,
 	AZS010.Analyzer,

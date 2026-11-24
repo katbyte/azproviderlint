@@ -3,7 +3,9 @@ package astx
 import (
 	"go/ast"
 	"go/token"
+	"slices"
 	"strings"
+	"sync"
 
 	"golang.org/x/tools/go/analysis"
 )
@@ -33,4 +35,34 @@ func DeleteLine(pass *analysis.Pass, node ast.Node) analysis.TextEdit {
 		}
 	}
 	return analysis.TextEdit{Pos: start, End: end}
+}
+
+// claims holds, for each file, the bytes each rule's fixes rewrite.
+var (
+	claims     = map[string][]claim{}
+	claimsLock sync.Mutex
+)
+
+type claim struct {
+	start, end int
+	by         string
+}
+
+// Claim reports whether the rule's fix may rewrite the bytes from start to end. When two rules rewrite the same bytes golangci-lint drops every
+// fix in the file, so the first rule to claim a place keeps its fix and the others report without one until it has been applied.
+func Claim(pass *analysis.Pass, start, end token.Pos) bool {
+	at := pass.Fset.Position(start)
+	mine := claim{start: at.Offset, end: at.Offset + int(end-start), by: pass.Analyzer.Name}
+
+	claimsLock.Lock()
+	defer claimsLock.Unlock()
+
+	if slices.ContainsFunc(claims[at.Filename], func(c claim) bool { return c.by != mine.by && mine.start <= c.end && c.start <= mine.end }) {
+		return false
+	}
+	if !slices.Contains(claims[at.Filename], mine) {
+		claims[at.Filename] = append(claims[at.Filename], mine)
+	}
+
+	return true
 }
