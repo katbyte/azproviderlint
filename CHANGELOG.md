@@ -1,15 +1,18 @@
-## Unreleased
+## v0.16.0 (2026-11-24)
 
-- `AZS015`: a word with no space before a bracket, such as `size(in GB)`, is now reported ([#106](https://github.com/katbyte/azproviderlint/pull/106))
 - add rule `AZS018`: resource and property descriptions with a note in them, such as `**Note:** ...` ([#105](https://github.com/katbyte/azproviderlint/pull/105))
 - add rule `AZS019`: resource and property descriptions written as a question, such as `Should the Thing be enabled?` ([#108](https://github.com/katbyte/azproviderlint/pull/108))
+- add rule `AZS020`: resource and property descriptions naming a resource or property the provider does not have, such as a property since renamed ([#112](https://github.com/katbyte/azproviderlint/pull/112))
+- `AZS015`: a word with no space before a bracket, such as `size(in GB)`, is now reported ([#106](https://github.com/katbyte/azproviderlint/pull/106))
 - `AZS017`: wordy phrases such as `or not` and `in order to` are now reported and shortened ([#109](https://github.com/katbyte/azproviderlint/pull/109))
 - `AZS014`: a range or a length the schema does not check, such as `must be between 5 and 300 seconds`, is now reported, and more ways of listing values are recognised, such as `Acceptable values include ...` ([#110](https://github.com/katbyte/azproviderlint/pull/110))
 - descriptions handed to a shared schema helper, such as `helpers.NameSchema("The name.")`, are now checked by every description rule ([#111](https://github.com/katbyte/azproviderlint/pull/111))
 - `AZS014`: a read-only property described as something to set, such as `Whether to ...`, is now reported ([#111](https://github.com/katbyte/azproviderlint/pull/111))
 - `AZS014`: value lists in the middle of a sentence, such as `..., possible values are a and b`, and more ways of saying what else must be set are recognised ([#111](https://github.com/katbyte/azproviderlint/pull/111))
 - `AZS015`: a value in quotes where the docs use backticks, such as `"TemporaryDisk"`, is now reported ([#111](https://github.com/katbyte/azproviderlint/pull/111))
-- add rule `AZS020`: resource and property descriptions naming a resource or property the provider does not have, such as a property since renamed ([#112](https://github.com/katbyte/azproviderlint/pull/112))
+- `AZS014`: a list that says what each value means, such as `` `Regional` - all nodes in one region``, is no longer reported ([#113](https://github.com/katbyte/azproviderlint/pull/113))
+- `AZS014`: removing `as defined below` no longer leaves words such as `which are` behind ([#113](https://github.com/katbyte/azproviderlint/pull/113))
+- two rules fixing the same words no longer lose every fix in the file ([#113](https://github.com/katbyte/azproviderlint/pull/113))
 
 ## v0.15.1 (2026-11-23)
 
