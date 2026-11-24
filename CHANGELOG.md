@@ -3,6 +3,7 @@
 - `AZS015`: a word with no space before a bracket, such as `size(in GB)`, is now reported ([#106](https://github.com/katbyte/azproviderlint/pull/106))
 - add rule `AZS018`: resource and property descriptions with a note in them, such as `**Note:** ...` ([#105](https://github.com/katbyte/azproviderlint/pull/105))
 - add rule `AZS019`: resource and property descriptions written as a question, such as `Should the Thing be enabled?` ([#108](https://github.com/katbyte/azproviderlint/pull/108))
+- `AZS017`: wordy phrases such as `or not` and `in order to` are now reported and shortened ([#109](https://github.com/katbyte/azproviderlint/pull/109))
 
 ## v0.15.1 (2026-11-23)
 

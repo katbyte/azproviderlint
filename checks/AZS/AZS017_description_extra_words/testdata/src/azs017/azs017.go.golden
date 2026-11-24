@@ -42,6 +42,33 @@ func flagged() *schema.Resource {
 	}
 }
 
+func flaggedPhrases() *schema.Resource {
+	return &schema.Resource{
+		Schema: map[string]*schema.Schema{
+			"caching_enabled": {
+				Type:        schema.TypeString,
+				Description: "Whether to enable caching.", // want `description has "or not" - it adds nothing`
+			},
+
+			"ldap_over_tls_enabled": {
+				Type:        schema.TypeString,
+				Description: "Whether the LDAP traffic needs to be secured via TLS.", // want `description opens with "Specifies whether" - open with "Whether"` `description has "or not" - it adds nothing`
+			},
+
+			"key": {
+				Type:        schema.TypeString,
+				Description: "The key used to sign in. It is only shown once.", // want `description has "in order to" - "to" says the same` `description has "Please note" - it adds nothing`
+			},
+
+			// "to to" would be left behind, so there is no fix
+			"terms_of_service": {
+				Type:        schema.TypeString,
+				Description: "The Terms of Service which users are required to agree to in order to sign up.", // want `description has "in order to" - "to" says the same`
+			},
+		},
+	}
+}
+
 func flaggedFramework() fwschema.Attribute {
 	return fwschema.StringAttribute{
 		MarkdownDescription: "How the storage adapters between nodes are connected.", // want `description opens with "Defines how" - open with "How"`
@@ -66,6 +93,11 @@ func passing() *schema.Resource {
 			"enabled": {
 				Type:        schema.TypeString,
 				Description: "Whether the Webhook is enabled.",
+			},
+
+			"fallback": {
+				Type:        schema.TypeString,
+				Description: "The value to use when the name is empty or not set.",
 			},
 		},
 	}
