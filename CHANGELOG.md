@@ -9,6 +9,7 @@
 - `AZS014`: a read-only property described as something to set, such as `Whether to ...`, is now reported ([#111](https://github.com/katbyte/azproviderlint/pull/111))
 - `AZS014`: value lists in the middle of a sentence, such as `..., possible values are a and b`, and more ways of saying what else must be set are recognised ([#111](https://github.com/katbyte/azproviderlint/pull/111))
 - `AZS015`: a value in quotes where the docs use backticks, such as `"TemporaryDisk"`, is now reported ([#111](https://github.com/katbyte/azproviderlint/pull/111))
+- add rule `AZS020`: resource and property descriptions naming a resource or property the provider does not have, such as a property since renamed ([#112](https://github.com/katbyte/azproviderlint/pull/112))
 
 ## v0.15.1 (2026-11-23)
 

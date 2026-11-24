@@ -104,6 +104,7 @@ Rules are named `AZ`, a category letter, and a number. The letters follow [tfpro
 | [AZS017](checks/AZS/AZS017_description_extra_words) | resource and property descriptions must not have extra words |
 | [AZS018](checks/AZS/AZS018_description_note) | resource and property descriptions must not have a note in them |
 | [AZS019](checks/AZS/AZS019_description_question) | resource and property descriptions must not be a question |
+| [AZS020](checks/AZS/AZS020_description_unknown_name) | resource and property descriptions must not name a resource or property that does not exist |
 
 ### AZC - Clients & SDK Usage
 
