@@ -17,7 +17,7 @@ import (
 	AZS014 "github.com/katbyte/azproviderlint/checks/AZS/AZS014_description_repeats_schema"
 	AZS015 "github.com/katbyte/azproviderlint/checks/AZS/AZS015_description_punctuation"
 	AZS016 "github.com/katbyte/azproviderlint/checks/AZS/AZS016_description_product_name_case"
-	AZS017 "github.com/katbyte/azproviderlint/checks/AZS/AZS017_description_opens_with_specifies"
+	AZS017 "github.com/katbyte/azproviderlint/checks/AZS/AZS017_description_extra_words"
 	AZS018 "github.com/katbyte/azproviderlint/checks/AZS/AZS018_description_note"
 	AZS019 "github.com/katbyte/azproviderlint/checks/AZS/AZS019_description_question"
 )
