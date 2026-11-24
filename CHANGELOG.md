@@ -1,3 +1,7 @@
+## Unreleased
+
+- `AZS015`: a word with no space before a bracket, such as `size(in GB)`, is now reported ([#106](https://github.com/katbyte/azproviderlint/pull/106))
+
 ## v0.15.1 (2026-11-23)
 
 - re-release of v0.15.0, whose binaries were published without their build provenance ([#104](https://github.com/katbyte/azproviderlint/pull/104))
