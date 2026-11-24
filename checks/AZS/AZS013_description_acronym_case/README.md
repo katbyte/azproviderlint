@@ -1,4 +1,4 @@
-# AZS013 - acronyms in resource and property descriptions must be written in their usual case
+# AZS013 - resource and property descriptions must write acronyms in their usual case
 
 AZS013 reports an acronym in a resource or property description that is not written the way it is everywhere else: `id` or `Id` for `ID`, `Api` for `API`, `url` for `URL`.
 
