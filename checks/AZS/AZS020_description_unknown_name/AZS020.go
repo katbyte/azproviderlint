@@ -12,6 +12,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"slices"
 	"strings"
 	"sync"
 
@@ -29,13 +30,18 @@ var Analyzer = &analysis.Analyzer{
 	Run:      run,
 }
 
-// allowed holds the names that are fine though the provider does not define them. It starts with Terraform's own.
-var allowed = map[string]bool{"for_each": true, "depends_on": true, "ignore_changes": true, "create_before_destroy": true, "prevent_destroy": true, "replace_triggered_by": true}
+// allowed holds the names that are fine though the provider does not define them, each as a pattern for the whole name. It starts with
+// Terraform's own.
+var allowed = []*regexp.Regexp{regexp.MustCompile(`^(?:for_each|depends_on|ignore_changes|create_before_destroy|prevent_destroy|replace_triggered_by)$`)}
 
 func init() {
 	Analyzer.Flags.Init("AZS020", flag.ContinueOnError)
-	Analyzer.Flags.Func("allow", "a name to accept though the provider does not define it, such as another provider's resource; repeat for several", func(name string) error {
-		allowed[name] = true
+	Analyzer.Flags.Func("allow", "a name to accept though the provider does not define it, or a pattern for several such as azuread_.*; repeat for more", func(name string) error {
+		pattern, err := regexp.Compile(`^(?:` + name + `)$`)
+		if err != nil {
+			return fmt.Errorf("allow %q is not a pattern: %w", name, err)
+		}
+		allowed = append(allowed, pattern)
 
 		return nil
 	})
@@ -103,7 +109,7 @@ func run(pass *analysis.Pass) (any, error) {
 	lock.Unlock()
 
 	known := func(said string) bool {
-		if allowed[said] {
+		if slices.ContainsFunc(allowed, func(pattern *regexp.Regexp) bool { return pattern.MatchString(said) }) {
 			return true
 		}
 

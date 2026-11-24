@@ -8,6 +8,13 @@ import (
 func flagged() *schema.Resource {
 	return &schema.Resource{
 		Schema: map[string]*schema.Schema{
+			// read-only, so it is what it is and not what it should be
+			"https_required": {
+				Type:        schema.TypeBool,
+				Computed:    true,
+				Description: "Should HTTPS be required?", // want `description asks a question - say what it is, such as "Whether the Thing is enabled\."`
+			},
+
 			"audit_log_enabled": {
 				Type:        schema.TypeBool,
 				Description: "Should the log auditing be enabled?", // want `description asks a question - say what it is, such as "Whether the Thing is enabled\."`

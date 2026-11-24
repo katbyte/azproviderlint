@@ -64,8 +64,9 @@ These pass:
 - `e.g.`, `i.e.`, `etc.` and `vs.` in the middle of a sentence
 - `...`, `::`, `.NET`, `1,000`, `10:30`, and `a)` or `1)` numbering the points of a list
 - a plural made from code, `` `subnet`s ``, and a space that is the whole value, `` ` ` ``
-- a plural in brackets, `value(s)`, and a call, `now()`
-- a phrase in quotes, `known as "bring your own key"`
+- a plural in brackets, `value(s)` or `HTTP(S)`, and a call, `now()`
+- a phrase in quotes, `known as "bring your own key"`, a term after `a` or `the`, `a "floating" IP`, and a list in square brackets, `["10.0.0.0/24"]`
+- every quoted value in a description that has any of those, since mending some of its quotes and not the rest is worse than none
 
 A description is a question when it opens with `Should`, `Is`, `Are`, `Does`, `Do`, `Can`, `Must`, `Has`, `Have`, `Will`, `Was` or `Were`. Its first sentence is the question, so `Should the Thing be enabled. Defaults to true.` is reported too, and so is one behind a tag such as `(Boolean)`.
 

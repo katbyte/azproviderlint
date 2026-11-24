@@ -74,7 +74,7 @@ Each kind of repeat has a name, and can be switched off by it.
 | `item-count` | a sentence saying how many items or blocks there can be | the property sets `MaxItems` or `MinItems` | `A maximum of 100 rule blocks may be defined.` |
 | `length` | how long a value can be, as a sentence or inside one | its validation gives a length | `Must be between 1 and 80 characters.`, `...up to 80 characters in length` |
 | `defined-below` | words or a sentence that point at the docs page | always | `as defined below`, `Each rule block supports fields defined below.` |
-| `read-only-setting` | a read-only property described as something to set | the property is read-only | `Whether to keep the path.`, `Set to true to...`, `Whether the Thing should be enabled.` |
+| `read-only-setting` | a read-only property described as something to set | the property is read-only | `Whether to keep the path.`, `Set to true to...`, `Whether the Thing should be enabled.`, `Whether the Thing should use HTTPS.` |
 | `unchecked-range` | a sentence giving a range or a length | nothing in the schema checks it | `This value must be between 5 and 300 seconds.`, `The range is 100 - 65000.`, `Must be between 1 and 80 characters.` |
 
 The tags are `Required`, `Optional`, `Computed`, `Sensitive`, `Deprecated`, `ForceNew`, `Read-Only`, `Write-Only`, `Boolean`, `Bool`, `String`, `Number`, `Integer`, `Int`, `Float`, `List`, `Set`, `Map`, `Block` and `Object`, in brackets and capitalised, alone or several together.
@@ -95,6 +95,7 @@ These pass on a property that can be set, because the description is the only pl
 
 - `Possible values are...`, `Changing this forces...`, a count or `Exactly one of...` on a property whose schema does not say it
 - a list of values that only holds some of the time: `If mode is Fast, possible values are a and b.`
+- a list that says what each value means: ``Possible values are `Regional` - all nodes in one region, `Zonal` - nodes spread across zones.``
 - a sentence that says more than the schema does: `Only one rule block can be specified unless mode is Fast.`
 - something needed only for some values, which the schema cannot say: `Required when mode is Fast.`
 
@@ -111,7 +112,7 @@ The tag, the words or the whole sentence is removed. There is no fix when:
 - every sentence of the description repeats the schema, so nothing would be left
 - a length sits inside a sentence that says more, which has to be reworded by hand
 - the property can be set and sets no `Default`
-- a range or a length is not checked by the schema, which needs a validation first
+- a range or a length is not checked by the schema, which needs a validation first. Check the numbers against the API before writing it; the description may be wrong
 - a read-only property is described as something to set, which has to be reworded
 - the description is a constant or is joined from parts, which is reported as a whole
 

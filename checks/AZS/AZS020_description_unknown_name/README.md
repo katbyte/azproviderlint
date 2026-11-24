@@ -51,7 +51,8 @@ The same descriptions are read as by [AZS011](../AZS011_description_blank#what-c
 ## Limits
 
 - A name is looked for across the whole provider, not the one resource, so a real property of some other resource passes.
-- Another provider's resource, such as `azuread_application`, is reported. Add it with `allow`.
+- Another provider's resource, such as `azuread_application`, is reported. Add it, or the whole provider, with `allow`.
+- A resource that was removed is reported even where the text says so, as in `supersedes the removed azurerm_old_thing`. Ignore that line.
 - golangci-lint keeps a package's reports until the package changes. One cleared by adding the missing resource somewhere else stays until `golangci-lint cache clean`.
 
 ## No fix
@@ -60,7 +61,7 @@ The right name cannot be guessed.
 
 ## Options
 
-`allow` adds a name to accept though the provider does not define it. Repeat it for several.
+`allow` adds a name to accept though the provider does not define it, or a pattern for several, which must match the whole name. Repeat it for more.
 
 ```yaml
 linters:
@@ -69,11 +70,11 @@ linters:
       azproviderlint:
         settings:
           AZS020:
-            allow: [azuread_application, azapi_resource]
+            allow: [azapi_resource, 'azuread_.*']
 ```
 
 ```sh
-azproviderlint -AZS020 -AZS020.allow=azuread_application -AZS020.allow=azapi_resource ./...
+azproviderlint -AZS020 -AZS020.allow=azapi_resource -AZS020.allow='azuread_.*' ./...
 ```
 
 ## Ignoring Reports

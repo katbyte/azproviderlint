@@ -58,6 +58,7 @@ const (
 	setting   = "read-only-setting"
 
 	listsValues  = "description lists the values it can take - the schema's validation already does"
+	givesRange   = "description gives the range it can take - the schema's validation already does"
 	givesDefault = "description gives the default - the schema's Default already does"
 	unsetDefault = "description gives the default - set Default in the schema or take it out; if it has to stay, say why in an //azignore"
 	givesLength  = "description says how long it can be - the schema's validation already does"
@@ -85,10 +86,10 @@ const tagWord = `(?:Required|Optional|Computed|Sensitive|Deprecated|ForceNew|Rea
 
 var (
 	tag          = regexp.MustCompile(`\(` + tagWord + `(?:(?:, | and | or |/| )` + tagWord + `)*\)`)
-	definedBelow = regexp.MustCompile(`[ \t]*\b(?:as )?(?:defined|documented|described|detailed|specified|outlined) (?:below|above)\b`)
+	definedBelow = regexp.MustCompile(`[ \t]*,?[ \t]*\b(?:(?:which|that) (?:is|are) )?(?:as )?(?:defined|documented|described|detailed|specified|outlined) (?:below|above)\b`)
 
 	// whole sentences
-	blockBelow     = regexp.MustCompile(`^(?:The|Each|Every|An?) (?:\x01+ )?blocks? (?:supports?|exports?|contains?|has|have)(?: the)?(?: following)?(?: fields| arguments| attributes| properties)?(?: as)? (?:defined|documented|described|detailed|specified|outlined|listed) (?:below|above)\.?$`)
+	blockBelow     = regexp.MustCompile(`^(?:The|Each|Every|An?) (?:\x01+ )?blocks? (?:supports?|exports?|contains?|has|have)(?: the)?(?: following)?(?: fields| arguments| attributes| properties)?(?: as)? (?:defined|documented|described|detailed|specified|outlined|listed) (?:below|above)\.?$|^(?:The|Each|Every|An?)(?: exported)?(?: \x01+)?(?: blocks?| fields| arguments| attributes| properties)? (?:is|are) (?:as )?(?:defined|documented|described|detailed|specified|outlined|listed) (?:below|above)\.?$`)
 	possibleValues = regexp.MustCompile(`^(?:(?:(?:At this time|Currently),? )?(?:[Tt]he )?(?:only )?` + listed + `(?::| (?:are|is|include|includes|range)\b)|Options (?:are|include)\b|(?:The )?Values (?:are|include):? ` + quoted + `|(?:(?:This|It|The)(?: value| number| field| property)? )?(?i:must|should|can) be (?:one of|either|between|at least|at most)\b|` + ranged + `|(?:[Cc]an be (?:set to )?|One of |Either )` + values + `\.?$|(?:Currently,? )?(?i:only) ` + quoted + ` (?:is|are) (?:currently )?(?:supported|allowed|valid|accepted)(?: currently| at this time)?\.?$)`)
 	defaults       = regexp.MustCompile(`^(?:(?:(?:If|When) (?:blank|omitted|unspecified|unset|not specified|not set|not provided|left blank|left empty),? )?(?:(?:This|this|It|it)(?: value| field| property)? |The |the )?[Dd]efaults? (?:value )?(?:to|is)\b|By default,? (?:this|it) is (?:set to )?` + value + `\.?$)`)
 	forceNew       = regexp.MustCompile(`^Changing (?:this|the|it)\b(?: [\w\x01]+){0,3}? (?:forces|will force) a new\b`)
@@ -99,8 +100,12 @@ var (
 	lengthIs       = regexp.MustCompile(`^(?:(?:(?:It|This|The value|The name) )?(?i:must|should|can|may) be (?:a string )?` + span + `|Cannot exceed ` + count + ` characters(?: in length)?|Max(?:imum)? length(?: is|:) ` + count + ` characters|The maximum (?:allowed )?length (?:for this field )?is ` + count + ` characters|Length is limited to ` + count + ` characters|Restricted to ` + count + ` characters)\.?$`)
 
 	// words inside a sentence that says more
-	valuesUnended  = regexp.MustCompile(`[^\s.?!,;:]( (?:Possibles?|Valid|Allowed|Accepted|Acceptable|Supported|Permitted|Available) (?:values?|options)(?::| (?:are|is|include|includes)\b).*?)\.?$`)
-	valuesClause   = regexp.MustCompile(`(?:,| -| –|;) (?:it )?(?:(?:can|must|should) be (?:set to )?(?:either |one of |one or more (?:of|from) )?|either |one of |one or more (?:of|from) )(?:the following:? )?` + values + `(\.?)$`)
+	valuesUnended = regexp.MustCompile(`[^\s.?!,;:]( (?:Possibles?|Valid|Allowed|Accepted|Acceptable|Supported|Permitted|Available) (?:values?|options)(?::| (?:are|is|include|includes)\b).*?)\.?$`)
+	valuesClause  = regexp.MustCompile(`(?:,| -| –|;) (?:it )?(?:(?:can|must|should) be (?:set to )?(?:either |one of |one or more (?:of|from) )?|either |one of |one or more (?:of|from) )(?:the following:? )?` + values + `(\.?)$`)
+	// a list that says what each value means, which the schema does not: "`a` - the first; `b` - the second", "`0` for None, `9` for Basic"
+	explained = regexp.MustCompile(quoted + `(?: (?:-|–) |: ?)["'\x01]?[A-Za-z]|` + quoted + ` for [^,;.]+(?:,|;| and | or ).*` + quoted + ` for `)
+	ranges    = regexp.MustCompile(`(?i)\b(?:between|ranges?|at least|at most)\b`)
+
 	listedClause   = regexp.MustCompile(`(?:,| -| –|;) (?:the )?` + listed + `(?:(?::| (?:are|is|include|includes|will be):?) (?:either |one of )?(?:` + values + `|` + quoted + `(?: (?:through|to) ` + quoted + `)?)| (?:can )?range (?:from|between) .*?)(\.?)$`)
 	conditional    = regexp.MustCompile(`^(?i:if|when|otherwise|unless|for|while|where|with|in)\b`)
 	defaultClause  = regexp.MustCompile(`[,;] (?:which |and |it |this |otherwise )?defaults? to ` + value + `(\.?)$`)
@@ -108,7 +113,7 @@ var (
 	lengthClause   = regexp.MustCompile(span)
 
 	// what a description of something to set opens with: "Whether to...", "Set to...", "Whether the Thing should..."
-	asSetting = regexp.MustCompile(`^\s*(?:\(\w+\) )?(?:(Whether to|Set|Enable|Disable) |Whether [^.?!]*?\b(should) be\b)`)
+	asSetting = regexp.MustCompile(`^\s*(?:\(\w+\) )?(?:(Whether to|Set|Enable|Disable) |Whether [^.?!]*?\b(should)\b)`)
 
 	// a sentence giving the range a value must be in
 	rangeIs = regexp.MustCompile(`^(?:(?:(?:This|It|The)(?: value| number| field| property)? )?(?i:must|should|can) be (?:between|at least|at most)\b|(?:The )?` + listed + ` (?:(?:are|is) (?:between|from)|range (?:between|from))\b|` + ranged + `)`)
@@ -319,13 +324,30 @@ func check(text string, known facts) []description.Finding {
 		{"item-count", "description says how many there can be - the schema's MaxItems or MinItems already does", itemCount, known.Items},
 	}
 
+	// a range is not a list, and is called what it is
+	listing := func(said string) string {
+		if ranges.MatchString(said) {
+			return givesRange
+		}
+
+		return listsValues
+	}
+
 	sentences := description.Sentences(masked)
 	repeats := make([][2]string, len(sentences))
 	kept := 0
 	for i, sentence := range sentences {
 		for _, repeat := range repeated {
+			if repeat.kind == possible && explained.MatchString(sentence.Text) {
+				continue
+			}
+
 			if repeat.known && *enabled[repeat.kind] && repeat.says.MatchString(sentence.Text) {
 				repeats[i] = [2]string{repeat.kind, repeat.message}
+				if repeat.message == listsValues {
+					repeats[i][1] = listing(sentence.Text)
+				}
+
 				break
 			}
 		}
@@ -368,18 +390,18 @@ func check(text string, known facts) []description.Finding {
 		}
 
 		// a sentence that is kept can still end with the values, after a comma or where a full stop was left out
-		if known.Values {
+		if known.Values && !explained.MatchString(sentence.Text) {
 			if at := valuesClause.FindStringSubmatchIndex(sentence.Text); at != nil {
-				add(possible, description.Finding{Start: sentence.Start + at[0], End: sentence.Start + at[2], Message: listsValues, Fix: removeWords})
+				add(possible, description.Finding{Start: sentence.Start + at[0], End: sentence.Start + at[2], Message: listing(sentence.Text[at[0]:at[2]]), Fix: removeWords})
 			}
 
 			if at := valuesUnended.FindStringSubmatchIndex(sentence.Text); at != nil {
-				add(possible, description.Finding{Start: sentence.Start + at[2], End: sentence.Start + at[3], Message: listsValues, Fix: removeWords})
+				add(possible, description.Finding{Start: sentence.Start + at[2], End: sentence.Start + at[3], Message: listing(sentence.Text[at[2]:at[3]]), Fix: removeWords})
 			}
 
 			// "If mode is Fast, possible values are..." says when, which the schema does not
 			if at := listedClause.FindStringSubmatchIndex(sentence.Text); at != nil && !conditional.MatchString(sentence.Text) {
-				add(possible, description.Finding{Start: sentence.Start + at[0], End: sentence.Start + at[2], Message: listsValues, Fix: removeWords})
+				add(possible, description.Finding{Start: sentence.Start + at[0], End: sentence.Start + at[2], Message: listing(sentence.Text[at[0]:at[2]]), Fix: removeWords})
 			}
 		}
 
@@ -437,7 +459,7 @@ func check(text string, known facts) []description.Finding {
 	}
 
 	for _, at := range definedBelow.FindAllStringIndex(masked, -1) {
-		add(below, description.Finding{Start: at[0], End: at[1], Message: fmt.Sprintf("description points at the docs page with %q - a description has no page around it", strings.TrimSpace(masked[at[0]:at[1]])), Fix: removeWords})
+		add(below, description.Finding{Start: at[0], End: at[1], Message: fmt.Sprintf("description points at the docs page with %q - a description has no page around it", strings.Trim(masked[at[0]:at[1]], ", \t")), Fix: removeWords})
 	}
 
 	slices.SortStableFunc(findings, func(a, b description.Finding) int { return cmp.Compare(a.Start, b.Start) })
