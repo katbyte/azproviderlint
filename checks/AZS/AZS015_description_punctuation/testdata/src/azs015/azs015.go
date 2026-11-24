@@ -26,6 +26,16 @@ func flagged() *schema.Resource {
 				Description: " The alias of the Thing. ", // want `description should not start with a space` `description should not end with a space`
 			},
 
+			"enabled": {
+				Type:        schema.TypeBool,
+				Description: "Should the Thing be enabled.", // want `description asks a question, so it should end with a question mark`
+			},
+
+			"public": {
+				Type:        schema.TypeBool,
+				Description: "Is the Thing public", // want `description asks a question, so it should end with a question mark`
+			},
+
 			"mode": {
 				Type:        schema.TypeString,
 				Description: "The mode of the Thing.  Possible values are `Fast`,`Slow` and `Off` . defaults to `Off`..", // want `description has more than one space in a row` `description has no space after ','` `description has a space before '\.'` `sentence should start with a capital letter` `description has doubled punctuation "\.\."`
@@ -74,6 +84,11 @@ func flagged() *schema.Resource {
 			"joined": {
 				Type:        schema.TypeString,
 				Description: "The first half, " + "and the second", // want `description should end with a full stop`
+			},
+
+			"zoned": {
+				Type:        schema.TypeBool,
+				Description: "Should zones be used. Changing this forces a new Thing to be created.", // want `description asks a question, so it should end with a question mark`
 			},
 
 			"bullet": {

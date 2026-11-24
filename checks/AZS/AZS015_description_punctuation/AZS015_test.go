@@ -18,7 +18,6 @@ func TestAZS015(t *testing.T) {
 	for _, text := range []string{
 		"The name of the Thing.",
 		"Should the Thing be enabled?",
-		"Should the Thing be enabled.",
 		"Should the Thing be enabled? Defaults to `true`.",
 		"Must be between `1` and `5`.",
 		"Is required when `mode` is set.",
@@ -60,6 +59,14 @@ func TestAZS015(t *testing.T) {
 		"The name!":                         {"description should end with a full stop"},
 		"The name of `foo`":                 {"description should end with a full stop"},
 		"The name (optional)":               {"description should end with a full stop"},
+		"Is `foo` enabled.":                 {"description asks a question, so it should end with a question mark"},
+		"Is HTTPS required.":                {"description asks a question, so it should end with a question mark"},
+		"Does this apply to all rules":      {"description asks a question, so it should end with a question mark"},
+		"Should public access be enabled.":  {"description asks a question, so it should end with a question mark"},
+		"Is detailed logging enabled":       {"description asks a question, so it should end with a question mark"},
+		"(Boolean) Is approval required.":   {"description asks a question, so it should end with a question mark"},
+		"Should only HTTPS be allowed.":     {"description asks a question, so it should end with a question mark"},
+		"Should it be on. Defaults to off.": {"description asks a question, so it should end with a question mark"},
 		"- The name.":                       {`description starts with "-" - start with its first word`},
 		"* the name.":                       {`description starts with "*" - start with its first word`, "description should start with a capital letter"},
 		"The name\tof it.":                  {"description has a tab in it - use a space"},
@@ -106,6 +113,7 @@ func TestAZS015(t *testing.T) {
 	for kind, text := range map[string]string{
 		"capital":             "the name.",
 		"full-stop":           "The name",
+		"question-mark":       "Is the Thing on.",
 		"sentence-capital":    "The name. changing it is fine.",
 		"leading-mark":        "- The name.",
 		"line-break":          "The name\tof it.",
@@ -131,7 +139,7 @@ func TestAZS015(t *testing.T) {
 		*enabled[kind] = true
 	}
 
-	if len(enabled) != 15 {
-		t.Errorf("%d kinds can be switched off, and the test covers 15", len(enabled))
+	if len(enabled) != 16 {
+		t.Errorf("%d kinds can be switched off, and the test covers 16", len(enabled))
 	}
 }

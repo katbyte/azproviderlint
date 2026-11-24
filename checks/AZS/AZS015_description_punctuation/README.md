@@ -39,6 +39,7 @@ Each kind of mistake has a name, and can be switched off by it.
 |---|---|---|
 | `capital` | a description that starts with a lowercase word | `the name of the Thing.` |
 | `full-stop` | a description that does not end with a full stop or a question mark | `The name of the Thing` |
+| `question-mark` | a question that ends with a full stop | `Should the Thing be enabled.` |
 | `sentence-capital` | a later sentence that starts with a lowercase word | `The name. changing this...` |
 | `leading-mark` | a dash, bullet or other mark before the first word | `- The name of the Thing.` |
 | `edge-space` | a space at the start or the end | `"The name. "` |
@@ -63,9 +64,11 @@ These pass:
 - `...`, `::`, `.NET`, `1,000`, `10:30`, and `a)` or `1)` numbering the points of a list
 - a plural made from code, `` `subnet`s ``, and a space that is the whole value, `` ` ` ``
 
-A description ending in code or a link is reported as missing its full stop, since the code is not the end of the sentence.
+A description is a question when it opens with `Should`, `Is`, `Are`, `Does`, `Do`, `Can`, `Must`, `Has`, `Have`, `Will`, `Was` or `Were`. Its first sentence is the question, so `Should the Thing be enabled. Defaults to true.` is reported too, and so is one behind a tag such as `(Boolean)`.
 
-A description written as a question is for [AZS019](../AZS019_description_question) to report.
+It is a statement when the next word leaves the subject out: `Must be between 1 and 5.`, `Can only be set when...`, `Is required when...`, `Has no effect...`.
+
+A description ending in code or a link is reported as missing its full stop, since the code is not the end of the sentence.
 
 ## What counts
 
@@ -91,12 +94,12 @@ Most kinds have a fix that changes only the characters involved. There is none w
 
 ```yaml
           AZS015:
-            full-stop: false
+            question-mark: false
             pasted-characters: false
 ```
 
 ```bash
-azproviderlint -AZS015 -AZS015.full-stop=false -AZS015.pasted-characters=false ./...
+azproviderlint -AZS015 -AZS015.question-mark=false -AZS015.pasted-characters=false ./...
 ```
 
 See the [root README](../../../README.md#options) for where the settings go.

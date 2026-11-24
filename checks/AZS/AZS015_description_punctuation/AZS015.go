@@ -33,6 +33,7 @@ func init() {
 	for _, kind := range [][2]string{
 		{"capital", "a description that starts with a lowercase word"},
 		{"full-stop", "a description that does not end with a full stop or a question mark"},
+		{"question-mark", "a question that ends with a full stop"},
 		{"sentence-capital", "a sentence inside a description that starts with a lowercase word"},
 		{"leading-mark", "a description that starts with a dash, bullet or other mark"},
 		{"edge-space", "a space at the start or the end of a description"},
@@ -53,6 +54,7 @@ func init() {
 
 var (
 	plainWord    = regexp.MustCompile(`^[a-z]+(?:['-][a-z]+)*$`)
+	question     = regexp.MustCompile(`^(?:\(\w+\) )?(?:Should|Is|Are|Was|Were|Does|Do|Can|Must|Has|Have|Will) (?:(?:only|also|always|never|either|still) )*([^\s,.;:?!]+)`)
 	leadingMark  = regexp.MustCompile(`^[-*\x{2022},;:.!?)\]]+[ \t\n\r]+`)
 	spaceBefore  = regexp.MustCompile(`[ \t]+([,.;:?!])`)
 	spaceAfter   = regexp.MustCompile(`[,;][A-Za-z\x01]|[A-Za-z]:\x01|(?:\b[a-z]+|\x01|\))[.?!][A-Z][a-z]+(?:[\s,.;:?!)]|$)|[a-z][.?!](?:If|The|This|These|It|When|A|An|In|For|To|Defaults|Changing|Possible|Must|Can|Should|Note|See|Use|Only|Each|One)\s`)
@@ -65,14 +67,18 @@ var (
 	entity       = regexp.MustCompile(`&#?\w+$`)
 )
 
+// the word after "Is", "Must" or "Can" that makes a rule of it, not a question: "Must be between 1 and 5.", "Is required when..."
+var statements = strings.Fields("be been not no to have contain include match start begin end one required optional mandatory used ignored set enabled disabled allowed supported deprecated computed returned specified defined expected populated generated limited needed applied configured provided unique valid mutually")
+
 // short forms that end in a full stop without ending the sentence
 var shortForms = []string{"e.g.", "i.e.", "etc.", "vs.", "cf.", "approx.", "incl.", "excl.", "viz.", "no.", "min.", "max.", "a.m.", "p.m."}
 
 const (
-	curlyQuote  = "a curly quote"
-	invisible   = "an invisible character"
-	removeSpace = "Remove the space"
-	addSpace    = "Add a space"
+	curlyQuote   = "a curly quote"
+	invisible    = "an invisible character"
+	removeSpace  = "Remove the space"
+	addSpace     = "Add a space"
+	asksQuestion = "description asks a question, so it should end with a question mark"
 )
 
 // what pasting from a document leaves behind, and the plain character to use; an empty replacement removes it
@@ -329,6 +335,13 @@ func check(text string) []description.Finding {
 		add("capital", description.Finding{Start: first.Start, End: first.Start + 1, Message: "description should start with a capital letter", Fix: "Capitalise it", New: strings.ToUpper(first.Text[:1])})
 	}
 
+	// "Should the Thing..." and "Is this..." ask; "Must be..." and "Is required when..." leave the subject out and state a rule
+	asks := false
+	if opener := question.FindStringSubmatch(masked[lo:hi]); opener != nil {
+		asks = !slices.Contains(statements, opener[1])
+	}
+
+	sentences := 1
 	for i, word := range words[from+1:] {
 		before := strings.TrimRight(words[from+i].Text, ")]}\"'*_")
 		if before == "" || !strings.ContainsRune(".?!", rune(before[len(before)-1])) || strings.HasSuffix(before, "..") {
@@ -341,6 +354,12 @@ func check(text string) []description.Finding {
 			continue
 		}
 
+		// the question is the first sentence, whatever follows it
+		if at := words[from+i].Start + len(before) - 1; sentences == 1 && asks && masked[at] == '.' {
+			add("question-mark", description.Finding{Start: at, End: at + 1, Message: asksQuestion, Fix: "End with a question mark", New: "?"})
+		}
+
+		sentences++
 		if w := word.Trim(".,;:?!)]}\"'*_"); plainWord.MatchString(w.Text) {
 			add("sentence-capital", description.Finding{Start: w.Start, End: w.Start + 1, Message: "sentence should start with a capital letter", Fix: "Capitalise it", New: strings.ToUpper(w.Text[:1])})
 		}
@@ -348,8 +367,18 @@ func check(text string) []description.Finding {
 
 	// what the description ends with, ignoring a bracket or quote closing it: "(in seconds.)" ends with a full stop
 	end := len(strings.TrimRight(masked[:hi], ")]}\"'*_"))
-	if end > 0 && !endsAbbreviated && !strings.HasSuffix(masked[:end], "\u2026") && masked[end-1] != '.' && masked[end-1] != '?' {
+	asks = asks && sentences == 1
+	switch {
+	case end == 0 || endsAbbreviated || strings.HasSuffix(masked[:end], "\u2026"):
+	case masked[end-1] == '?':
+	case masked[end-1] == '.' && asks:
+		add("question-mark", description.Finding{Start: end - 1, End: end, Message: asksQuestion, Fix: "End with a question mark", New: "?"})
+	case masked[end-1] == '.':
+	default:
 		finding := description.Finding{Start: hi, End: hi, Message: "description should end with a full stop", Fix: "Add a full stop", New: "."}
+		if asks {
+			finding.Message, finding.Fix, finding.New = asksQuestion, "Add a question mark", "?"
+		}
 
 		// after a comma or a colon something is missing, and a full stop would not supply it
 		if last, _ := utf8.DecodeLastRuneInString(masked[:hi]); last != description.Blank && !unicode.IsLetter(last) && !unicode.IsDigit(last) && !strings.ContainsRune(")]}\"'*_%", last) {
