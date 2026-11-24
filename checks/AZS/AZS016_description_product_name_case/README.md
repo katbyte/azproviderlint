@@ -1,4 +1,4 @@
-# AZS016 - Azure product names in resource and property descriptions must be capitalised
+# AZS016 - resource and property descriptions must capitalise Azure product names
 
 AZS016 reports the name of an Azure product in a resource or property description that is not capitalised the way the provider writes it everywhere else: `function app` for `Function App`, `Storage account` for `Storage Account`.
 
