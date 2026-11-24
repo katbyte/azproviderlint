@@ -46,6 +46,11 @@ func flagged() *schema.Resource {
 				Description: "A note (free text), e.g. \"hello\", etc.", // want `description has a space just inside a bracket` `description has a space just inside a bracket` `"eg" should be "e\.g\."` `description has a space before ','` `"etc" should be "etc\."`
 			},
 
+			"size": {
+				Type:        schema.TypeString,
+				Description: "The size (in GB) of the disk(s).", // want `description has no space before '\('`
+			},
+
 			"version": {
 				Type:        schema.TypeString,
 				Description: "The version, one of `v1` or `v2.", // want `description has a backtick with no partner` `description should end with a full stop`
@@ -142,7 +147,7 @@ func passing() *schema.Resource {
 
 			"sku_name": {
 				Type:        schema.TypeString,
-				Description: "`sku_name` is two parts joined by an underscore(\\_), e.g. `Developer_1`. See [the docs](https://example.com/sku.html) for more.",
+				Description: "`sku_name` is two parts joined by an underscore (\\_), e.g. `Developer_1`. See [the docs](https://example.com/sku.html) for more.",
 			},
 
 			"runtime": {

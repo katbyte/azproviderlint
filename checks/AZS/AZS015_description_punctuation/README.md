@@ -47,7 +47,7 @@ Each kind of mistake has a name, and can be switched off by it.
 | `line-break` | a tab or a line break inside the description | `"The name.\nChanging this..."` |
 | `space-before` | a space before `,` `.` `;` `:` `?` or `!` | `The name of the Thing .` |
 | `space-after` | no space after `,` or `;`, after the full stop between two sentences, or after a `:` that runs into code | `` `Fast`,`Slow` `` |
-| `bracket-space` | a space just inside a bracket | `( in seconds )` |
+| `bracket-space` | a space just inside a bracket, or none before `(` | `( in seconds )`, `The time(in seconds)` |
 | `code-space` | code in backticks that touches the word beside it or other code, or has a space just inside the backticks | `` Defaults to`30` ``, `` `30 ` `` |
 | `doubled-punctuation` | two marks in a row | `..` `,.` `?.` |
 | `unbalanced` | a backtick, double quote or bracket with no partner | `` one of `v1` or `v2 `` |
@@ -63,6 +63,7 @@ These pass:
 - `e.g.`, `i.e.`, `etc.` and `vs.` in the middle of a sentence
 - `...`, `::`, `.NET`, `1,000`, `10:30`, and `a)` or `1)` numbering the points of a list
 - a plural made from code, `` `subnet`s ``, and a space that is the whole value, `` ` ` ``
+- a plural in brackets, `value(s)`, and a call, `now()`
 
 A description is a question when it opens with `Should`, `Is`, `Are`, `Does`, `Do`, `Can`, `Must`, `Has`, `Have`, `Will`, `Was` or `Were`. Its first sentence is the question, so `Should the Thing be enabled. Defaults to true.` is reported too, and so is one behind a tag such as `(Boolean)`.
 
