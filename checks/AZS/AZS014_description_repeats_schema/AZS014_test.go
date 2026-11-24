@@ -16,7 +16,7 @@ func TestAZS014(t *testing.T) {
 	_, filename, _, _ := runtime.Caller(0)
 	analysistest.RunWithSuggestedFixes(t, filepath.Join(filepath.Dir(filename), "testdata"), Analyzer, "azs014")
 
-	all := facts{values: true, isBool: true, hasDefault: true, forceNew: true, conflicts: true, oneOf: true, requires: true, items: true, length: true}
+	all := facts{Values: true, IsBool: true, HasDefault: true, ForceNew: true, Conflicts: true, OneOf: true, Requires: true, Items: true, Length: true}
 
 	for _, text := range []string{
 		"The name of the Thing.",
@@ -35,6 +35,11 @@ func TestAZS014(t *testing.T) {
 		"Changing this is fine.",
 		"The values possible are many.",
 		"The mode. Values are case sensitive.",
+		"The window. If `frequency` is `PT1M`, possible values are `PT1M` and `PT5M`.",
+		"The time zone, the possible values are defined [here](https://example.com/zones).",
+		"The feature to use, accepted values are `a` or `b`, it follows the SKU when left out.",
+		"If the `http_url` property is specified, the `file_path` is required and must be a relative path.",
+		"Whether to preserve the unmatched part of the path.",
 		"The owners, `a` or `b` among them.",
 		"The first of the names, `a` or `b`.",
 		"",
@@ -76,68 +81,83 @@ func TestAZS014(t *testing.T) {
 	)
 
 	for text, want := range map[string][]string{
-		"(Optional) The name.":                                             {`description has the tag "(Optional)" - the schema already says so`},
-		"The name. (Computed)":                                             {`description has the tag "(Computed)" - the schema already says so`},
-		"(Optional/Computed) The name.":                                    {`description has the tag "(Optional/Computed)" - the schema already says so`},
-		"(List) The names (String).":                                       {`description has the tag "(List)" - the schema already says so`, `description has the tag "(String)" - the schema already says so`},
-		"The mode. Possible values are `a` and `b`.":                       {values},
-		"The mode. Allowed values include `a`.":                            {values},
-		"The mode. Values are `a`, `b` and `c`.":                           {values},
-		"The mode. Values include 'a' and 'b'.":                            {values},
-		"The mode. Acceptable values include `a`, `b` and `c`.":            {values},
-		"The mode. Must be one of `a` or `b`.":                             {values},
-		"The size. Should be between 1 and 5.":                             {values},
-		"The size. The range is `100` - `65000`.":                          {values},
-		"The size. Valid range is 1-5.":                                    {values},
-		"The mode. Default is `a`.":                                        {byValue},
-		"The mode. The default value is `a`.":                              {byValue},
-		"The mode. Defaults to `a`. Possible values are `a`.":              {byValue, values},
-		"The mode. Changing this forces a new Thing to be created.":        {replaced},
-		"The mode. Changing this value forces a new Thing to be created.":  {replaced},
-		"The mode. Cannot be used together with `speed`.":                  {clashes},
-		"The key. Only one of `key` or `secret` can be specified.":         {either},
-		"The mode. Changing this forces a new resource.":                   {replaced},
-		"The name. Changing the name forces a new resource to be created.": {replaced},
-		"The mode. Valid options are `a` or `b`.":                          {values},
-		"The mode. Permitted values: `a`, `b`, or `c`.":                    {values},
-		"The mode. Possibles values are `a` and `b`.":                      {values},
-		"The mode. Currently only `a` is supported.":                       {values},
-		"The mode. Only `a` is supported currently.":                       {values},
-		"The size. This value can be between `1` and `7` days.":            {values},
-		"The size. This number should be between 1 and 365.":               {values},
-		"The mode of the site Possible values include: `a` and `b`.":       {values},
-		"The type of the runbook - can be either `a`, `b` or `c`.":         {values},
-		"The type of validation, one of `a` or `b`.":                       {values},
-		"The type of validation - either `a` or `b`.":                      {values},
-		"The URL. `branch` and `token` must also be set.":                  {needs},
-		"The URL. Required with `branch`.":                                 {needs},
-		"The URL. This is required with `branch`.":                         {needs},
-		"The URL. Requires `branch` to be set.":                            {needs},
-		"The URL. Required if `branch` is set.":                            {needs},
-		"The path. Only valid in conjunction with `health_check_path`.":    {needs},
-		"The verb. Options are 'GET', 'POST', and 'PUT'.":                  {values},
-		"The mode. Allowed values: `a`, `b`.":                              {values},
-		"The mode. Can be `a` or `b`.":                                     {values},
-		"The mode. Either `a` or `b`.":                                     {values},
-		"The mode. One of `a`, `b` or `c`.":                                {values},
-		"The mode, which defaults to `Fast`.":                              {byValue},
-		"The mode (defaults to `Fast`) of the Thing.":                      {byValue},
-		"The site. If blank, defaults to 'Default-First-Site-Name'.":       {byValue},
-		"The mode. This defaults to `a` if not specified.":                 {byValue},
-		"Is it on? By default, this is set to false.":                      {byValue},
-		"The key. Exactly one of `key` or `secret` must be specified.":     {either},
-		"The key. One of either `key` or `secret` is required.":            {either},
-		"The key. At least one of `key`, `secret` or `token` must be set.": {either},
-		"The rules. A maximum of `100` `rule` blocks may be defined.":      {counted},
-		"The rules. Can support up to `5` `rule` blocks.":                  {counted},
-		"A `rule` block. Only one `rule` block can be specified.":          {counted},
-		"The name. Must be between 1 and 80 characters.":                   {long},
-		"The name. Cannot exceed 80 characters in length.":                 {long},
-		"The name, letters and dashes up to 80 characters in length.":      {long},
-		"The rules. Each `rule` block supports fields defined below.":      {page},
-		"The `sku` block supports the fields documented below. The SKU.":   {page},
-		"A `sku` block as defined below.":                                  {`description points at the docs page with "as defined below" - a description has no page around it`},
-		"One or more `sku` blocks, described above.":                       {`description points at the docs page with "described above" - a description has no page around it`},
+		"(Optional) The name.":                                                                      {`description has the tag "(Optional)" - the schema already says so`},
+		"The name. (Computed)":                                                                      {`description has the tag "(Computed)" - the schema already says so`},
+		"(Optional/Computed) The name.":                                                             {`description has the tag "(Optional/Computed)" - the schema already says so`},
+		"(List) The names (String).":                                                                {`description has the tag "(List)" - the schema already says so`, `description has the tag "(String)" - the schema already says so`},
+		"The mode. Possible values are `a` and `b`.":                                                {values},
+		"The mode. Allowed values include `a`.":                                                     {values},
+		"The mode. Values are `a`, `b` and `c`.":                                                    {values},
+		"The mode. Values include 'a' and 'b'.":                                                     {values},
+		"The mode. Acceptable values include `a`, `b` and `c`.":                                     {values},
+		"The mode. Must be one of `a` or `b`.":                                                      {values},
+		"The size. Should be between 1 and 5.":                                                      {values},
+		"The size. The range is `100` - `65000`.":                                                   {values},
+		"The size. Valid range is 1-5.":                                                             {values},
+		"The mode. Default is `a`.":                                                                 {byValue},
+		"The mode. The default value is `a`.":                                                       {byValue},
+		"The mode. Defaults to `a`. Possible values are `a`.":                                       {byValue, values},
+		"The mode. Changing this forces a new Thing to be created.":                                 {replaced},
+		"The mode. Changing this value forces a new Thing to be created.":                           {replaced},
+		"The mode. Cannot be used together with `speed`.":                                           {clashes},
+		"The key. Only one of `key` or `secret` can be specified.":                                  {either},
+		"The mode. Changing this forces a new resource.":                                            {replaced},
+		"The name. Changing the name forces a new resource to be created.":                          {replaced},
+		"The mode. Valid options are `a` or `b`.":                                                   {values},
+		"The mode. Permitted values: `a`, `b`, or `c`.":                                             {values},
+		"The mode. Possibles values are `a` and `b`.":                                               {values},
+		"The mode. Currently only `a` is supported.":                                                {values},
+		"The mode. Only `a` is supported currently.":                                                {values},
+		"The size. This value can be between `1` and `7` days.":                                     {values},
+		"The size. This number should be between 1 and 365.":                                        {values},
+		"The mode of the site Possible values include: `a` and `b`.":                                {values},
+		"The type of the runbook - can be either `a`, `b` or `c`.":                                  {values},
+		"The type of validation, one of `a` or `b`.":                                                {values},
+		"The type of validation - either `a` or `b`.":                                               {values},
+		"The URL. `branch` and `token` must also be set.":                                           {needs},
+		"The URL. Required with `branch`.":                                                          {needs},
+		"The URL. This attribute is required when `branch` is specified.":                           {needs},
+		"The URL. The `uid` and `gid` properties must be specified together or not at all.":         {needs},
+		"The URL. If the `http_url` property is specified, the `file_path` is required.":            {needs},
+		"The URL. When `a` is set, `b` must also be set.":                                           {needs},
+		"The mode of the Thing, possible values are `a` and `b`.":                                   {values},
+		"The mode of the Thing - valid values include: `a`, `b`, `c`.":                              {values},
+		"The tier of the SKU, possible values are `Standard`.":                                      {values},
+		"The priority of the Job, possible values can range from -1000 (lowest) to 1000 (highest).": {values},
+		"The mode of the Thing, can be set to `a`, `b` or `c`.":                                     {values},
+		"The mode. Currently the only possible values are `a` and `b`.":                             {values},
+		"The scale unit of the Gateway, possible values are `1` through `40`.":                      {values},
+		"The status of the request, possible values will be `a`, `b`, or `c`.":                      {values},
+		"The mode. can be set to `a`, `b` or `c`.":                                                  {values},
+		"The mode. At this time the supported values are `a` and `b`.":                              {values},
+		"The URL. This is required with `branch`.":                                                  {needs},
+		"The URL. Requires `branch` to be set.":                                                     {needs},
+		"The URL. Required if `branch` is set.":                                                     {needs},
+		"The path. Only valid in conjunction with `health_check_path`.":                             {needs},
+		"The verb. Options are 'GET', 'POST', and 'PUT'.":                                           {values},
+		"The mode. Allowed values: `a`, `b`.":                                                       {values},
+		"The mode. Can be `a` or `b`.":                                                              {values},
+		"The mode. Either `a` or `b`.":                                                              {values},
+		"The mode. One of `a`, `b` or `c`.":                                                         {values},
+		"The mode, which defaults to `Fast`.":                                                       {byValue},
+		"The mode (defaults to `Fast`) of the Thing.":                                               {byValue},
+		"The site. If blank, defaults to 'Default-First-Site-Name'.":                                {byValue},
+		"The mode. This defaults to `a` if not specified.":                                          {byValue},
+		"Is it on? By default, this is set to false.":                                               {byValue},
+		"The key. Exactly one of `key` or `secret` must be specified.":                              {either},
+		"The key. Either `id` or both `key` and `location` must be specified.":                      {either},
+		"The key. One of either `key` or `secret` is required.":                                     {either},
+		"The key. At least one of `key`, `secret` or `token` must be set.":                          {either},
+		"The rules. A maximum of `100` `rule` blocks may be defined.":                               {counted},
+		"The rules. Can support up to `5` `rule` blocks.":                                           {counted},
+		"A `rule` block. Only one `rule` block can be specified.":                                   {counted},
+		"The name. Must be between 1 and 80 characters.":                                            {long},
+		"The name. Cannot exceed 80 characters in length.":                                          {long},
+		"The name, letters and dashes up to 80 characters in length.":                               {long},
+		"The rules. Each `rule` block supports fields defined below.":                               {page},
+		"The `sku` block supports the fields documented below. The SKU.":                            {page},
+		"A `sku` block as defined below.":                                                           {`description points at the docs page with "as defined below" - a description has no page around it`},
+		"One or more `sku` blocks, described above.":                                                {`description points at the docs page with "described above" - a description has no page around it`},
 	} {
 		var got []string
 		for _, finding := range check(text, all) {
@@ -170,7 +190,7 @@ func TestAZS014(t *testing.T) {
 		}
 	}
 
-	if got := check("Is it on? Possible values are `true` and `false`.", facts{isBool: true}); len(got) != 1 || got[0].Message != byType {
+	if got := check("Is it on? Possible values are `true` and `false`.", facts{IsBool: true}); len(got) != 1 || got[0].Message != byType {
 		t.Errorf("a bool's values: got %v", got)
 	}
 
@@ -204,13 +224,30 @@ func TestAZS014(t *testing.T) {
 		"(Computed) The state.":                                         {`description has the tag "(Computed)" - the schema already says so`, "The state."},
 		"The rules. Each `rule` block supports fields defined below.":   {page, "The rules."},
 	} {
-		got := check(text, facts{readOnly: true})
+		got := check(text, facts{ReadOnly: true})
 		if len(got) != 1 || got[0].Message != want[0] || text[:got[0].Start]+got[0].New+text[got[0].End:] != want[1] {
 			t.Errorf("%q on a read-only property: got %v", text, got)
 		}
 	}
 
-	if got := check("The state of the Thing, as last read.", facts{readOnly: true}); len(got) > 0 {
+	// a read-only property described as something to set is called out by the words that say so, and left to be reworded
+	for text, want := range map[string]string{
+		"Whether to preserve the unmatched part of the path.": "Whether to",
+		"Whether the Thing should be enabled.":                "should",
+		"Set to `true` to keep the path.":                     "Set",
+		"Enable to allow secured volumes.":                    "Enable",
+	} {
+		got := check(text, facts{ReadOnly: true})
+		if len(got) != 1 || got[0].Fix != "" || text[got[0].Start:got[0].End] != want || !strings.HasSuffix(got[0].Message, "say what it holds") {
+			t.Errorf("%q on a read-only property: got %v", text, got)
+		}
+	}
+
+	if got := check("Whether the Thing is enabled. Settings are kept.", facts{ReadOnly: true}); len(got) > 0 {
+		t.Errorf("a read-only property saying what it holds: got %v", got)
+	}
+
+	if got := check("The state of the Thing, as last read.", facts{ReadOnly: true}); len(got) > 0 {
 		t.Errorf("prose on a read-only property: got %v", got)
 	}
 
@@ -226,37 +263,41 @@ func TestAZS014(t *testing.T) {
 		"The size. The range is `100` - `65000`.":                 "ISO8601DurationBetween",
 		"The name. Must be between 1 and 80 characters.":          "StringLenBetween",
 	} {
-		got := check(text, facts{unchecked: true, bounds: "ISO8601DurationBetween"})
+		got := check(text, facts{Unchecked: true, Bounds: "ISO8601DurationBetween"})
 		if len(got) != 1 || got[0].Fix != "" || !strings.HasSuffix(got[0].Message, "check it in the schema with "+want) {
 			t.Errorf("%q with nothing checking it: got %v", text, got)
 		}
 	}
 
-	if got := check("The size. Must be between 1 and 5.", facts{unchecked: true}); len(got) != 1 || !strings.HasSuffix(got[0].Message, "with a validation") {
+	if got := check("The size. Must be between 1 and 5.", facts{Unchecked: true}); len(got) != 1 || !strings.HasSuffix(got[0].Message, "with a validation") {
 		t.Errorf("a range with no validation to name: got %v", got)
 	}
 
-	if got := check("The size, which must be between 1 and 5 unless `mode` is set.", facts{unchecked: true}); len(got) > 0 {
+	if got := check("The size, which must be between 1 and 5 unless `mode` is set.", facts{Unchecked: true}); len(got) > 0 {
 		t.Errorf("a range inside a sentence that says more: got %v", got)
 	}
 
 	// each kind of repeat can be switched off on its own; the kinds are package state, so this cannot run beside anything else
 	for kind, text := range map[string]string{
-		"tag":             "(Optional) The name.",
-		"possible-values": "The mode. Possible values are `a` and `b`.",
-		"default":         "The mode. Defaults to `a`.",
-		"force-new":       "The mode. Changing this forces a new resource to be created.",
-		"conflicts-with":  "The mode. Conflicts with `speed`.",
-		"defined-below":   "A `sku` block as defined below.",
-		"one-of":          "The key. Exactly one of `key` or `secret` must be specified.",
-		"required-with":   "The URL. `branch` and `token` must also be set.",
-		"item-count":      "The rules. A maximum of `100` `rule` blocks may be defined.",
-		"length":          "The name, letters and dashes up to 80 characters in length.",
-		"unchecked-range": "The size. Must be between 1 and 5.",
+		"tag":               "(Optional) The name.",
+		"possible-values":   "The mode. Possible values are `a` and `b`.",
+		"default":           "The mode. Defaults to `a`.",
+		"force-new":         "The mode. Changing this forces a new resource to be created.",
+		"conflicts-with":    "The mode. Conflicts with `speed`.",
+		"defined-below":     "A `sku` block as defined below.",
+		"one-of":            "The key. Exactly one of `key` or `secret` must be specified.",
+		"required-with":     "The URL. `branch` and `token` must also be set.",
+		"item-count":        "The rules. A maximum of `100` `rule` blocks may be defined.",
+		"length":            "The name, letters and dashes up to 80 characters in length.",
+		"unchecked-range":   "The size. Must be between 1 and 5.",
+		"read-only-setting": "Whether to keep the path.",
 	} {
 		known := all
-		if kind == unchecked {
-			known = facts{unchecked: true}
+		switch kind {
+		case unchecked:
+			known = facts{Unchecked: true}
+		case setting:
+			known = facts{ReadOnly: true}
 		}
 
 		if len(check(text, known)) == 0 {
@@ -270,7 +311,7 @@ func TestAZS014(t *testing.T) {
 		*enabled[kind] = true
 	}
 
-	if len(enabled) != 11 {
-		t.Errorf("%d kinds can be switched off, and the test covers 11", len(enabled))
+	if len(enabled) != 12 {
+		t.Errorf("%d kinds can be switched off, and the test covers 12", len(enabled))
 	}
 }

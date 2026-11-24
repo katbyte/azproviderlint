@@ -5,6 +5,10 @@
 - add rule `AZS019`: resource and property descriptions written as a question, such as `Should the Thing be enabled?` ([#108](https://github.com/katbyte/azproviderlint/pull/108))
 - `AZS017`: wordy phrases such as `or not` and `in order to` are now reported and shortened ([#109](https://github.com/katbyte/azproviderlint/pull/109))
 - `AZS014`: a range or a length the schema does not check, such as `must be between 5 and 300 seconds`, is now reported, and more ways of listing values are recognised, such as `Acceptable values include ...` ([#110](https://github.com/katbyte/azproviderlint/pull/110))
+- descriptions handed to a shared schema helper, such as `helpers.NameSchema("The name.")`, are now checked by every description rule ([#111](https://github.com/katbyte/azproviderlint/pull/111))
+- `AZS014`: a read-only property described as something to set, such as `Whether to ...`, is now reported ([#111](https://github.com/katbyte/azproviderlint/pull/111))
+- `AZS014`: value lists in the middle of a sentence, such as `..., possible values are a and b`, and more ways of saying what else must be set are recognised ([#111](https://github.com/katbyte/azproviderlint/pull/111))
+- `AZS015`: a value in quotes where the docs use backticks, such as `"TemporaryDisk"`, is now reported ([#111](https://github.com/katbyte/azproviderlint/pull/111))
 
 ## v0.15.1 (2026-11-23)
 

@@ -8,8 +8,6 @@ import (
 
 	"github.com/katbyte/azproviderlint/lib/description"
 	"golang.org/x/tools/go/analysis"
-	"golang.org/x/tools/go/analysis/passes/inspect"
-	"golang.org/x/tools/go/ast/inspector"
 )
 
 // Analyzer checks that a description says what a property is and does not ask it, so "Should the Thing be enabled?" is reported. The docs
@@ -18,7 +16,7 @@ var Analyzer = &analysis.Analyzer{
 	Name:     "AZS019",
 	Doc:      "check that resource and property descriptions are not written as a question",
 	URL:      "https://github.com/katbyte/azproviderlint/blob/main/checks/AZS/AZS019_description_question/README.md",
-	Requires: []*analysis.Analyzer{inspect.Analyzer},
+	Requires: []*analysis.Analyzer{description.Analyzer},
 	Run:      run,
 }
 
@@ -34,12 +32,7 @@ var (
 var statements = strings.Fields("be been not no to have contain include match start begin end one required optional mandatory used ignored set enabled disabled allowed supported deprecated computed returned specified defined expected populated generated limited needed applied configured provided unique valid mutually")
 
 func run(pass *analysis.Pass) (any, error) {
-	insp, ok := pass.ResultOf[inspect.Analyzer].(*inspector.Inspector)
-	if !ok {
-		return nil, nil
-	}
-
-	for _, found := range description.All(pass, insp) {
+	for _, found := range description.All(pass) {
 		for _, finding := range check(found.Text) {
 			found.Report(pass, finding)
 		}

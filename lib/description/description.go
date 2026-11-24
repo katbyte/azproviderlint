@@ -7,13 +7,55 @@ import (
 	"go/constant"
 	"go/token"
 	"go/types"
+	"reflect"
 	"strconv"
 	"strings"
 	"unicode/utf8"
 
+	"github.com/katbyte/azproviderlint/lib/astx"
+	"github.com/katbyte/azproviderlint/lib/facts"
 	"golang.org/x/tools/go/analysis"
+	"golang.org/x/tools/go/analysis/passes/inspect"
 	"golang.org/x/tools/go/ast/inspector"
 )
+
+// Analyzer finds the descriptions in a package once, for every check that reads them. It also records which functions take a description as a
+// parameter, so the text handed to a shared schema helper is read where it is written, in whichever package that is.
+var Analyzer = &analysis.Analyzer{
+	Name:       "descriptions",
+	Doc:        "find the resource and property descriptions written out in a package",
+	Requires:   []*analysis.Analyzer{inspect.Analyzer},
+	FactTypes:  []analysis.Fact{(*takesDescription)(nil)},
+	ResultType: reflect.TypeFor[*Descriptions](),
+}
+
+// run refers to Analyzer, so it is wired up here and not in the literal, which would be an initialization cycle.
+func init() { Analyzer.Run = run }
+
+// takesDescription is the fact on a function that builds a schema from what it is given: bit i is set when parameter i becomes a description.
+type takesDescription struct{ Params uint64 }
+
+func (*takesDescription) AFact() {}
+
+func (f *takesDescription) String() string { return "description(" + facts.Bits(f.Params) + ")" }
+
+// Descriptions is what Analyzer finds in a package.
+type Descriptions struct {
+	// Found is every description written as text.
+	Found []Found
+
+	// Helpers holds, for each function of the package that takes a description, the schema value each such parameter is set on.
+	Helpers map[*types.Func]map[int]*ast.CompositeLit
+}
+
+// All returns every description in the package, for a check that requires Analyzer.
+func All(pass *analysis.Pass) []Found {
+	if found, ok := pass.ResultOf[Analyzer].(*Descriptions); ok {
+		return found.Found
+	}
+
+	return nil
+}
 
 // Found is one description written as text in the code: on a schema property, a resource, a framework attribute or block, a provider function or
 // its parameters, or returned by a typed resource's Description() method.
@@ -24,8 +66,13 @@ type Found struct {
 	// Text is what it says.
 	Text string
 
-	// Owner is the schema value the description is set on, whose other fields say what the property is. It is nil for a typed resource's method.
+	// Owner is the schema value the description is set on, whose other fields say what the property is. It is nil for a typed resource's method,
+	// and for text handed to a helper in another package.
 	Owner *ast.CompositeLit
+
+	// Via is the helper the text is handed to, and Param which of its parameters takes it. Via is nil for a description set where it is written.
+	Via   *types.Func
+	Param int
 
 	// where each byte of Text sits in the source, counted from the literal's opening quote; nil when Value is not one string literal
 	offsets []int
@@ -45,16 +92,121 @@ type Finding struct {
 	Fix, New string
 }
 
-// All returns every description in the package, outside its test files, that is text the compiler can read: a string, or constants joined together.
-func All(pass *analysis.Pass, insp *inspector.Inspector) []Found {
+// run finds every description in the package, outside its test files, that is text the compiler can read: a string, or constants joined together.
+// One handed to a function that sets it on a schema is found at the call.
+func run(pass *analysis.Pass) (any, error) {
+	insp, ok := pass.ResultOf[inspect.Analyzer].(*inspector.Inspector)
+	if !ok {
+		return &Descriptions{}, nil
+	}
+
+	// the plugin sdk and the framework keep their schema types in a package named schema, and a provider function's in one named function; an
+	// Azure API model with a Description field is neither
+	described := func(lit *ast.CompositeLit) []*ast.KeyValueExpr {
+		t := pass.TypesInfo.TypeOf(lit)
+		if t == nil {
+			return nil
+		}
+		if ptr, ok := types.Unalias(t).(*types.Pointer); ok {
+			t = ptr.Elem()
+		}
+
+		named, ok := types.Unalias(t).(*types.Named)
+		if !ok || named.Obj().Pkg() == nil || !strings.Contains(named.Obj().Pkg().Path(), "/terraform-plugin-") {
+			return nil
+		}
+		if name := named.Obj().Pkg().Name(); name != "schema" && name != "function" {
+			return nil
+		}
+
+		var descriptions []*ast.KeyValueExpr
+		for _, elt := range lit.Elts {
+			if kv, ok := elt.(*ast.KeyValueExpr); ok {
+				if key, ok := kv.Key.(*ast.Ident); ok && (key.Name == "Description" || key.Name == "MarkdownDescription") {
+					descriptions = append(descriptions, kv)
+				}
+			}
+		}
+
+		return descriptions
+	}
+
+	// a function takes a description when it sets a parameter as one, or hands it to a function that does
+	type helper struct {
+		fn     *types.Func
+		body   *ast.BlockStmt
+		params map[types.Object]int
+	}
+	helpers := map[*types.Func]map[int]*ast.CompositeLit{}
+	takes, err := facts.Run(pass, Analyzer,
+		func(fn *types.Func, decl *ast.FuncDecl) (helper, bool) {
+			h := helper{fn: fn, body: decl.Body, params: map[types.Object]int{}}
+			i := 0
+			for _, field := range decl.Type.Params.List {
+				for _, name := range field.Names {
+					if obj := pass.TypesInfo.Defs[name]; obj != nil && i < 64 {
+						h.params[obj] = i
+					}
+					i++
+				}
+				if len(field.Names) == 0 {
+					i++
+				}
+			}
+
+			return h, len(h.params) > 0 && !strings.HasSuffix(pass.Fset.Position(decl.Pos()).Filename, "_test.go")
+		},
+		func(s *facts.Set[takesDescription, *takesDescription], h helper) takesDescription {
+			param := func(e ast.Expr) (int, bool) {
+				id, ok := ast.Unparen(e).(*ast.Ident)
+				if !ok {
+					return 0, false
+				}
+				i, ok := h.params[pass.TypesInfo.Uses[id]]
+
+				return i, ok
+			}
+
+			var f takesDescription
+			ast.Inspect(h.body, func(n ast.Node) bool {
+				switch n := n.(type) {
+				case *ast.CompositeLit:
+					for _, kv := range described(n) {
+						if i, ok := param(kv.Value); ok {
+							f.Params |= 1 << i
+							if helpers[h.fn] == nil {
+								helpers[h.fn] = map[int]*ast.CompositeLit{}
+							}
+							helpers[h.fn][i] = n
+						}
+					}
+
+				case *ast.CallExpr:
+					callee := s.Get(astx.CalledFunc(pass, n))
+					for j, arg := range n.Args {
+						if i, ok := param(arg); ok && j < 64 && callee.Params&(1<<j) != 0 {
+							f.Params |= 1 << i
+						}
+					}
+				}
+
+				return true
+			})
+
+			return f
+		})
+	if err != nil {
+		return nil, err
+	}
+
 	var found []Found
-	add := func(value ast.Expr, owner *ast.CompositeLit) {
+	add := func(value ast.Expr, owner *ast.CompositeLit, via *types.Func, param int) {
 		tv, ok := pass.TypesInfo.Types[value]
 		if !ok || tv.Value == nil || tv.Value.Kind() != constant.String {
 			return
 		}
 
-		f := Found{Value: value, Text: constant.StringVal(tv.Value), Owner: owner}
+		f := Found{Value: value, Text: constant.StringVal(tv.Value), Owner: owner, Via: via, Param: param}
 		lit, ok := ast.Unparen(value).(*ast.BasicLit)
 		if !ok || lit.Kind != token.STRING || len(lit.Value) < 2 {
 			found = append(found, f)
@@ -102,39 +254,22 @@ func All(pass *analysis.Pass, insp *inspector.Inspector) []Found {
 		found = append(found, f)
 	}
 
-	insp.Preorder([]ast.Node{(*ast.CompositeLit)(nil), (*ast.FuncDecl)(nil)}, func(n ast.Node) {
+	insp.Preorder([]ast.Node{(*ast.CompositeLit)(nil), (*ast.FuncDecl)(nil), (*ast.CallExpr)(nil)}, func(n ast.Node) {
 		if strings.HasSuffix(pass.Fset.Position(n.Pos()).Filename, "_test.go") {
 			return
 		}
 
 		switch n := n.(type) {
 		case *ast.CompositeLit:
-			t := pass.TypesInfo.TypeOf(n)
-			if t == nil {
-				return
-			}
-			if ptr, ok := types.Unalias(t).(*types.Pointer); ok {
-				t = ptr.Elem()
+			for _, kv := range described(n) {
+				add(kv.Value, n, nil, 0)
 			}
 
-			// the plugin sdk and the framework keep their schema types in a package named schema, and a provider function's in one named
-			// function; an Azure API model with a Description field is neither
-			named, ok := types.Unalias(t).(*types.Named)
-			if !ok || named.Obj().Pkg() == nil || !strings.Contains(named.Obj().Pkg().Path(), "/terraform-plugin-") {
-				return
-			}
-			if name := named.Obj().Pkg().Name(); name != "schema" && name != "function" {
-				return
-			}
-
-			for _, elt := range n.Elts {
-				kv, ok := elt.(*ast.KeyValueExpr)
-				if !ok {
-					continue
-				}
-
-				if key, ok := kv.Key.(*ast.Ident); ok && (key.Name == "Description" || key.Name == "MarkdownDescription") {
-					add(kv.Value, n)
+		case *ast.CallExpr:
+			fn := astx.CalledFunc(pass, n)
+			for j, arg := range n.Args {
+				if j < 64 && takes.Get(fn).Params&(1<<j) != 0 {
+					add(arg, helpers[fn][j], fn, j)
 				}
 			}
 
@@ -159,12 +294,12 @@ func All(pass *analysis.Pass, insp *inspector.Inspector) []Found {
 			}
 
 			if ret, ok := n.Body.List[0].(*ast.ReturnStmt); ok && len(ret.Results) == 1 {
-				add(ret.Results[0], nil)
+				add(ret.Results[0], nil, nil, 0)
 			}
 		}
 	})
 
-	return found
+	return &Descriptions{Found: found, Helpers: helpers}, nil
 }
 
 // Report reports a finding at its place inside the description, with its fix. A description that is not one string literal is reported as a whole,

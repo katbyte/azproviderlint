@@ -12,8 +12,6 @@ import (
 
 	"github.com/katbyte/azproviderlint/lib/description"
 	"golang.org/x/tools/go/analysis"
-	"golang.org/x/tools/go/analysis/passes/inspect"
-	"golang.org/x/tools/go/ast/inspector"
 )
 
 // Analyzer checks that the name of an Azure product in a description is capitalised the way the provider writes it everywhere else: "Function
@@ -22,7 +20,7 @@ var Analyzer = &analysis.Analyzer{
 	Name:     "AZS016",
 	Doc:      "check that Azure product names in resource and property descriptions are capitalised",
 	URL:      "https://github.com/katbyte/azproviderlint/blob/main/checks/AZS/AZS016_description_product_name_case/README.md",
-	Requires: []*analysis.Analyzer{inspect.Analyzer},
+	Requires: []*analysis.Analyzer{description.Analyzer},
 	Run:      run,
 }
 
@@ -78,12 +76,7 @@ func list(checked bool, given ...string) {
 }
 
 func run(pass *analysis.Pass) (any, error) {
-	insp, ok := pass.ResultOf[inspect.Analyzer].(*inspector.Inspector)
-	if !ok {
-		return nil, nil
-	}
-
-	for _, found := range description.All(pass, insp) {
+	for _, found := range description.All(pass) {
 		for _, finding := range check(found.Text) {
 			found.Report(pass, finding)
 		}
