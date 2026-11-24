@@ -41,7 +41,7 @@ func init() {
 		{"line-break", "a tab or line break inside a description"},
 		{"space-before", "a space before a comma, full stop or other mark"},
 		{"space-after", "a comma, full stop or other mark with no space after it"},
-		{"bracket-space", "a space just inside a bracket"},
+		{"bracket-space", "a space just inside a bracket, or none before one"},
 		{"code-space", "code in backticks that touches the word beside it, or has a space just inside the backticks"},
 		{"doubled-punctuation", "two marks in a row, such as .. or ,."},
 		{"unbalanced", "a backtick, quote or bracket with no partner"},
@@ -59,6 +59,7 @@ var (
 	spaceBefore  = regexp.MustCompile(`[ \t]+([,.;:?!])`)
 	spaceAfter   = regexp.MustCompile(`[,;][A-Za-z\x01]|[A-Za-z]:\x01|(?:\b[a-z]+|\x01|\))[.?!][A-Z][a-z]+(?:[\s,.;:?!)]|$)|[a-z][.?!](?:If|The|This|These|It|When|A|An|In|For|To|Defaults|Changing|Possible|Must|Can|Should|Note|See|Use|Only|Each|One)\s`)
 	bracketSpace = regexp.MustCompile(`[(\[][ \t]+|[ \t]+[)\]]`)
+	bracketTouch = regexp.MustCompile(`[A-Za-z0-9\x01]\((\)|e?s\))?`)
 	doubleSpace  = regexp.MustCompile(`[ \t]{2,}`)
 	lineBreak    = regexp.MustCompile(`[ \t]*[\n\r\t][ \t\n\r]*`)
 	codeSpan     = regexp.MustCompile("`[^`]*`")
@@ -220,6 +221,13 @@ func check(text string) []description.Finding {
 			end--
 		}
 		add("bracket-space", description.Finding{Start: start, End: end, Message: "description has a space just inside a bracket", Fix: removeSpace})
+	}
+
+	// "value(s)" is a plural and "now()" is a call, neither is short of a space
+	for _, at := range bracketTouch.FindAllStringSubmatchIndex(masked[lo:hi], -1) {
+		if at[2] < 0 {
+			add("bracket-space", description.Finding{Start: lo + at[0] + 1, End: lo + at[0] + 1, Message: "description has no space before '('", Fix: addSpace, New: " "})
+		}
 	}
 
 	for _, at := range lineBreak.FindAllStringIndex(masked[lo:hi], -1) {
