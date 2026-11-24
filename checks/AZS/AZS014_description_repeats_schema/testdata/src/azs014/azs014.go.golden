@@ -303,7 +303,7 @@ func passing() *schema.Resource {
 			"plain": {
 				Type:        schema.TypeString,
 				Optional:    true,
-				Description: "The plain one. Can be `a` or `b`. Changing this forces a new resource. Must be between 1 and 80 characters. Exactly one of `plain` or `mode` must be specified.",
+				Description: "The plain one. Can be `a` or `b`. Changing this forces a new resource. Exactly one of `plain` or `mode` must be specified.",
 			},
 
 			"rule": {
@@ -365,3 +365,81 @@ func passingFramework() fwschema.Schema {
 }
 
 func describe(name string) string { return "the " + name + ". Defaults to `a`." }
+
+// what checks a duration, as the provider's own validation package has it
+func ISO8601Duration(any, string) ([]string, []error) { return nil, nil }
+
+func ISO8601DurationBetween(shortest, longest string) schema.SchemaValidateFunc { return nil }
+
+func validateName(any, string) ([]string, []error) { return nil, nil }
+
+// a range is the schema's to check: it is reported until a validation does, and taken out once one does
+func ranges() *schema.Resource {
+	return &schema.Resource{
+		Schema: map[string]*schema.Schema{
+			"lock_duration": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: ISO8601Duration,
+				Description:  "The lock duration for the queue. This value must be between 5 and 300 seconds.", // want `description gives a range the schema does not check - check it in the schema with ISO8601DurationBetween`
+			},
+
+			"ttl": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: ISO8601DurationBetween("PT5S", "PT5M"),
+				Description:  "The time a message lives for.", // want `description lists the values it can take - the schema's validation already does`
+			},
+
+			"retries": {
+				Type:        schema.TypeInt,
+				Optional:    true,
+				Description: "The number of retries. Must be at least `1`.", // want `description gives a range the schema does not check - check it in the schema with IntBetween`
+			},
+
+			"priority": {
+				Description: "The priority of the rule collection. The range is `100` - `65000`.", // want `description gives a range the schema does not check - check it in the schema with IntBetween`
+				Type:        schema.TypeInt,
+				Required:    true,
+			},
+
+			"order": {
+				Type:         schema.TypeInt,
+				Required:     true,
+				ValidateFunc: validation.IntBetween(100, 65000),
+				Description:  "The order of the rule collection.", // want `description lists the values it can take - the schema's validation already does`
+			},
+
+			"label": {
+				Type:         schema.TypeString,
+				Optional:     true,
+				ValidateFunc: validation.StringIsNotEmpty,
+				Description:  "The label of the Thing. Must be between 1 and 80 characters.", // want `description gives a range the schema does not check - check it in the schema with StringLenBetween`
+			},
+
+			"weight": {
+				Type:        schema.TypeString,
+				Optional:    true,
+				Description: "The weight of the Thing. Possible values are between `1` and `100`.", // want `description gives a range the schema does not check - check it in the schema with a validation`
+			},
+
+			// a function of the provider's own may well check the range
+			"name": {
+				Type:         schema.TypeString,
+				Required:     true,
+				ValidateFunc: validateName,
+				Description:  "The name of the Thing. Must be between 1 and 80 characters.",
+			},
+
+			"secret_permissions": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Elem: &schema.Schema{
+					Type:         schema.TypeString,
+					ValidateFunc: validation.StringInSlice([]string{"Backup", "Delete", "Get"}, false),
+				},
+				Description: "List of secret permissions.", // want `description lists the values it can take - the schema's validation already does`
+			},
+		},
+	}
+}

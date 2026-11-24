@@ -43,6 +43,7 @@ func init() {
 		{"item-count", "a sentence saying how many items or blocks there can be, when it sets MaxItems or MinItems"},
 		{length, "a sentence or words giving how long a value can be, when its validation already does"},
 		{below, "a sentence or words that point at the docs page, such as \"as defined below\""},
+		{unchecked, "a sentence giving a range or a length, when nothing in the schema checks it"},
 	} {
 		enabled[kind[0]] = Analyzer.Flags.Bool(kind[0], true, "report "+kind[1]+" (false leaves it alone)")
 	}
@@ -52,6 +53,8 @@ const (
 	possible = "possible-values"
 	length   = "length"
 	below    = "defined-below"
+
+	unchecked = "unchecked-range"
 
 	listsValues  = "description lists the values it can take - the schema's validation already does"
 	givesDefault = "description gives the default - the schema's Default already does"
@@ -69,8 +72,9 @@ const (
 	values = value + `(?:(?:, and |, or |, | and | or )` + value + `)+`
 	quoted = `(?:\x01+|'[^']*'|"[^"]*")`
 	names  = `\x01+(?:(?:, and |, or |, | and | or )\x01+)*`
-	listed = `(?i:possibles?|valid|allowed|accepted|supported|permitted|available) (?:values?|options)`
+	listed = `(?i:possibles?|valid|allowed|accepted|acceptable|supported|permitted|available) (?:values?|options)`
 	count  = `(?:\x01+|\d+|one|two|three|four|five|six|seven|eight|nine|ten)`
+	ranged = `(?:The )?(?:(?i:valid|allowed|supported|possible|accepted|permitted) )?(?i:range) is\b`
 	span   = `(?:between ` + count + ` and ` + count + `|\d+-\d+|up to ` + count + `|at most ` + count + `|at least ` + count + `|a maximum of ` + count + `|a minimum of ` + count + `|no (?:more|longer) than ` + count + `) characters(?: in length| long)?`
 )
 
@@ -82,7 +86,7 @@ var (
 
 	// whole sentences
 	blockBelow     = regexp.MustCompile(`^(?:The|Each|Every|An?) (?:\x01+ )?blocks? (?:supports?|exports?|contains?|has|have)(?: the)?(?: following)?(?: fields| arguments| attributes| properties)?(?: as)? (?:defined|documented|described|detailed|specified|outlined|listed) (?:below|above)\.?$`)
-	possibleValues = regexp.MustCompile(`^(?:(?:The )?` + listed + `(?::| (?:are|is|include|includes|range)\b)|Options (?:are|include)\b|(?:(?:This|It|The)(?: value| number| field| property)? )?(?i:must|should|can) be (?:one of|either|between|at least|at most)\b|(?:Can be (?:set to )?|One of |Either )` + values + `\.?$|(?:Currently,? )?(?i:only) ` + quoted + ` (?:is|are) (?:currently )?(?:supported|allowed|valid|accepted)(?: currently| at this time)?\.?$)`)
+	possibleValues = regexp.MustCompile(`^(?:(?:The )?` + listed + `(?::| (?:are|is|include|includes|range)\b)|Options (?:are|include)\b|(?:The )?Values (?:are|include):? ` + quoted + `|(?:(?:This|It|The)(?: value| number| field| property)? )?(?i:must|should|can) be (?:one of|either|between|at least|at most)\b|` + ranged + `|(?:Can be (?:set to )?|One of |Either )` + values + `\.?$|(?:Currently,? )?(?i:only) ` + quoted + ` (?:is|are) (?:currently )?(?:supported|allowed|valid|accepted)(?: currently| at this time)?\.?$)`)
 	defaults       = regexp.MustCompile(`^(?:(?:(?:If|When) (?:blank|omitted|unspecified|unset|not specified|not set|not provided|left blank|left empty),? )?(?:(?:This|this|It|it)(?: value| field| property)? |The |the )?[Dd]efaults? (?:value )?(?:to|is)\b|By default,? (?:this|it) is (?:set to )?` + value + `\.?$)`)
 	forceNew       = regexp.MustCompile(`^Changing (?:this|the|it)\b(?: [\w\x01]+){0,3}? (?:forces|will force) a new\b`)
 	requiredWith   = regexp.MustCompile(`^(?:(?:(?:This|It)(?: value| field| property| argument)? is )?(?i:required) (?:with|when|if) ` + names + `(?: (?:is|are) (?:set|specified|provided|configured|defined))?|Requires ` + names + `(?: to be (?:set|specified|provided|configured|defined))?|` + names + ` must also be (?:set|specified|provided|configured|defined)|(?:Only valid|Can only be (?:set|used|specified)) (?:in conjunction |together |along )?with ` + names + `)\.?$`)
@@ -92,18 +96,24 @@ var (
 	lengthIs       = regexp.MustCompile(`^(?:(?:(?:It|This|The value|The name) )?(?i:must|should|can|may) be (?:a string )?` + span + `|Cannot exceed ` + count + ` characters(?: in length)?|Max(?:imum)? length(?: is|:) ` + count + ` characters|The maximum (?:allowed )?length (?:for this field )?is ` + count + ` characters|Length is limited to ` + count + ` characters|Restricted to ` + count + ` characters)\.?$`)
 
 	// words inside a sentence that says more
-	valuesUnended  = regexp.MustCompile(`[^\s.?!,;:]( (?:Possibles?|Valid|Allowed|Accepted|Supported|Permitted|Available) (?:values?|options)(?::| (?:are|is|include|includes)\b).*?)\.?$`)
-	valuesClause   = regexp.MustCompile(`(?:,| -| –|;) (?:it )?can be (?:either |one of )?` + values + `(\.?)$`)
+	valuesUnended  = regexp.MustCompile(`[^\s.?!,;:]( (?:Possibles?|Valid|Allowed|Accepted|Acceptable|Supported|Permitted|Available) (?:values?|options)(?::| (?:are|is|include|includes)\b).*?)\.?$`)
+	valuesClause   = regexp.MustCompile(`(?:,| -| –|;) (?:it )?(?:(?:can|must|should) be (?:either |one of |one or more (?:of|from) )?|either |one of |one or more (?:of|from) )(?:the following:? )?` + values + `(\.?)$`)
 	defaultClause  = regexp.MustCompile(`[,;] (?:which |and |it |this |otherwise )?defaults? to ` + value + `(\.?)$`)
 	defaultBracket = regexp.MustCompile(` ?\((?:which |this |it )?[Dd]efaults? to ` + value + `\)`)
 	lengthClause   = regexp.MustCompile(span)
+
+	// a sentence giving the range a value must be in
+	rangeIs = regexp.MustCompile(`^(?:(?:(?:This|It|The)(?: value| number| field| property)? )?(?i:must|should|can) be (?:between|at least|at most)\b|(?:The )?` + listed + ` (?:(?:are|is) (?:between|from)|range (?:between|from))\b|` + ranged + `)`)
 )
 
 // the validation that pins a property to a length, and to a list or a range of values, by the name of the function that builds it
 var (
 	lengths    = []string{"StringLenBetween", "LengthBetween", "LengthAtLeast", "LengthAtMost", "UTF8LengthBetween", "UTF8LengthAtLeast", "UTF8LengthAtMost"}
-	valueLists = []string{"StringInSlice", "IntInSlice", "FloatInSlice", "IntBetween", "IntAtLeast", "IntAtMost", "FloatBetween", "FloatAtLeast", "FloatAtMost", "OneOf", "OneOfCaseInsensitive", "Between", "AtLeast", "AtMost"}
+	valueLists = []string{"StringInSlice", "IntInSlice", "FloatInSlice", "IntBetween", "IntAtLeast", "IntAtMost", "FloatBetween", "FloatAtLeast", "FloatAtMost", "OneOf", "OneOfCaseInsensitive", "Between", "AtLeast", "AtMost", "ISO8601DurationBetween"}
 )
+
+// formats holds the validation that checks what a value looks like and nothing of its range, with the validation to use when it has one.
+var formats = map[string]string{"ISO8601Duration": "ISO8601DurationBetween", "StringIsNotEmpty": "", "StringIsNotWhiteSpace": "", "NoZeroValues": ""}
 
 // facts is what a property's schema says about it that a description might repeat.
 type facts struct {
@@ -111,6 +121,11 @@ type facts struct {
 
 	// readOnly is whether the provider fills the property in and the user cannot set it: Computed, and neither Optional nor Required.
 	readOnly bool
+
+	// unchecked is whether nothing validates the property, or only its format, so a range in its description is not enforced; bounds names the
+	// validation that would enforce it, when the schema tells which
+	unchecked bool
+	bounds    string
 }
 
 func run(pass *analysis.Pass) (any, error) {
@@ -177,8 +192,29 @@ func run(pass *analysis.Pass) (any, error) {
 			known.hasDefault = fields["Default"] != nil && !astx.IsNilValue(pass, fields["Default"])
 			known.readOnly = astx.IsTrueConstant(pass, fields["Computed"]) && fields["Optional"] == nil && fields["Required"] == nil
 
-			if sel, ok := ast.Unparen(fields["Type"]).(*ast.SelectorExpr); ok && sel.Sel.Name == "TypeBool" {
-				known.isBool = true
+			if sel, ok := ast.Unparen(fields["Type"]).(*ast.SelectorExpr); ok {
+				known.isBool = sel.Sel.Name == "TypeBool"
+				known.bounds = map[string]string{"TypeInt": "IntBetween", "TypeFloat": "FloatBetween"}[sel.Sel.Name]
+			}
+
+			// a function this check does not know may well check the range, so only no validation, or one that is known not to, counts
+			known.unchecked = true
+			for _, expr := range validation {
+				name := ""
+				switch v := ast.Unparen(expr).(type) {
+				case nil:
+					continue
+				case *ast.Ident:
+					name = v.Name
+				case *ast.SelectorExpr:
+					name = v.Sel.Name
+				}
+
+				better, ok := formats[name]
+				known.unchecked = known.unchecked && ok
+				if better != "" {
+					known.bounds = better
+				}
 			}
 
 			t := pass.TypesInfo.TypeOf(found.Owner)
@@ -279,6 +315,18 @@ func check(text string, known facts) []description.Finding {
 		}
 
 		before = true
+
+		// a range belongs in the schema, where it is enforced; the sentence stays until it is
+		if known.unchecked && (rangeIs.MatchString(sentence.Text) || lengthIs.MatchString(sentence.Text)) {
+			with := "a validation"
+			switch {
+			case lengthIs.MatchString(sentence.Text):
+				with = "StringLenBetween"
+			case known.bounds != "":
+				with = known.bounds
+			}
+			add(unchecked, description.Finding{Start: sentence.Start, End: sentence.End, Message: "description gives a range the schema does not check - check it in the schema with " + with})
+		}
 
 		// a sentence that is kept can still end with the values, after a comma or where a full stop was left out
 		if known.values {

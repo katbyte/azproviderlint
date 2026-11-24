@@ -4,6 +4,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"slices"
+	"strings"
 	"testing"
 
 	"golang.org/x/tools/go/analysis/analysistest"
@@ -33,6 +34,9 @@ func TestAZS014(t *testing.T) {
 		"The value set by default is `Fast`.",
 		"Changing this is fine.",
 		"The values possible are many.",
+		"The mode. Values are case sensitive.",
+		"The owners, `a` or `b` among them.",
+		"The first of the names, `a` or `b`.",
 		"",
 	} {
 		if got := check(text, all); len(got) > 0 {
@@ -51,6 +55,7 @@ func TestAZS014(t *testing.T) {
 		"The name. Must be between 1 and 80 characters.",
 		"The URL. `branch` and `token` must also be set.",
 		"The type of the runbook - can be either `a`, `b` or `c`.",
+		"List of permissions, must be one or more from the following: `a`, `b` and `c`.",
 	} {
 		if got := check(text, facts{}); len(got) > 0 {
 			t.Errorf("%q with no facts: unexpected %q", text, got[0].Message)
@@ -77,8 +82,13 @@ func TestAZS014(t *testing.T) {
 		"(List) The names (String).":                                       {`description has the tag "(List)" - the schema already says so`, `description has the tag "(String)" - the schema already says so`},
 		"The mode. Possible values are `a` and `b`.":                       {values},
 		"The mode. Allowed values include `a`.":                            {values},
+		"The mode. Values are `a`, `b` and `c`.":                           {values},
+		"The mode. Values include 'a' and 'b'.":                            {values},
+		"The mode. Acceptable values include `a`, `b` and `c`.":            {values},
 		"The mode. Must be one of `a` or `b`.":                             {values},
 		"The size. Should be between 1 and 5.":                             {values},
+		"The size. The range is `100` - `65000`.":                          {values},
+		"The size. Valid range is 1-5.":                                    {values},
 		"The mode. Default is `a`.":                                        {byValue},
 		"The mode. The default value is `a`.":                              {byValue},
 		"The mode. Defaults to `a`. Possible values are `a`.":              {byValue, values},
@@ -97,6 +107,8 @@ func TestAZS014(t *testing.T) {
 		"The size. This number should be between 1 and 365.":               {values},
 		"The mode of the site Possible values include: `a` and `b`.":       {values},
 		"The type of the runbook - can be either `a`, `b` or `c`.":         {values},
+		"The type of validation, one of `a` or `b`.":                       {values},
+		"The type of validation - either `a` or `b`.":                      {values},
 		"The URL. `branch` and `token` must also be set.":                  {needs},
 		"The URL. Required with `branch`.":                                 {needs},
 		"The URL. This is required with `branch`.":                         {needs},
@@ -179,6 +191,7 @@ func TestAZS014(t *testing.T) {
 	// are reported as they are anywhere
 	for text, want := range map[string][2]string{
 		"The state. Possible values include `a` and `b`.":               {"description lists the values it can take" + neverSet, "The state."},
+		"The type. Acceptable values include `a`, `b` and `c`.":         {"description lists the values it can take" + neverSet, "The type."},
 		"The state. Defaults to `a`.":                                   {"description gives the default" + neverSet, "The state."},
 		"The state, which defaults to `a`.":                             {"description gives the default" + neverSet, "The state."},
 		"The state (defaults to `a`) of the Thing.":                     {"description gives the default" + neverSet, "The state of the Thing."},
@@ -205,6 +218,28 @@ func TestAZS014(t *testing.T) {
 		t.Errorf("prose about a default: got %v", got)
 	}
 
+	// a range nothing in the schema checks is called out and left there, naming the validation when the schema tells which
+	for text, want := range map[string]string{
+		"The time. This value must be between 5 and 300 seconds.": "ISO8601DurationBetween",
+		"The size. Should be at most `5`.":                        "ISO8601DurationBetween",
+		"The size. Possible values range from 1 to 5.":            "ISO8601DurationBetween",
+		"The size. The range is `100` - `65000`.":                 "ISO8601DurationBetween",
+		"The name. Must be between 1 and 80 characters.":          "StringLenBetween",
+	} {
+		got := check(text, facts{unchecked: true, bounds: "ISO8601DurationBetween"})
+		if len(got) != 1 || got[0].Fix != "" || !strings.HasSuffix(got[0].Message, "check it in the schema with "+want) {
+			t.Errorf("%q with nothing checking it: got %v", text, got)
+		}
+	}
+
+	if got := check("The size. Must be between 1 and 5.", facts{unchecked: true}); len(got) != 1 || !strings.HasSuffix(got[0].Message, "with a validation") {
+		t.Errorf("a range with no validation to name: got %v", got)
+	}
+
+	if got := check("The size, which must be between 1 and 5 unless `mode` is set.", facts{unchecked: true}); len(got) > 0 {
+		t.Errorf("a range inside a sentence that says more: got %v", got)
+	}
+
 	// each kind of repeat can be switched off on its own; the kinds are package state, so this cannot run beside anything else
 	for kind, text := range map[string]string{
 		"tag":             "(Optional) The name.",
@@ -217,19 +252,25 @@ func TestAZS014(t *testing.T) {
 		"required-with":   "The URL. `branch` and `token` must also be set.",
 		"item-count":      "The rules. A maximum of `100` `rule` blocks may be defined.",
 		"length":          "The name, letters and dashes up to 80 characters in length.",
+		"unchecked-range": "The size. Must be between 1 and 5.",
 	} {
-		if len(check(text, all)) == 0 {
+		known := all
+		if kind == unchecked {
+			known = facts{unchecked: true}
+		}
+
+		if len(check(text, known)) == 0 {
 			t.Errorf("%s: %q should be reported", kind, text)
 		}
 
 		*enabled[kind] = false
-		if got := check(text, all); len(got) > 0 {
+		if got := check(text, known); len(got) > 0 {
 			t.Errorf("%s switched off: %q still reports %q", kind, text, got[0].Message)
 		}
 		*enabled[kind] = true
 	}
 
-	if len(enabled) != 10 {
-		t.Errorf("%d kinds can be switched off, and the test covers 10", len(enabled))
+	if len(enabled) != 11 {
+		t.Errorf("%d kinds can be switched off, and the test covers 11", len(enabled))
 	}
 }
