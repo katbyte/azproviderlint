@@ -1,6 +1,8 @@
 ## Unreleased
 
 - add rule `AZS018`: resource and property descriptions with a note in them, such as `**Note:** ...` ([#105](https://github.com/katbyte/azproviderlint/pull/105))
+- add rule `AZS019`: resource and property descriptions written as a question, such as `Should the Thing be enabled?` ([#107](https://github.com/katbyte/azproviderlint/pull/107))
+- `AZS015`: a question ending in a full stop is no longer reported, and its `question-mark` option is gone; questions are for `AZS019` ([#107](https://github.com/katbyte/azproviderlint/pull/107))
 
 ## v0.15.1 (2026-11-23)
 
