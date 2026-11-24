@@ -44,7 +44,7 @@ func flagged() *schema.Resource {
 				Type:         schema.TypeInt,
 				Optional:     true,
 				ValidateFunc: validation.IntBetween(1, 10),
-				Description:  "The size of the Thing. Must be between `1` and `10`.", // want `description lists the values it can take - the schema's validation already does`
+				Description:  "The size of the Thing. Must be between `1` and `10`.", // want `description gives the range it can take - the schema's validation already does`
 			},
 
 			"secret": {
@@ -390,7 +390,7 @@ func ranges() *schema.Resource {
 				Type:         schema.TypeString,
 				Optional:     true,
 				ValidateFunc: ISO8601DurationBetween("PT5S", "PT5M"),
-				Description:  "The time a message lives for. This value must be between 5 and 300 seconds.", // want `description lists the values it can take - the schema's validation already does`
+				Description:  "The time a message lives for. This value must be between 5 and 300 seconds.", // want `description gives the range it can take - the schema's validation already does`
 			},
 
 			"retries": {
@@ -409,7 +409,7 @@ func ranges() *schema.Resource {
 				Type:         schema.TypeInt,
 				Required:     true,
 				ValidateFunc: validation.IntBetween(100, 65000),
-				Description:  "The order of the rule collection. The range is `100` - `65000`.", // want `description lists the values it can take - the schema's validation already does`
+				Description:  "The order of the rule collection. The range is `100` - `65000`.", // want `description gives the range it can take - the schema's validation already does`
 			},
 
 			"label": {

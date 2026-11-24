@@ -215,7 +215,7 @@ There is no per-rule flag on the golangci-lint command line. Use the settings ab
 
 ### Options
 
-Some rules take options. Each rule's README lists them. In golangci-lint they go under the rule's name in the same settings block. On the standalone binary they are `-<RULE>.<option>` flags. An option that takes several values takes a list in the settings, and is repeated on the command line.
+Some rules take options. Each rule's README lists them. In golangci-lint they go under the rule's name in the same settings block. On the standalone binary they are `-<RULE>.<option>` flags. An option that takes several values takes a list in the settings, and is repeated on the command line. Settings for a rule the pinned version does not have stop it from starting, so add them in the same change as the version bump.
 
 ```yaml
         settings:

@@ -8,6 +8,13 @@ import (
 func flagged() *schema.Resource {
 	return &schema.Resource{
 		Schema: map[string]*schema.Schema{
+			// read-only, so it is what it is and not what it should be
+			"https_required": {
+				Type:        schema.TypeBool,
+				Computed:    true,
+				Description: "Whether HTTPS is required.", // want `description asks a question - say what it is, such as "Whether the Thing is enabled\."`
+			},
+
 			"audit_log_enabled": {
 				Type:        schema.TypeBool,
 				Description: "Whether the log auditing should be enabled.", // want `description asks a question - say what it is, such as "Whether the Thing is enabled\."`
@@ -21,7 +28,7 @@ func flagged() *schema.Resource {
 			// only "Should ... be ..." has a fix
 			"https_only": {
 				Type:        schema.TypeBool,
-				Description: "Is the Function App only accessible via HTTPS?", // want `description asks a question - say what it is, such as "Whether the Thing is enabled\."`
+				Description: "Whether the Function App is only accessible via HTTPS.", // want `description asks a question - say what it is, such as "Whether the Thing is enabled\."`
 			},
 
 			"use_32_bit_worker": {

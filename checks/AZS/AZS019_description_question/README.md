@@ -41,7 +41,19 @@ The same descriptions are read as by [AZS011](../AZS011_description_blank#what-c
 
 ## Fix
 
-`Should the Thing be enabled?` becomes `Whether the Thing should be enabled.` The other questions have no fix, since turning them round takes more than moving a word.
+The question is turned round where that only takes moving a word:
+
+| Question | Becomes |
+|---|---|
+| `Should the Thing be enabled?` | `Whether the Thing should be enabled.` |
+| `Should the Thing use HTTPS?` | `Whether the Thing should use HTTPS.` |
+| `Can the Thing only be reached over HTTPS?` | `Whether the Thing can only be reached over HTTPS.` |
+| `Is the Thing enabled?`, `Are Web Sockets enabled?` | `Whether the Thing is enabled.`, `Whether Web Sockets are enabled.` |
+| `Whether the Thing is enabled?` | `Whether the Thing is enabled.` |
+
+On a read-only property nothing is asked of the user, so `Should the Thing be enabled?` becomes `Whether the Thing is enabled.` and `Should the Thing use HTTPS?` becomes `Whether the Thing uses HTTPS.`
+
+The rest have no fix: `Does the Thing use HTTPS?`, a question where the verb cannot be told from the subject, and a garbled one such as `Should the Thing prevent it to be deleted?`
 
 ## Options
 

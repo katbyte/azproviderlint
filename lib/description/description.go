@@ -8,8 +8,10 @@ import (
 	"go/token"
 	"go/types"
 	"reflect"
+	"slices"
 	"strconv"
 	"strings"
+	"sync"
 	"unicode/utf8"
 
 	"github.com/katbyte/azproviderlint/lib/astx"
@@ -302,8 +304,20 @@ func run(pass *analysis.Pass) (any, error) {
 	return &Descriptions{Found: found, Helpers: helpers}, nil
 }
 
+// claims holds, for each file, the bytes each rule's fixes rewrite. When two rules rewrite the same bytes golangci-lint drops every fix in the
+// file, so the first rule there keeps its fix and the others report without one until it has been applied.
+var (
+	claims     = map[string][]claim{}
+	claimsLock sync.Mutex
+)
+
+type claim struct {
+	start, end int
+	by         string
+}
+
 // Report reports a finding at its place inside the description, with its fix. A description that is not one string literal is reported as a whole,
-// without a fix.
+// without a fix, and so is one whose fix would rewrite what another rule's fix already does.
 func (f Found) Report(pass *analysis.Pass, finding Finding) {
 	if f.offsets == nil {
 		pass.Report(analysis.Diagnostic{Pos: f.Value.Pos(), End: f.Value.End(), Message: finding.Message})
@@ -318,7 +332,19 @@ func (f Found) Report(pass *analysis.Pass, finding Finding) {
 	}
 
 	if finding.Fix != "" && (!f.raw || !strings.Contains(text, "`")) {
-		d.SuggestedFixes = []analysis.SuggestedFix{{Message: finding.Fix, TextEdits: []analysis.TextEdit{{Pos: d.Pos, End: d.End, NewText: []byte(text)}}}}
+		at := pass.Fset.Position(d.Pos)
+		mine := claim{start: at.Offset, end: at.Offset + int(d.End-d.Pos), by: pass.Analyzer.Name}
+
+		claimsLock.Lock()
+		free := !slices.ContainsFunc(claims[at.Filename], func(c claim) bool { return c.by != mine.by && mine.start <= c.end && c.start <= mine.end })
+		if free && !slices.Contains(claims[at.Filename], mine) {
+			claims[at.Filename] = append(claims[at.Filename], mine)
+		}
+		claimsLock.Unlock()
+
+		if free {
+			d.SuggestedFixes = []analysis.SuggestedFix{{Message: finding.Fix, TextEdits: []analysis.TextEdit{{Pos: d.Pos, End: d.End, NewText: []byte(text)}}}}
+		}
 	}
 	pass.Report(d)
 }

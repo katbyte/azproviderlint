@@ -35,6 +35,10 @@ func TestAZS014(t *testing.T) {
 		"Changing this is fine.",
 		"The values possible are many.",
 		"The mode. Values are case sensitive.",
+		"The policy. Values are: \"Regional\": All nodes are in one region; \"Zonal\": Nodes are spread across zones.",
+		"The caching mode. Values are: \"none\" - Caching is off. \"readOnly\" - The disk is read only.",
+		"The level. Possible values are `0` for None, `9` for Basic, and `15` for Detailed.",
+		"The time slot. Valid values are: `0` - the first slot, `4` - the second slot.",
 		"The window. If `frequency` is `PT1M`, possible values are `PT1M` and `PT5M`.",
 		"The time zone, the possible values are defined [here](https://example.com/zones).",
 		"The feature to use, accepted values are `a` or `b`, it follows the SKU when left out.",
@@ -69,6 +73,7 @@ func TestAZS014(t *testing.T) {
 
 	const (
 		values   = "description lists the values it can take - the schema's validation already does"
+		inRange  = "description gives the range it can take - the schema's validation already does"
 		byType   = "description lists the values it can take - a bool is always true or false"
 		byValue  = "description gives the default - the schema's Default already does"
 		replaced = "description says a change forces a new resource - the schema's ForceNew already does"
@@ -91,9 +96,9 @@ func TestAZS014(t *testing.T) {
 		"The mode. Values include 'a' and 'b'.":                                                     {values},
 		"The mode. Acceptable values include `a`, `b` and `c`.":                                     {values},
 		"The mode. Must be one of `a` or `b`.":                                                      {values},
-		"The size. Should be between 1 and 5.":                                                      {values},
-		"The size. The range is `100` - `65000`.":                                                   {values},
-		"The size. Valid range is 1-5.":                                                             {values},
+		"The size. Should be between 1 and 5.":                                                      {inRange},
+		"The size. The range is `100` - `65000`.":                                                   {inRange},
+		"The size. Valid range is 1-5.":                                                             {inRange},
 		"The mode. Default is `a`.":                                                                 {byValue},
 		"The mode. The default value is `a`.":                                                       {byValue},
 		"The mode. Defaults to `a`. Possible values are `a`.":                                       {byValue, values},
@@ -108,8 +113,8 @@ func TestAZS014(t *testing.T) {
 		"The mode. Possibles values are `a` and `b`.":                                               {values},
 		"The mode. Currently only `a` is supported.":                                                {values},
 		"The mode. Only `a` is supported currently.":                                                {values},
-		"The size. This value can be between `1` and `7` days.":                                     {values},
-		"The size. This number should be between 1 and 365.":                                        {values},
+		"The size. This value can be between `1` and `7` days.":                                     {inRange},
+		"The size. This number should be between 1 and 365.":                                        {inRange},
 		"The mode of the site Possible values include: `a` and `b`.":                                {values},
 		"The type of the runbook - can be either `a`, `b` or `c`.":                                  {values},
 		"The type of validation, one of `a` or `b`.":                                                {values},
@@ -123,7 +128,7 @@ func TestAZS014(t *testing.T) {
 		"The mode of the Thing, possible values are `a` and `b`.":                                   {values},
 		"The mode of the Thing - valid values include: `a`, `b`, `c`.":                              {values},
 		"The tier of the SKU, possible values are `Standard`.":                                      {values},
-		"The priority of the Job, possible values can range from -1000 (lowest) to 1000 (highest).": {values},
+		"The priority of the Job, possible values can range from -1000 (lowest) to 1000 (highest).": {inRange},
 		"The mode of the Thing, can be set to `a`, `b` or `c`.":                                     {values},
 		"The mode. Currently the only possible values are `a` and `b`.":                             {values},
 		"The scale unit of the Gateway, possible values are `1` through `40`.":                      {values},
@@ -179,6 +184,13 @@ func TestAZS014(t *testing.T) {
 		"The type of the runbook - can be either `a`, `b` or `c`.":                                                      "The type of the runbook.",
 		"The minimum TLS version for the SCM site Possible values include: `1.0`, `1.1` and  `1.2`. Defaults to `1.2`.": "The minimum TLS version for the SCM site.",
 		"The rules. Each `rule` block supports fields defined below. Applied in order.":                                 "The rules. Applied in order.",
+		"List of `rule` objects representing the rules, as defined below.":                                              "List of `rule` objects representing the rules.",
+		"One or more `rule` blocks which are defined below.":                                                            "One or more `rule` blocks.",
+		"A `rule` block which is documented below.":                                                                     "A `rule` block.",
+		"A `rule` block is exported. The exported attributes are defined below.":                                        "A `rule` block is exported.",
+		"The Thing's configuration. The `rule` block is defined below.":                                                 "The Thing's configuration.",
+		"Where the Action goes. A `run_after` block is as defined below.":                                               "Where the Action goes.",
+		"The Thing's configuration. The `rule` is documented below.":                                                    "The Thing's configuration.",
 	} {
 		got := text
 		for _, finding := range slices.Backward(check(text, all)) {
@@ -234,6 +246,7 @@ func TestAZS014(t *testing.T) {
 	for text, want := range map[string]string{
 		"Whether to preserve the unmatched part of the path.": "Whether to",
 		"Whether the Thing should be enabled.":                "should",
+		"Whether the Thing should use HTTPS.":                 "should",
 		"Set to `true` to keep the path.":                     "Set",
 		"Enable to allow secured volumes.":                    "Enable",
 	} {

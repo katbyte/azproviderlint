@@ -58,14 +58,16 @@ var (
 	spaceBefore  = regexp.MustCompile(`[ \t]+([,.;:?!])`)
 	spaceAfter   = regexp.MustCompile(`[,;][A-Za-z\x01]|[A-Za-z]:\x01|(?:\b[a-z]+|\x01|\))[.?!][A-Z][a-z]+(?:[\s,.;:?!)]|$)|[a-z][.?!](?:If|The|This|These|It|When|A|An|In|For|To|Defaults|Changing|Possible|Must|Can|Should|Note|See|Use|Only|Each|One)\s`)
 	bracketSpace = regexp.MustCompile(`[(\[][ \t]+|[ \t]+[)\]]`)
-	bracketTouch = regexp.MustCompile(`[A-Za-z0-9\x01]\((\)|e?s\))?`)
+	bracketTouch = regexp.MustCompile(`[A-Za-z0-9\x01]\((\)|(?i:e?s)\))?`)
 	doubleSpace  = regexp.MustCompile(`[ \t]{2,}`)
 	lineBreak    = regexp.MustCompile(`[ \t]*[\n\r\t][ \t\n\r]*`)
 	codeSpan     = regexp.MustCompile("`[^`]*`")
 	marks        = regexp.MustCompile(`[,.;:?!]{2,}`)
 	listMarker   = regexp.MustCompile(`(?:^|\s)[A-Za-z0-9]{1,2}$`)
 	entity       = regexp.MustCompile(`&#?\w+$`)
-	quotedValue  = regexp.MustCompile(`(?:^|[\s(\[])("[^"\s]+"|'[^'\s]+')(?:$|[\s)\].,;:?!])`)
+	quotedValue  = regexp.MustCompile(`"[^"\s]+"|'[^'\s]+'`)
+	openingQuote = regexp.MustCompile(`"|(?:^|[\s(\[/,])'`)
+	quotedTerm   = regexp.MustCompile(`(?i)\b(?:an?|the) ["'][a-z]+["']$`)
 )
 
 // the word after "Is", "Must" or "Can" that makes a rule of it, not a question: "Must be between 1 and 5.", "Is required when..."
@@ -302,12 +304,27 @@ func check(text string) []description.Finding {
 		add("doubled-punctuation", finding)
 	}
 
-	// one word in quotes is a value or a name, which the docs put in backticks; a quoted phrase is prose
-	if strings.Count(masked, `"`)%2 == 0 {
-		for _, at := range quotedValue.FindAllStringSubmatchIndex(masked, -1) {
-			if said := text[at[2]:at[3]]; !strings.Contains(said, "`") {
-				add("quoted-value", description.Finding{Start: at[2], End: at[3], Message: fmt.Sprintf("description has %s in quotes - a value goes in backticks", said), Fix: "Use backticks", New: "`" + said[1:len(said)-1] + "`"})
-			}
+	// one word in quotes is a value or a name, which the docs put in backticks. A quoted phrase, a term after "a" or "the" and a list in square
+	// brackets are not, and a description with any of those is left alone: mending some of its quotes and not the rest is worse than none
+	quotes := quotedValue.FindAllStringIndex(masked, -1)
+	values, doubles := true, 0
+	for _, at := range quotes {
+		before, after := masked[:at[0]], masked[at[1]:]
+		opens := before == "" || strings.ContainsRune(" (/", rune(before[len(before)-1]))
+		closes := after == "" || strings.ContainsRune(" ).,;:?!/", rune(after[0]))
+		if !opens || !closes || quotedTerm.MatchString(masked[:at[1]]) || strings.Contains(text[at[0]:at[1]], "`") {
+			values = false
+		}
+		if masked[at[0]] == '"' {
+			doubles++
+		}
+	}
+
+	// a quote left over opens a phrase, or has no partner
+	if values && len(openingQuote.FindAllString(masked, -1)) == len(quotes)+doubles {
+		for _, at := range quotes {
+			said := text[at[0]:at[1]]
+			add("quoted-value", description.Finding{Start: at[0], End: at[1], Message: fmt.Sprintf("description has %s in quotes - a value goes in backticks", said), Fix: "Use backticks", New: "`" + said[1:len(said)-1] + "`"})
 		}
 	}
 

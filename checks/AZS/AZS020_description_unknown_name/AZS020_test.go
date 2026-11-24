@@ -2,6 +2,7 @@ package AZS020
 
 import (
 	"path/filepath"
+	"regexp"
 	"runtime"
 	"slices"
 	"testing"
@@ -64,12 +65,23 @@ func TestAZS020(t *testing.T) {
 		t.Errorf("no provider name: got %v", got)
 	}
 
-	// a name the consumer allows is accepted; the allowed names are package state, so this cannot run beside anything else
-	if err := Analyzer.Flags.Set("allow", "azuread_application"); err != nil {
-		t.Fatal(err)
+	// a name the consumer allows is accepted, alone or by a pattern for a whole provider; the allowed names are package state, so this cannot run
+	// beside anything else
+	before := len(allowed)
+	for _, allow := range []string{"azapi_resource", "azuread_.*"} {
+		if err := Analyzer.Flags.Set("allow", allow); err != nil {
+			t.Fatal(err)
+		}
 	}
-	if !allowed["azuread_application"] || !allowed["ignore_changes"] {
-		t.Errorf("allowed names: got %v", allowed)
+
+	for name, want := range map[string]bool{"azapi_resource": true, "azapi_resources": false, "azuread_application": true, "my_azuread_application": false, "ignore_changes": true} {
+		if got := slices.ContainsFunc(allowed, func(pattern *regexp.Regexp) bool { return pattern.MatchString(name) }); got != want {
+			t.Errorf("allowed %q: got %v, want %v", name, got, want)
+		}
 	}
-	delete(allowed, "azuread_application")
+
+	if err := Analyzer.Flags.Set("allow", "azuread_("); err == nil {
+		t.Error("a pattern that does not compile should be refused")
+	}
+	allowed = allowed[:before]
 }
