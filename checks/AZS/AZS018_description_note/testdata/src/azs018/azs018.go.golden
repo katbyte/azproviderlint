@@ -1,0 +1,72 @@
+package azs018
+
+import (
+	fwschema "github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-sdk/v2/helper/schema"
+)
+
+func flagged() *schema.Resource {
+	return &schema.Resource{
+		Schema: map[string]*schema.Schema{
+			"internal_load_balancer_enabled": {
+				Type:        schema.TypeString,
+				Description: "Should the Container Environment operate in Internal Load Balancing Mode?", // want `description has a note in it - a note belongs in the docs, not the description`
+			},
+
+			"infrastructure_subnet_id": {
+				Type:        schema.TypeString,
+				Description: "The existing Subnet to use for the Container Apps Control Plane.", // want `description has a note in it - a note belongs in the docs, not the description`
+			},
+
+			"preflight_enabled": {
+				Type:        schema.TypeString,
+				Description: "Should the Preflight Validation API be called at plan time?", // want `description has a note in it - a note belongs in the docs, not the description`
+			},
+
+			"zip_deploy_file": {
+				Type:        schema.TypeString,
+				Description: `The path of the Zip packaged application to deploy.`, // want `description has a note in it - a note belongs in the docs, not the description`
+			},
+
+			// with nothing but the note there is nothing to leave, so there is no fix
+			"value": {
+				Type:        schema.TypeString,
+				Description: "**Note:** This value is ignored if `secret_name` is used.", // want `description has a note in it - a note belongs in the docs, not the description`
+			},
+		},
+	}
+}
+
+func flaggedFramework() fwschema.Attribute {
+	return fwschema.StringAttribute{
+		MarkdownDescription: "The path to the App Auth settings.", // want `description has a note in it - a note belongs in the docs, not the description`
+	}
+}
+
+func passing() *schema.Resource {
+	return &schema.Resource{
+		Description: "Manages a Webhook.",
+
+		Schema: map[string]*schema.Schema{
+			"note": {
+				Type:        schema.TypeString,
+				Description: "A note about this user.",
+			},
+
+			"key": {
+				Type:        schema.TypeString,
+				Description: "The key of the Webhook. Please note these values are only shown once.",
+			},
+
+			"message": {
+				Type:        schema.TypeString,
+				Description: "The message to show, such as `Note: closed on Sundays`.",
+			},
+
+			"important": {
+				Type:        schema.TypeString,
+				Description: "The name of the Webhook. **Important:** it cannot be changed.",
+			},
+		},
+	}
+}
