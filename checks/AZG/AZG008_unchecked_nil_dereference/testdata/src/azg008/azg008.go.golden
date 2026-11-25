@@ -214,7 +214,7 @@ func validErrContract(parse func(string) (*properties, error)) int {
 // Should be flagged: the error is discarded, so nothing proves the pointer valid.
 func invalidDiscardedErr(parse func(string) (*properties, error)) int {
 	props, _ := parse("x")
-	return len((pointer.From(props)).Name2()) // want "dereference of possibly-nil `props` may panic - add a nil check or use pointer.From"
+	return len(pointer.From(props).Name2()) // want "dereference of possibly-nil `props` may panic - add a nil check or use pointer.From"
 }
 
 func (properties) Name2() string { return "" }
@@ -344,8 +344,11 @@ type bag struct {
 func (c counter) get() int { return c.n }
 
 func invalidCopyable(h holder, b bag) {
-	use((pointer.From(h.C)).get()) // want "dereference of possibly-nil `h.C` may panic - add a nil check or use pointer.From"
-	use((pointer.From(h.Arr))[0])  // want "dereference of possibly-nil `h.Arr` may panic - add a nil check or use pointer.From"
+	use(pointer.From(h.C).get()) // want "dereference of possibly-nil `h.C` may panic - add a nil check or use pointer.From"
+	use(pointer.From(h.Arr)[0])  // want "dereference of possibly-nil `h.Arr` may panic - add a nil check or use pointer.From"
+	use(pointer.From(b.M)["k"])  // want "dereference of possibly-nil `b.M` may panic - add a nil check or use pointer.From"
+	use((*b.S)[0])    // want "dereference of possibly-nil `b.S` may panic - add a nil check \\(no fix: reading an element of what pointer.From gives would panic too\\)"
+	use((*b.S)[1:])   // want "dereference of possibly-nil `b.S` may panic - add a nil check \\(no fix: reading an element of what pointer.From gives would panic too\\)"
 }
 
 // Should NOT be flagged: an explicitly instantiated pointer.To* call always allocates.
@@ -456,14 +459,14 @@ func invalidErrReassigned(d data, parse func(string) (*properties, error), other
 	p, err := parse("x")
 	err = other()
 	if err == nil {
-		d.Set("name", (pointer.From(p)).Name2()) // want "dereference of possibly-nil `p` may panic - add a nil check or use pointer.From"
+		d.Set("name", pointer.From(p).Name2()) // want "dereference of possibly-nil `p` may panic - add a nil check or use pointer.From"
 	}
 	q, err := parse("y")
 	err = other()
 	if err != nil {
 		return
 	}
-	d.Set("name", (pointer.From(q)).Name2()) // want "dereference of possibly-nil `q` may panic - add a nil check or use pointer.From"
+	d.Set("name", pointer.From(q).Name2()) // want "dereference of possibly-nil `q` may panic - add a nil check or use pointer.From"
 }
 
 // Should be flagged: the alias's source chain was reassigned after the copy.

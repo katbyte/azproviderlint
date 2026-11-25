@@ -71,6 +71,8 @@ Bare pointer parameters (`func f(x *T) { *x }`, closures included) are trusted b
 
 The rule decides which functions send a request body by reading what they do, not what they are called. A function sends a write if it uses `http.MethodPut`, `MethodPatch`, or `MethodPost`, or a `"PUT"`, `"PATCH"`, or `"POST"` string, or calls something that does. A parameter is the body if it reaches `json.Marshal` or `xml.Marshal`, including inside a closure or through another call. `CreateOrUpdate`, its `ThenPoll` wrappers, and autorest's `WithJSON` all qualify on their own. The dereference is caught whether the value is passed directly, copied into a local, put in a struct field or literal, or passed by address.
 
+**No fix is offered for an element of a slice or string either.** `pointer.From(items)[0]` panics on a nil `items` just as `(*items)[0]` does, so it is reported for a nil check to be added. A map or an array reads fine, and is fixed.
+
 `fix-with: none` turns fixes off entirely. Some dereferences cannot take `pointer.From` at all because the result must stay addressable: `*x = v`, `(*x).F = v`, `&*x`, `(*x)++`, or a pointer-receiver method on `*x`. Those, and implicit dereferences like `m.Properties.Name` with a nil `Properties`, are AZG009's to report.
 
 ## Options
