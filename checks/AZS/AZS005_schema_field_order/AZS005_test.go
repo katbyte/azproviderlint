@@ -112,7 +112,15 @@ func TestAZS005(t *testing.T) {
 		}
 	}
 
-	// an order given in the settings replaces the default; the orders are package state, so this cannot run beside anything else
+	// state migrations are checked until the setting says not to; it is package state, as the orders below are, so this cannot run beside anything else
+	analysistest.Run(t, filepath.Join(filepath.Dir(filename), "testdata"), Analyzer, "azs005/migration")
+	if err := Analyzer.Flags.Set("state-migrations", "false"); err != nil {
+		t.Fatal(err)
+	}
+	analysistest.Run(t, filepath.Join(filepath.Dir(filename), "testdata"), Analyzer, "azs005/migrations")
+	stateMigrations = true
+
+	// an order given in the settings replaces the default
 	plugin, framework := pluginOrder, frameworkOrder
 	for _, field := range []string{"Type", "Description"} {
 		if err := Analyzer.Flags.Set("order-plugin", field); err != nil {

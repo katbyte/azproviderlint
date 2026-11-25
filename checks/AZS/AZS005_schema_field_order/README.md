@@ -76,6 +76,8 @@ There is no fix where two fields share a line in a property written over several
 
 `order-framework` (or `order`) is the order for a framework attribute or block. `order-plugin` is the order for a plugin SDK schema. Each replaces its default.
 
+`state-migrations: false` leaves alone a package named `migration` or `migrations`, whose schemas are what old state looked like. They are checked by default.
+
 ```yaml
 linters:
   settings:
@@ -85,6 +87,7 @@ linters:
           AZS005:
             order-framework: [Description, Required, Optional, Computed, Validators]
             order-plugin: [Type, Description, Required, Optional, Computed, Elem]
+            state-migrations: false
 ```
 
 ```sh

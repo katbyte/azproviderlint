@@ -71,11 +71,12 @@ To leave these alone instead, set `mismatched: false`.
 |---|---|---|
 | `ignore` | | regular expressions; an import is skipped when its package name matches any of them |
 | `allow` | | aliases that are never reported |
+| `allow-pattern` | | regular expressions; an alias is never reported when it matches any of them |
 | `generated` | false | also check generated files: those with the standard `// Code generated ... DO NOT EDIT.` header, and the provider's `_gen.go` files |
 | `own-package` | false | also report an alias that avoids the name of the file's own package |
 | `mismatched` | true | report an alias that is the package's real name where the import path does not show it; see [above](#packages-named-differently-from-their-path) |
 
-`ignore` and `allow` take several values: a list in the golangci settings, or the flag repeated on the command line.
+`ignore`, `allow` and `allow-pattern` take several values: a list in the golangci settings, or the flag repeated on the command line.
 
 ```yaml
           AZG010:
@@ -83,6 +84,7 @@ To leave these alone instead, set `mismatched: false`.
               - '^v\d{4}_\d{2}_\d{2}' # versioned SDK packages: v2021_03_01, v2021_04_01_preview
               - '^v\d+_\d+$'          # v7_4
             allow: [log, azValidate]
+            allow-pattern: ['Beta$'] # groupBeta, ownerBeta: aliases that show a beta API is in use
 ```
 
 ```bash
@@ -92,6 +94,8 @@ azproviderlint -AZG010 '-AZG010.ignore=^v\d{4}_\d{2}_\d{2}' '-AZG010.ignore=^v\d
 `ignore` is matched against the package's name, not the alias or the import path. A pattern matches anywhere in the name unless it is anchored with `^` and `$`. Give each pattern its own entry; they are not split on commas, since a pattern can contain one (`\d{2,4}`).
 
 `allow` entries are whole alias names. They can also be comma-separated in one entry (`log,azValidate`).
+
+`allow-pattern` is matched against the alias, the same way `ignore` is matched against the package's name.
 
 Under golangci-lint, reports in generated files are also subject to its own `linters.exclusions.generated` setting, which hides them by default.
 

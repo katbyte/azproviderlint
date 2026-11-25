@@ -48,8 +48,12 @@ var Analyzer = &analysis.Analyzer{
 // packages (`v2021_03_01`) that read better under a descriptive alias.
 var ignore []*regexp.Regexp
 
-// allow lists aliases that are never reported, whatever package they name.
-var allow []string
+// allow lists aliases that are never reported, whatever package they name, and allowPattern does the same for any alias that matches one of
+// its patterns, such as the Beta an alias ends in to show a beta API is in use.
+var (
+	allow        []string
+	allowPattern []*regexp.Regexp
+)
 
 // ownPackage also reports an alias that avoids the name of the file's own package.
 var ownPackage bool
@@ -63,22 +67,27 @@ var mismatched bool
 // provider's _gen.go files, which carry a header of their own.
 var checkGenerated bool
 
-// both flags add to their list each time they are set, since a regular expression cannot be
+// each flag adds to its list each time it is set, since a regular expression cannot be
 // split on a separator that it may itself contain
 func init() {
 	Analyzer.Flags.Init("AZG010", flag.ContinueOnError)
 	Analyzer.Flags.BoolVar(&checkGenerated, "generated", false, "also check generated files")
 	Analyzer.Flags.BoolVar(&ownPackage, "own-package", false, "also report an alias that avoids the name of the file's own package")
 	Analyzer.Flags.BoolVar(&mismatched, "mismatched", true, "report an alias that is the package's real name where the import path does not show it (false leaves it alone)")
-	Analyzer.Flags.Func("ignore", "skip imports whose package name matches this regular expression; repeat for several",
-		func(s string) error {
+
+	patterns := func(into *[]*regexp.Regexp) func(string) error {
+		return func(s string) error {
 			pattern, err := regexp.Compile(s)
 			if err != nil {
 				return err
 			}
-			ignore = append(ignore, pattern)
+			*into = append(*into, pattern)
+
 			return nil
-		})
+		}
+	}
+	Analyzer.Flags.Func("ignore", "skip imports whose package name matches this regular expression; repeat for several", patterns(&ignore))
+	Analyzer.Flags.Func("allow-pattern", "leave unreported an alias that matches this regular expression; repeat for several", patterns(&allowPattern))
 	Analyzer.Flags.Func("allow", "alias to leave unreported; repeat or comma-separate for several",
 		func(s string) error {
 			for alias := range strings.SplitSeq(s, ",") {
@@ -140,7 +149,7 @@ func run(pass *analysis.Pass) (any, error) {
 			if alias == name && writeName {
 				continue
 			}
-			if slices.Contains(allow, alias) {
+			if slices.Contains(allow, alias) || slices.ContainsFunc(allowPattern, func(pattern *regexp.Regexp) bool { return pattern.MatchString(alias) }) {
 				continue
 			}
 			if slices.ContainsFunc(ignore, func(pattern *regexp.Regexp) bool { return pattern.MatchString(name) }) {

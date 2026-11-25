@@ -38,6 +38,13 @@ func TestAZG010(t *testing.T) {
 	analysistest.Run(t, dir, Analyzer, "azg010allow")
 	allow = nil
 
+	if err := Analyzer.Flags.Set("allow-pattern", "Beta$"); err != nil {
+		t.Fatal(err)
+	}
+
+	analysistest.Run(t, dir, Analyzer, "azg010allowpattern")
+	allowPattern = nil
+
 	// the main package go test generates is skipped even when generated files are checked
 	checkGenerated = true
 	analysistest.Run(t, dir, Analyzer, "azg010generated")
@@ -52,7 +59,9 @@ func TestAZG010(t *testing.T) {
 	analysistest.RunWithSuggestedFixes(t, dir, Analyzer, "azg010nomismatched")
 	mismatched = true
 
-	if err := Analyzer.Flags.Set("ignore", "("); err == nil {
-		t.Fatal("expected an error for an invalid ignore pattern")
+	for _, flag := range []string{"ignore", "allow-pattern"} {
+		if err := Analyzer.Flags.Set(flag, "("); err == nil {
+			t.Fatalf("expected an error for an invalid %s pattern", flag)
+		}
 	}
 }

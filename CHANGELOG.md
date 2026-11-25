@@ -3,6 +3,7 @@
 - add rule `AZS005`: schema properties whose fields are not written in the agreed order, such as `Computed` before `Optional` ([#116](https://github.com/katbyte/azproviderlint/pull/116))
 - `AZS015`: line breaks can be reported in resource, property, list or set descriptions only ([#117](https://github.com/katbyte/azproviderlint/pull/117))
 - `AZS003` and the description rules: state migration schemas are no longer reported, in a package named `migration` or `migrations` ([#118](https://github.com/katbyte/azproviderlint/pull/118))
+- `AZG010`: aliases can be allowed by pattern, such as every alias ending in `Beta` ([#120](https://github.com/katbyte/azproviderlint/pull/120))
 - `AZS010`: a type with a field named `ResourceType`, such as the acceptance tests' `TestData`, is no longer reported as a resource ([#118](https://github.com/katbyte/azproviderlint/pull/118))
 
 ## v0.16.0 (2026-11-24)
