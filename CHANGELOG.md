@@ -1,4 +1,4 @@
-## Unreleased
+## v0.17.0 (2026-11-25)
 
 - add rule `AZS005`: schema properties whose fields are not written in the agreed order, such as `Computed` before `Optional` ([#116](https://github.com/katbyte/azproviderlint/pull/116))
 - `AZS015`: line breaks can be reported in resource, property, list or set descriptions only ([#117](https://github.com/katbyte/azproviderlint/pull/117))
