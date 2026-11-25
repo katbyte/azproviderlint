@@ -26,3 +26,10 @@ type ListNestedBlock struct {
 }
 
 func (ListNestedBlock) isBlock() {}
+
+type SetNestedBlock struct {
+	Description         string
+	MarkdownDescription string
+}
+
+func (SetNestedBlock) isBlock() {}

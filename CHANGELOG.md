@@ -1,3 +1,7 @@
+## Unreleased
+
+- `AZS015`: line breaks can be reported in resource, property, list or set descriptions only ([#117](https://github.com/katbyte/azproviderlint/pull/117))
+
 ## v0.16.0 (2026-11-24)
 
 - add rule `AZS018`: resource and property descriptions with a note in them, such as `**Note:** ...` ([#105](https://github.com/katbyte/azproviderlint/pull/105))
