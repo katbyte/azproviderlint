@@ -51,6 +51,8 @@ Ported from [tfproviderlint PR #236 (XS003)](https://github.com/bflad/tfprovider
 },
 ```
 
+A package named `migration` or `migrations` is not checked, as its schemas are what old state looked like.
+
 ## Ignoring Reports
 
 Put `//azignore:AZS003 - <reason>` at the end of the line, or on the line above it. The reason is required.

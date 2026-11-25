@@ -28,7 +28,7 @@ description is blank - write one, or remove it
 
 ## What counts
 
-A description is text written out in the code, outside test files, in one of these places:
+A description is text written out in the code, outside test files and state migrations, in one of these places:
 
 - `Description` on a plugin SDK schema property, block or resource (`pluginsdk.Schema`, `pluginsdk.Resource`)
 - `Description` or `MarkdownDescription` on a framework schema, attribute or block

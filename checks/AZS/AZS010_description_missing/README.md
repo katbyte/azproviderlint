@@ -89,7 +89,7 @@ These need none:
 - the element of a list or set: `Elem: &pluginsdk.Schema{Type: pluginsdk.TypeString}`
 - the `pluginsdk.Resource` that holds a block's properties; the block itself is described, and so is each property inside
 - a schema handed to a function, such as the one that hashes a set
-- anything in a package named `migration`, which is what old state looked like
+- anything in a package named `migration` or `migrations`, which is what old state looked like
 - test files
 
 A description that is there but empty is [AZS011](../AZS011_description_blank)'s to report. A property whose whole schema comes from a helper in another module, such as `commonschema.Location()`, is not checked here.

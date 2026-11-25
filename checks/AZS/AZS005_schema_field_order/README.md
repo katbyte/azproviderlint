@@ -66,7 +66,7 @@ A field the order does not name is not checked, and stays where it is.
 
 ## Fix
 
-The fields are put in order, each with its own line's comment and any comment above it, and the values are lined up again as `gofmt` would. A `Note: O+C` comment stays between `Optional` and `Computed`.
+The fields are put in order, each with its own line's comment and any comment above it, and the values are lined up again as `gofmt` would. A `Note: O+C` comment stays between `Optional` and `Computed`. A blank line between two fields is left out.
 
 A property inside another is put in order in the same fix.
 
