@@ -50,13 +50,13 @@ Every property then reads the same way: what it is, its type, whether it is set,
 
 ## The order
 
-For a plugin SDK schema:
-
-`Description`, `Type`, `Required`, `Optional`, `Computed`, `ForceNew`, `Default`, `DefaultFunc`, `InputDefault`, `Sensitive`, `WriteOnly`, `MinItems`, `MaxItems`, `ConfigMode`, `ValidateFunc`, `ValidateDiagFunc`, `StateFunc`, `DiffSuppressFunc`, `DiffSuppressOnRefresh`, `Set`, `RequiredWith`, `ConflictsWith`, `ExactlyOneOf`, `AtLeastOneOf`, `Deprecated`, `Elem`
-
-For a framework attribute or block, the same order with its own field names:
+For a framework attribute or block:
 
 `Description`, `MarkdownDescription`, `CustomType`, `ElementType`, `NestedObject`, `AttributeTypes`, `Required`, `Optional`, `Computed`, `Default`, `Sensitive`, `WriteOnly`, `Validators`, `PlanModifiers`, `DeprecationMessage`, `Attributes`, `Blocks`
+
+For a plugin SDK schema, the same order with its own field names:
+
+`Description`, `Type`, `Required`, `Optional`, `Computed`, `ForceNew`, `Default`, `DefaultFunc`, `InputDefault`, `Sensitive`, `WriteOnly`, `MinItems`, `MaxItems`, `ConfigMode`, `ValidateFunc`, `ValidateDiagFunc`, `StateFunc`, `DiffSuppressFunc`, `DiffSuppressOnRefresh`, `Set`, `RequiredWith`, `ConflictsWith`, `ExactlyOneOf`, `AtLeastOneOf`, `Deprecated`, `Elem`
 
 The plugin SDK order is the one most properties in the azurerm, azuread and aws providers already use, with what the property holds, such as `Elem`, last. About nine in ten in each of the three already fit.
 
@@ -74,7 +74,7 @@ There is no fix where two fields share a line in a property written over several
 
 ## Options
 
-`order` is the order for a plugin SDK schema, and `framework-order` that for a framework attribute or block. Either replaces its default.
+`order` is the order for a framework attribute or block, and `order-framework` is another name for it. `order-plugin` is the order for a plugin SDK schema. Each replaces its default.
 
 ```yaml
 linters:
@@ -83,11 +83,12 @@ linters:
       azproviderlint:
         settings:
           AZS005:
-            order: [Type, Description, Required, Optional, Computed, Elem]
+            order: [Description, Required, Optional, Computed, Validators]
+            order-plugin: [Type, Description, Required, Optional, Computed, Elem]
 ```
 
 ```sh
-azproviderlint -AZS005 -AZS005.order=Type -AZS005.order=Description -AZS005.order=Required ./...
+azproviderlint -AZS005 -AZS005.order-plugin=Type -AZS005.order-plugin=Description -AZS005.order-plugin=Required ./...
 ```
 
 ## Ignoring Reports

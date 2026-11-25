@@ -83,7 +83,7 @@ func TestAZS005(t *testing.T) {
 		var properties []property
 		ast.Inspect(file, func(n ast.Node) bool {
 			if lit, ok := n.(*ast.CompositeLit); ok {
-				properties = append(properties, property{lit: lit, want: order})
+				properties = append(properties, property{lit: lit, want: pluginOrder})
 			}
 
 			return true
@@ -108,21 +108,32 @@ func TestAZS005(t *testing.T) {
 	}
 
 	// an order given in the settings replaces the default; the orders are package state, so this cannot run beside anything else
-	before := order
+	plugin, framework := pluginOrder, frameworkOrder
 	for _, field := range []string{"Type", "Description"} {
-		if err := Analyzer.Flags.Set("order", field); err != nil {
+		if err := Analyzer.Flags.Set("order-plugin", field); err != nil {
 			t.Fatal(err)
 		}
 	}
 
-	if !slices.Equal(order, []string{"Type", "Description"}) {
-		t.Errorf("order given in the settings: got %q", order)
+	if !slices.Equal(pluginOrder, []string{"Type", "Description"}) {
+		t.Errorf("order-plugin given in the settings: got %q", pluginOrder)
 	}
 
 	for _, field := range []string{"Type", "not a field"} {
-		if err := Analyzer.Flags.Set("order", field); err == nil {
-			t.Errorf("order %q should be refused", field)
+		if err := Analyzer.Flags.Set("order-plugin", field); err == nil {
+			t.Errorf("order-plugin %q should be refused", field)
 		}
 	}
-	order = before
+
+	// order and order-framework are two names for the one setting
+	for name, field := range map[string]string{"order": "Required", "order-framework": "Description"} {
+		if err := Analyzer.Flags.Set(name, field); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	if len(frameworkOrder) != 2 || !slices.Contains(frameworkOrder, "Required") || !slices.Contains(frameworkOrder, "Description") {
+		t.Errorf("order and order-framework given in the settings: got %q", frameworkOrder)
+	}
+	pluginOrder, frameworkOrder = plugin, framework
 }
