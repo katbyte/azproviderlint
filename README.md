@@ -197,6 +197,19 @@ To run only azproviderlint through the custom binary:
 custom-gcl run --enable-only azproviderlint ./...
 ```
 
+golangci-lint shows one report per line for each linter, and every rule here is the same linter. A line two rules report shows only one of them unless that is switched off:
+
+```yaml
+issues:
+  uniq-by-line: false
+```
+
+golangci-lint keeps the results of earlier runs, and does not notice that a rebuilt binary holds a newer azproviderlint. After changing the version in `.custom-gcl.yml`, clear them:
+
+```bash
+custom-gcl cache clean
+```
+
 ### Choosing rules
 
 Every rule runs by default. Under `settings`, `enable` narrows that to a list and `disable` removes from whatever is enabled. Both accept rule names or whole categories.
