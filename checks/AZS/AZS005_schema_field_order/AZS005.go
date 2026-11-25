@@ -13,6 +13,7 @@ import (
 	"strings"
 
 	"github.com/katbyte/azproviderlint/lib/astx"
+	"github.com/katbyte/azproviderlint/lib/tf"
 	"golang.org/x/tools/go/analysis"
 	"golang.org/x/tools/go/analysis/passes/inspect"
 	"golang.org/x/tools/go/ast/inspector"
@@ -36,6 +37,9 @@ var (
 )
 
 const computed = "Computed"
+
+// stateMigrations is whether the schemas in a state migration are checked like any other.
+var stateMigrations = true
 
 // bothNote is the comment AZS007 asks for on a property that is both Optional and Computed.
 var bothNote = regexp.MustCompile(`(?i)//\s*note:\s*o\+c`)
@@ -66,6 +70,7 @@ func init() {
 	}
 
 	Analyzer.Flags.Func("order-plugin", "a field of a plugin SDK schema, in the order the fields are written; repeat for each, which replaces the default order", list(&pluginOrder))
+	Analyzer.Flags.BoolVar(&stateMigrations, "state-migrations", true, "also check state migrations, whose schemas are what old state looked like (false leaves them alone)")
 }
 
 // property is one schema property written out in the code, and the order its fields go in.
@@ -85,7 +90,7 @@ type found struct {
 
 func run(pass *analysis.Pass) (any, error) {
 	insp, ok := pass.ResultOf[inspect.Analyzer].(*inspector.Inspector)
-	if !ok {
+	if !ok || (!stateMigrations && tf.InStateMigration(pass)) {
 		return nil, nil
 	}
 
@@ -178,8 +183,8 @@ func check(fset *token.FileSet, read func(string) ([]byte, error), properties []
 		all = append(all, f)
 		this := len(all) - 1
 
-		tf := fset.File(lit.Pos())
-		src, err := read(tf.Name())
+		tfile := fset.File(lit.Pos())
+		src, err := read(tfile.Name())
 		if err != nil {
 			continue
 		}
@@ -187,8 +192,8 @@ func check(fset *token.FileSet, read func(string) ([]byte, error), properties []
 		// a field is moved as what it is when the property is on one line, and as its lines, with any comment above it, when each field has its own
 		starts, ends, movable := make([]int, n), make([]int, n), true
 		for i, elt := range lit.Elts {
-			starts[i], ends[i] = tf.Offset(elt.Pos()), tf.Offset(elt.End())
-			if tf.Line(lit.Lbrace) == tf.Line(lit.Rbrace) {
+			starts[i], ends[i] = tfile.Offset(elt.Pos()), tfile.Offset(elt.End())
+			if tfile.Line(lit.Lbrace) == tfile.Line(lit.Rbrace) {
 				continue
 			}
 
@@ -196,11 +201,11 @@ func check(fset *token.FileSet, read func(string) ([]byte, error), properties []
 			if i > 0 {
 				after = lit.Elts[i-1].End()
 			}
-			if tf.Line(elt.Pos()) == tf.Line(after) || tf.Line(elt.End()) == tf.Line(lit.Rbrace) {
+			if tfile.Line(elt.Pos()) == tfile.Line(after) || tfile.Line(elt.End()) == tfile.Line(lit.Rbrace) {
 				movable = false
 				break
 			}
-			starts[i], ends[i] = tf.Offset(tf.LineStart(tf.Line(after)+1)), tf.Offset(tf.LineStart(tf.Line(elt.End())+1))
+			starts[i], ends[i] = tfile.Offset(tfile.LineStart(tfile.Line(after)+1)), tfile.Offset(tfile.LineStart(tfile.Line(elt.End())+1))
 		}
 		if !movable {
 			continue
@@ -212,8 +217,8 @@ func check(fset *token.FileSet, read func(string) ([]byte, error), properties []
 		for i := range lit.Elts {
 			texts[i] = string(src[starts[i]:ends[i]])
 			for j, inner := range all {
-				from, to := tf.Offset(inner.lit.Lbrace), tf.Offset(inner.lit.Rbrace)+1
-				if inner.fix == "" || fset.File(inner.lit.Pos()) != tf || from < starts[i] || to > ends[i] {
+				from, to := tfile.Offset(inner.lit.Lbrace), tfile.Offset(inner.lit.Rbrace)+1
+				if inner.fix == "" || fset.File(inner.lit.Pos()) != tfile || from < starts[i] || to > ends[i] {
 					continue
 				}
 				texts[i] = texts[i][:from-starts[i]] + inner.fix + texts[i][to-starts[i]:]
@@ -222,9 +227,9 @@ func check(fset *token.FileSet, read func(string) ([]byte, error), properties []
 		}
 
 		// the note saying why a property is both set and read back sits between Optional and Computed, whichever field it was written above
-		if to := slices.IndexFunc(keys, func(key *ast.Ident) bool { return key.Name == computed }); to >= 0 && tf.Line(lit.Lbrace) != tf.Line(lit.Rbrace) {
+		if to := slices.IndexFunc(keys, func(key *ast.Ident) bool { return key.Name == computed }); to >= 0 && tfile.Line(lit.Lbrace) != tfile.Line(lit.Rbrace) {
 			for i, elt := range lit.Elts {
-				above := tf.Offset(tf.LineStart(tf.Line(elt.Pos()))) - starts[i]
+				above := tfile.Offset(tfile.LineStart(tfile.Line(elt.Pos()))) - starts[i]
 				if i != to && bothNote.MatchString(texts[i][:above]) {
 					texts[to], texts[i] = texts[i][:above]+texts[to], texts[i][above:]
 				}
@@ -233,12 +238,12 @@ func check(fset *token.FileSet, read func(string) ([]byte, error), properties []
 
 		// gofmt lines the values up afresh, which it only does for code it can read: the property is given a name to stand in for its type, and
 		// the indent of its first line
-		line := string(src[tf.Offset(tf.LineStart(tf.Line(lit.Lbrace))):tf.Offset(lit.Lbrace)])
+		line := string(src[tfile.Offset(tfile.LineStart(tfile.Line(lit.Lbrace))):tfile.Offset(lit.Lbrace)])
 		opening := line[:len(line)-len(strings.TrimLeft(line, " \t"))] + "_ = T"
 
 		var text strings.Builder
 		text.WriteString(opening)
-		text.Write(src[tf.Offset(lit.Lbrace):starts[0]])
+		text.Write(src[tfile.Offset(lit.Lbrace):starts[0]])
 		for i, field := range now {
 			// a blank line above a field marked a break in the old order, and is left out of the new one
 			for line, rest, more := strings.Cut(texts[field], "\n"); more && strings.TrimSpace(line) == ""; line, rest, more = strings.Cut(rest, "\n") {
@@ -250,7 +255,7 @@ func check(fset *token.FileSet, read func(string) ([]byte, error), properties []
 				text.Write(src[ends[i]:starts[i+1]])
 			}
 		}
-		text.Write(src[ends[n-1] : tf.Offset(lit.Rbrace)+1])
+		text.Write(src[ends[n-1] : tfile.Offset(lit.Rbrace)+1])
 
 		formatted, err := format.Source([]byte(text.String()))
 		if err != nil || !strings.HasPrefix(string(formatted), opening) {
