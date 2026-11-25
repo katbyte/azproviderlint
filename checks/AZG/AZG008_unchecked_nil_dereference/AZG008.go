@@ -228,11 +228,38 @@ climb:
 		return
 	}
 
+	// an element of a nil slice or string cannot be read either, so there pointer.From only moves the panic; a nil map or array reads fine
+	var outer ast.Node = star
+	for {
+		p, ok := parents[outer].(*ast.ParenExpr)
+		if !ok {
+			break
+		}
+		outer = p
+	}
+
+	element := false
+	switch p := parents[outer].(type) {
+	case *ast.IndexExpr:
+		element = p.X == outer
+
+	case *ast.SliceExpr:
+		element = p.X == outer
+	}
+
+	if tv, ok := pass.TypesInfo.Types[star]; element && ok {
+		_, slice := tv.Type.Underlying().(*types.Slice)
+		basic, _ := tv.Type.Underlying().(*types.Basic)
+		element = slice || (basic != nil && basic.Info()&types.IsString != 0)
+	}
+
 	msg := "dereference of possibly-nil `" + types.ExprString(star.X) + "` may panic - add a nil check or use pointer.From"
 	var fixes []analysis.SuggestedFix
 	switch {
 	case payload:
 		msg = "dereference of possibly-nil `" + types.ExprString(star.X) + "` may panic - add a nil check (no fix: the value is sent as a write request body, pointer.From would send it empty)"
+	case element:
+		msg = "dereference of possibly-nil `" + types.ExprString(star.X) + "` may panic - add a nil check (no fix: reading an element of what pointer.From gives would panic too)"
 	case fixWith == fixPointerFrom:
 		fixes = suggestedFixes(pass, parents, star)
 	}
@@ -273,8 +300,9 @@ func suggestedFixes(pass *analysis.Pass, parents map[ast.Node]ast.Node, star *as
 	}
 
 	// string(*enumPtr) becomes pointer.FromEnum(enumPtr) when the pointee is a string-kinded
-	// named type; otherwise the dereference alone becomes pointer.From(x)
-	target, replacement := ast.Node(star), pkgName+".From("+string(operandSrc)+")"
+	// named type; otherwise the dereference becomes pointer.From(x), along with any brackets
+	// around it, which a call does not need
+	target, replacement := outer, pkgName+".From("+string(operandSrc)+")"
 	if conv, ok := parents[outer].(*ast.CallExpr); ok && len(conv.Args) == 1 && conv.Args[0] == outer {
 		if tv, ok := pass.TypesInfo.Types[conv.Fun]; ok && tv.IsType() {
 			if basic, ok := tv.Type.Underlying().(*types.Basic); ok && basic.Kind() == types.String {

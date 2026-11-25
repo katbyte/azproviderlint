@@ -6,6 +6,7 @@
 - `AZG010`: aliases can be allowed by pattern, such as every alias ending in `Beta` ([#120](https://github.com/katbyte/azproviderlint/pull/120))
 - `AZS010`: a type with a field named `ResourceType`, such as the acceptance tests' `TestData`, is no longer reported as a resource ([#118](https://github.com/katbyte/azproviderlint/pull/118))
 - fixing with every rule on no longer skips a file, or stops it building, when two rules fix the same code ([#122](https://github.com/katbyte/azproviderlint/pull/122))
+- `AZG008`: the fix no longer leaves brackets behind, and reading an element of a slice or string, such as `(*items)[0]`, is reported without one ([#123](https://github.com/katbyte/azproviderlint/pull/123))
 
 ## v0.16.0 (2026-11-24)
 

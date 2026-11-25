@@ -346,6 +346,9 @@ func (c counter) get() int { return c.n }
 func invalidCopyable(h holder, b bag) {
 	use((*h.C).get()) // want "dereference of possibly-nil `h.C` may panic - add a nil check or use pointer.From"
 	use((*h.Arr)[0])  // want "dereference of possibly-nil `h.Arr` may panic - add a nil check or use pointer.From"
+	use((*b.M)["k"])  // want "dereference of possibly-nil `b.M` may panic - add a nil check or use pointer.From"
+	use((*b.S)[0])    // want "dereference of possibly-nil `b.S` may panic - add a nil check \\(no fix: reading an element of what pointer.From gives would panic too\\)"
+	use((*b.S)[1:])   // want "dereference of possibly-nil `b.S` may panic - add a nil check \\(no fix: reading an element of what pointer.From gives would panic too\\)"
 }
 
 // Should NOT be flagged: an explicitly instantiated pointer.To* call always allocates.
