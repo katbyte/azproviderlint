@@ -74,7 +74,7 @@ There is no fix where two fields share a line in a property written over several
 
 ## Options
 
-`order` is the order for a framework attribute or block, and `order-framework` is another name for it. `order-plugin` is the order for a plugin SDK schema. Each replaces its default.
+`order-framework` (or `order`) is the order for a framework attribute or block. `order-plugin` is the order for a plugin SDK schema. Each replaces its default.
 
 ```yaml
 linters:
@@ -83,7 +83,7 @@ linters:
       azproviderlint:
         settings:
           AZS005:
-            order: [Description, Required, Optional, Computed, Validators]
+            order-framework: [Description, Required, Optional, Computed, Validators]
             order-plugin: [Type, Description, Required, Optional, Computed, Elem]
 ```
 
