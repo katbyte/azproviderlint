@@ -12,7 +12,6 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/katbyte/azproviderlint/lib/astx"
 	"github.com/katbyte/azproviderlint/lib/tf"
 	"golang.org/x/tools/go/analysis"
 	"golang.org/x/tools/go/analysis/passes/inspect"
@@ -125,7 +124,7 @@ func run(pass *analysis.Pass) (any, error) {
 
 	for _, f := range check(pass.Fset, pass.ReadFile, properties) {
 		d := analysis.Diagnostic{Pos: f.at.Pos(), End: f.at.End(), Message: f.message}
-		if f.fix != "" && astx.Claim(pass, f.lit.Lbrace, f.lit.Rbrace+1) {
+		if f.fix != "" {
 			d.SuggestedFixes = []analysis.SuggestedFix{{Message: "Put the fields in order", TextEdits: []analysis.TextEdit{{Pos: f.lit.Lbrace, End: f.lit.Rbrace + 1, NewText: []byte(f.fix)}}}}
 		}
 		pass.Report(d)

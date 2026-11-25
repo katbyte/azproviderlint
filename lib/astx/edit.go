@@ -44,25 +44,56 @@ var (
 )
 
 type claim struct {
+	file       string
 	start, end int
 	by         string
 }
 
-// Claim reports whether the rule's fix may rewrite the bytes from start to end. When two rules rewrite the same bytes golangci-lint drops every
-// fix in the file, so the first rule to claim a place keeps its fix and the others report without one until it has been applied.
-func Claim(pass *analysis.Pass, start, end token.Pos) bool {
-	at := pass.Fset.Position(start)
-	mine := claim{start: at.Offset, end: at.Offset + int(end-start), by: pass.Analyzer.Name}
+// OneFixPerPlace makes every rule give up a fix that rewrites bytes another rule's fix already does. When two rules rewrite the same bytes
+// golangci-lint drops every fix in the file, so the first rule to fix a place keeps its fix and the others report without one until it has
+// been applied. A fix is kept or given up whole, however many edits it is made of. One that rewrites an import takes the whole file, since
+// another rule's fix may be about to use the name that import gives.
+func OneFixPerPlace(analyzers []*analysis.Analyzer) []*analysis.Analyzer {
+	for _, a := range analyzers {
+		run, name := a.Run, a.Name
+		a.Run = func(pass *analysis.Pass) (any, error) {
+			report := pass.Report
+			pass.Report = func(d analysis.Diagnostic) {
+				var kept []analysis.SuggestedFix
+				for _, fix := range d.SuggestedFixes {
+					var mine []claim
+					for _, edit := range fix.TextEdits {
+						at, size := pass.Fset.Position(edit.Pos), 0
+						if edit.End.IsValid() {
+							size = int(edit.End - edit.Pos)
+						}
+						mine = append(mine, claim{file: at.Filename, start: at.Offset, end: at.Offset + size, by: name})
 
-	claimsLock.Lock()
-	defer claimsLock.Unlock()
+						if file := EnclosingFile(pass, edit.Pos); file != nil && slices.ContainsFunc(file.Imports, func(spec *ast.ImportSpec) bool { return edit.Pos < spec.End() && spec.Pos() < edit.End }) {
+							mine = append(mine, claim{file: at.Filename, end: pass.Fset.File(edit.Pos).Size(), by: name})
+						}
+					}
 
-	if slices.ContainsFunc(claims[at.Filename], func(c claim) bool { return c.by != mine.by && mine.start <= c.end && c.start <= mine.end }) {
-		return false
+					claimsLock.Lock()
+					taken := slices.ContainsFunc(mine, func(m claim) bool {
+						return slices.ContainsFunc(claims[m.file], func(c claim) bool { return c.by != m.by && m.start <= c.end && c.start <= m.end })
+					})
+					if !taken {
+						for _, m := range mine {
+							claims[m.file] = append(claims[m.file], m)
+						}
+						kept = append(kept, fix)
+					}
+					claimsLock.Unlock()
+				}
+
+				d.SuggestedFixes = kept
+				report(d)
+			}
+
+			return run(pass)
+		}
 	}
-	if !slices.Contains(claims[at.Filename], mine) {
-		claims[at.Filename] = append(claims[at.Filename], mine)
-	}
 
-	return true
+	return analyzers
 }
