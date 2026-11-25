@@ -1,3 +1,7 @@
+## Unreleased
+
+- add rule `AZS005`: schema properties whose fields are not written in the agreed order, such as `Computed` before `Optional` ([#116](https://github.com/katbyte/azproviderlint/pull/116))
+
 ## v0.16.0 (2026-11-24)
 
 - add rule `AZS018`: resource and property descriptions with a note in them, such as `**Note:** ...` ([#105](https://github.com/katbyte/azproviderlint/pull/105))
