@@ -192,6 +192,11 @@ type notAResource struct{}
 
 func (notAResource) Description() string { return "describes something else" }
 
+// nor is one with a field of that name, as the acceptance tests' data has
+type testData struct{ ResourceType string }
+
+func (testData) Description() string { return "describes a test" }
+
 // a block is described like any other property, and what is inside it too
 func flaggedBlocks() (*schema.Schema, fwschema.Block) {
 	return &schema.Schema{

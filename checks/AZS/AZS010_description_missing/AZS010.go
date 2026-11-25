@@ -33,7 +33,7 @@ func run(pass *analysis.Pass) (any, error) {
 	}
 
 	// a state migration's schema is what old state looked like, and no docs are made from it
-	if pass.Pkg.Name() == "migration" {
+	if tf.InStateMigration(pass) {
 		return nil, nil
 	}
 
@@ -49,7 +49,9 @@ func run(pass *analysis.Pass) (any, error) {
 				return true
 			}
 
-			if named, _, _ := types.LookupFieldOrMethod(obj.Type(), true, pass.Pkg, "ResourceType"); named == nil {
+			// a field of that name, such as the one on the acceptance tests' data, does not make a resource
+			named, _, _ := types.LookupFieldOrMethod(obj.Type(), true, pass.Pkg, "ResourceType")
+			if _, method := named.(*types.Func); !method {
 				return true
 			}
 

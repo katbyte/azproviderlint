@@ -32,6 +32,11 @@ func TestAZS005(t *testing.T) {
 			fixed: "var _ = Schema{Type: 1, Optional: true, Computed: true}\n",
 			want:  []string{"schema field Type should come before Computed"},
 		},
+		"a blank line between fields is left out": {
+			src:   "var _ = Schema{\n\tType:     1,\n\tOptional: true,\n\n\t// what it is\n\tDescription: \"The name.\",\n}\n",
+			fixed: "var _ = Schema{\n\t// what it is\n\tDescription: \"The name.\",\n\tType:        1,\n\tOptional:    true,\n}\n",
+			want:  []string{"schema field Description should come before Type"},
+		},
 		"a comment moves with its field": {
 			src:   "var _ = Schema{\n\tType: 1,\n\t// checked by the API too\n\tValidateFunc: nil, // for now\n\tRequired:     true,\n}\n",
 			fixed: "var _ = Schema{\n\tType:     1,\n\tRequired: true,\n\t// checked by the API too\n\tValidateFunc: nil, // for now\n}\n",

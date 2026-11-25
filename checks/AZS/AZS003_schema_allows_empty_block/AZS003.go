@@ -34,6 +34,11 @@ func run(pass *analysis.Pass) (any, error) {
 		return nil, nil
 	}
 
+	// a state migration's schema is what old state looked like, which nobody writes a block for
+	if tf.InStateMigration(pass) {
+		return nil, nil
+	}
+
 	nodeFilter := []ast.Node{
 		(*ast.CompositeLit)(nil),
 	}

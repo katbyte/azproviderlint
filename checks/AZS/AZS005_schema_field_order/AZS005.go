@@ -240,6 +240,11 @@ func check(fset *token.FileSet, read func(string) ([]byte, error), properties []
 		text.WriteString(opening)
 		text.Write(src[tf.Offset(lit.Lbrace):starts[0]])
 		for i, field := range now {
+			// a blank line above a field marked a break in the old order, and is left out of the new one
+			for line, rest, more := strings.Cut(texts[field], "\n"); more && strings.TrimSpace(line) == ""; line, rest, more = strings.Cut(rest, "\n") {
+				texts[field] = rest
+			}
+
 			text.WriteString(texts[field])
 			if i < n-1 {
 				text.Write(src[ends[i]:starts[i+1]])

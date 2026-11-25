@@ -14,6 +14,7 @@ import (
 
 	"github.com/katbyte/azproviderlint/lib/astx"
 	"github.com/katbyte/azproviderlint/lib/facts"
+	"github.com/katbyte/azproviderlint/lib/tf"
 	"golang.org/x/tools/go/analysis"
 	"golang.org/x/tools/go/analysis/passes/inspect"
 	"golang.org/x/tools/go/ast/inspector"
@@ -95,8 +96,9 @@ type Finding struct {
 // run finds every description in the package, outside its test files, that is text the compiler can read: a string, or constants joined together.
 // One handed to a function that sets it on a schema is found at the call.
 func run(pass *analysis.Pass) (any, error) {
+	// a state migration's schema is what old state looked like, and no docs are made from it
 	insp, ok := pass.ResultOf[inspect.Analyzer].(*inspector.Inspector)
-	if !ok {
+	if !ok || tf.InStateMigration(pass) {
 		return &Descriptions{}, nil
 	}
 
@@ -288,8 +290,9 @@ func run(pass *analysis.Pass) (any, error) {
 				return
 			}
 
-			// every type the sdk registers says what it is called, which tells its Description() from any other
-			if obj, _, _ := types.LookupFieldOrMethod(sig.Recv().Type(), true, pass.Pkg, "ResourceType"); obj == nil {
+			// every type the sdk registers says what it is called with a method, which tells its Description() from any other
+			named, _, _ := types.LookupFieldOrMethod(sig.Recv().Type(), true, pass.Pkg, "ResourceType")
+			if _, method := named.(*types.Func); !method {
 				return
 			}
 

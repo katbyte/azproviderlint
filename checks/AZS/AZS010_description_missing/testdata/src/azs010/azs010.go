@@ -199,3 +199,8 @@ func model() apischema.SchemaContractProperties {
 type notAResource struct{}
 
 func (notAResource) Name() string { return "something else" }
+
+// a field named ResourceType, as the acceptance tests' data has, does not make a resource
+type TestData struct {
+	ResourceType string
+}
