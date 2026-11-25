@@ -100,7 +100,8 @@ func framework() fwschema.Schema {
 			},
 
 			"rule": fwschema.ListNestedAttribute{
-				NestedObject: fwschema.NestedAttributeObject{
+				Optional: true,
+				NestedObject: fwschema.NestedAttributeObject{ // want `schema field NestedObject should come before Optional`
 					Attributes: map[string]fwschema.Attribute{
 						"priority": fwschema.StringAttribute{
 							Validators: []any{},
@@ -108,7 +109,6 @@ func framework() fwschema.Schema {
 						},
 					},
 				},
-				Optional: true, // want `schema field Optional should come before NestedObject`
 			},
 		},
 		Description: "A Thing.",

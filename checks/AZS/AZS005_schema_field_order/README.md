@@ -56,7 +56,7 @@ For a plugin SDK schema:
 
 For a framework attribute or block, the same order with its own field names:
 
-`Description`, `MarkdownDescription`, `CustomType`, `ElementType`, `AttributeTypes`, `Required`, `Optional`, `Computed`, `Default`, `Sensitive`, `WriteOnly`, `Validators`, `PlanModifiers`, `DeprecationMessage`, `NestedObject`, `Attributes`, `Blocks`
+`Description`, `MarkdownDescription`, `CustomType`, `ElementType`, `NestedObject`, `AttributeTypes`, `Required`, `Optional`, `Computed`, `Default`, `Sensitive`, `WriteOnly`, `Validators`, `PlanModifiers`, `DeprecationMessage`, `Attributes`, `Blocks`
 
 The plugin SDK order is the one most properties in the azurerm, azuread and aws providers already use, with what the property holds, such as `Elem`, last. About nine in ten in each of the three already fit.
 

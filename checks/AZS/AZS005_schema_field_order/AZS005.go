@@ -33,7 +33,7 @@ var Analyzer = &analysis.Analyzer{
 // field in neither stays where it is.
 var (
 	order          = []string{"Description", "Type", "Required", "Optional", computed, "ForceNew", "Default", "DefaultFunc", "InputDefault", "Sensitive", "WriteOnly", "MinItems", "MaxItems", "ConfigMode", "ValidateFunc", "ValidateDiagFunc", "StateFunc", "DiffSuppressFunc", "DiffSuppressOnRefresh", "Set", "RequiredWith", "ConflictsWith", "ExactlyOneOf", "AtLeastOneOf", "Deprecated", "Elem"}
-	frameworkOrder = []string{"Description", "MarkdownDescription", "CustomType", "ElementType", "AttributeTypes", "Required", "Optional", computed, "Default", "Sensitive", "WriteOnly", "Validators", "PlanModifiers", "DeprecationMessage", "NestedObject", "Attributes", "Blocks"}
+	frameworkOrder = []string{"Description", "MarkdownDescription", "CustomType", "ElementType", "NestedObject", "AttributeTypes", "Required", "Optional", computed, "Default", "Sensitive", "WriteOnly", "Validators", "PlanModifiers", "DeprecationMessage", "Attributes", "Blocks"}
 )
 
 const computed = "Computed"
