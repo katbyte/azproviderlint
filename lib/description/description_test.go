@@ -6,12 +6,14 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/katbyte/azproviderlint/lib/astx"
 	"github.com/katbyte/azproviderlint/lib/description"
 	"golang.org/x/tools/go/analysis"
 	"golang.org/x/tools/go/analysis/analysistest"
 )
 
-// Two rules that would rewrite the same words cannot both fix them: the first keeps its fix, the second reports without one.
+// Two rules that would rewrite the same words cannot both fix them, once every rule is held to one fix per place: the first keeps its fix, the
+// second reports without one.
 func TestReportOneFixPerPlace(t *testing.T) {
 	t.Parallel()
 
@@ -37,7 +39,7 @@ func TestReportOneFixPerPlace(t *testing.T) {
 
 	fixes := func(a *analysis.Analyzer) int {
 		n := 0
-		for _, result := range analysistest.Run(discard{t}, testdata, a, "claims") {
+		for _, result := range analysistest.Run(discard{t}, testdata, astx.OneFixPerPlace([]*analysis.Analyzer{a})[0], "claims") {
 			for _, d := range result.Diagnostics {
 				n += len(d.SuggestedFixes)
 			}

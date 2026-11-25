@@ -306,7 +306,7 @@ func run(pass *analysis.Pass) (any, error) {
 }
 
 // Report reports a finding at its place inside the description, with its fix. A description that is not one string literal is reported as a whole,
-// without a fix, and so is one whose fix would rewrite what another rule's fix already does.
+// without a fix.
 func (f Found) Report(pass *analysis.Pass, finding Finding) {
 	if f.offsets == nil {
 		pass.Report(analysis.Diagnostic{Pos: f.Value.Pos(), End: f.Value.End(), Message: finding.Message})
@@ -320,7 +320,7 @@ func (f Found) Report(pass *analysis.Pass, finding Finding) {
 		text = text[1 : len(text)-1]
 	}
 
-	if finding.Fix != "" && (!f.raw || !strings.Contains(text, "`")) && astx.Claim(pass, d.Pos, d.End) {
+	if finding.Fix != "" && (!f.raw || !strings.Contains(text, "`")) {
 		d.SuggestedFixes = []analysis.SuggestedFix{{Message: finding.Fix, TextEdits: []analysis.TextEdit{{Pos: d.Pos, End: d.End, NewText: []byte(text)}}}}
 	}
 	pass.Report(d)
