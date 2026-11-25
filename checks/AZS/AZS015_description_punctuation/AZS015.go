@@ -4,6 +4,8 @@ package AZS015
 import (
 	"cmp"
 	"fmt"
+	"go/ast"
+	"go/types"
 	"regexp"
 	"slices"
 	"strings"
@@ -27,6 +29,17 @@ var Analyzer = &analysis.Analyzer{
 // enabled holds, by name, whether each kind of mistake is looked for. All are, until one is switched off.
 var enabled = map[string]*bool{}
 
+// breaksIn is where a tab or line break is looked for: every description when empty, or only those of the places named.
+var breaksIn = map[string]bool{}
+
+const (
+	lineBreakKind = "line-break"
+	resources     = "resources"
+	properties    = "properties"
+	lists         = "lists"
+	sets          = "sets"
+)
+
 func init() {
 	for _, kind := range [][2]string{
 		{"capital", "a description that starts with a lowercase word"},
@@ -36,7 +49,6 @@ func init() {
 		{"leading-mark", "a description that starts with a dash, bullet or other mark"},
 		{"edge-space", "a space at the start or the end of a description"},
 		{"double-space", "more than one space in a row"},
-		{"line-break", "a tab or line break inside a description"},
 		{"space-before", "a space before a comma, full stop or other mark"},
 		{"space-after", "a comma, full stop or other mark with no space after it"},
 		{"bracket-space", "a space just inside a bracket, or none before one"},
@@ -49,6 +61,25 @@ func init() {
 	} {
 		enabled[kind[0]] = Analyzer.Flags.Bool(kind[0], true, "report "+kind[1]+" (false leaves it alone)")
 	}
+
+	// a line break can also be looked for in some descriptions only
+	on := true
+	enabled[lineBreakKind] = &on
+	Analyzer.Flags.Func(lineBreakKind, "report a tab or line break inside a description: true, false, or where to look out of resources, properties, lists and sets; repeat for each (default true)", func(where string) error {
+		switch where {
+		case "true", "false":
+			on = where == "true"
+			clear(breaksIn)
+
+		case resources, properties, lists, sets:
+			on, breaksIn[where] = true, true
+
+		default:
+			return fmt.Errorf("%q is not true, false, %s, %s, %s or %s", where, resources, properties, lists, sets)
+		}
+
+		return nil
+	})
 }
 
 var (
@@ -105,7 +136,46 @@ var pasted = map[rune][2]string{
 
 func run(pass *analysis.Pass) (any, error) {
 	for _, found := range description.All(pass) {
-		for _, finding := range check(found.Text) {
+		// a description is a resource's when it is its Description() or set on the resource itself, and a property's otherwise, which may be a list or a set
+		place, holds := properties, ""
+		if found.Owner == nil && found.Via == nil {
+			place = resources
+		}
+
+		if found.Owner != nil {
+			t := pass.TypesInfo.TypeOf(found.Owner)
+			if ptr, ok := types.Unalias(t).(*types.Pointer); ok {
+				t = ptr.Elem()
+			}
+
+			if named, ok := types.Unalias(t).(*types.Named); ok && named.Obj().Pkg() != nil {
+				name := named.Obj().Name()
+				switch {
+				case name == "Resource", name == "Definition", name == "Schema" && strings.Contains(named.Obj().Pkg().Path(), "/terraform-plugin-framework"):
+					place = resources
+
+				case name == "Schema":
+					for _, elt := range found.Owner.Elts {
+						if kv, ok := elt.(*ast.KeyValueExpr); ok {
+							key, _ := kv.Key.(*ast.Ident)
+							value, _ := ast.Unparen(kv.Value).(*ast.SelectorExpr)
+							if key != nil && key.Name == "Type" && value != nil {
+								holds = map[string]string{"TypeList": lists, "TypeSet": sets}[value.Sel.Name]
+							}
+						}
+					}
+
+				case strings.HasPrefix(name, "List"):
+					holds = lists
+
+				case strings.HasPrefix(name, "Set"):
+					holds = sets
+				}
+			}
+		}
+
+		breaks := len(breaksIn) == 0 || breaksIn[place] || breaksIn[holds]
+		for _, finding := range check(found.Text, breaks) {
 			found.Report(pass, finding)
 		}
 	}
@@ -113,8 +183,9 @@ func run(pass *analysis.Pass) (any, error) {
 	return nil, nil
 }
 
-// check returns what is wrong with a description's punctuation, in the order it appears. A blank description has none to check.
-func check(text string) []description.Finding {
+// check returns what is wrong with a description's punctuation, in the order it appears. A blank description has none to check, and tabs and
+// line breaks are only looked for when breaks is set.
+func check(text string, breaks bool) []description.Finding {
 	masked := description.Mask(text)
 	lo := len(text) - len(strings.TrimLeft(text, " \t\n\r"))
 	hi := len(strings.TrimRight(text, " \t\n\r"))
@@ -227,12 +298,14 @@ func check(text string) []description.Finding {
 		}
 	}
 
-	for _, at := range lineBreak.FindAllStringIndex(masked[lo:hi], -1) {
-		what := "a line break"
-		if !strings.ContainsAny(masked[lo+at[0]:lo+at[1]], "\n\r") {
-			what = "a tab"
+	if breaks {
+		for _, at := range lineBreak.FindAllStringIndex(masked[lo:hi], -1) {
+			what := "a line break"
+			if !strings.ContainsAny(masked[lo+at[0]:lo+at[1]], "\n\r") {
+				what = "a tab"
+			}
+			add(lineBreakKind, description.Finding{Start: lo + at[0], End: lo + at[1], Message: "description has " + what + " in it - use a space", Fix: "Use a space", New: " "})
 		}
-		add("line-break", description.Finding{Start: lo + at[0], End: lo + at[1], Message: "description has " + what + " in it - use a space", Fix: "Use a space", New: " "})
 	}
 
 	for _, at := range doubleSpace.FindAllStringIndex(masked[lo:hi], -1) {

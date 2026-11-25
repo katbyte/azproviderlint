@@ -95,16 +95,20 @@ Most kinds have a fix that changes only the characters involved. There is none w
 | Option | Default | Effect |
 |---|---|---|
 | each kind in the table above | `true` | `false` stops reporting that kind |
+| `line-break` | `true` | also takes where to report it: `resources`, `properties`, `lists`, `sets`, or a list of them |
 
 ```yaml
           AZS015:
             question-mark: false
             pasted-characters: false
+            line-break: properties
 ```
 
 ```bash
-azproviderlint -AZS015 -AZS015.question-mark=false -AZS015.pasted-characters=false ./...
+azproviderlint -AZS015 -AZS015.question-mark=false -AZS015.pasted-characters=false -AZS015.line-break=properties ./...
 ```
+
+For `line-break`, `resources` is the description of a resource, data source or function, `properties` that of any property, and `lists` and `sets` that of a list or set property.
 
 See the [root README](../../../README.md#options) for where the settings go.
 

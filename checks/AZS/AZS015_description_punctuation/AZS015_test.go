@@ -60,7 +60,7 @@ func TestAZS015(t *testing.T) {
 		"",
 		"   ",
 	} {
-		if got := check(text); len(got) > 0 {
+		if got := check(text, true); len(got) > 0 {
 			t.Errorf("%q: unexpected %q", text, got[0].Message)
 		}
 	}
@@ -121,7 +121,7 @@ func TestAZS015(t *testing.T) {
 		"The name—here.":                                                     {`description has an em dash '—' - use "-"`},
 	} {
 		var got []string
-		for _, finding := range check(text) {
+		for _, finding := range check(text, true) {
 			got = append(got, finding.Message)
 		}
 
@@ -131,7 +131,7 @@ func TestAZS015(t *testing.T) {
 	}
 
 	// each kind of mistake can be switched off on its own; the kinds are package state, so this cannot run beside anything else
-	if got := check(`Only "TemporaryDisk" is supported.`); len(got) != 1 || got[0].New != "`TemporaryDisk`" {
+	if got := check(`Only "TemporaryDisk" is supported.`, true); len(got) != 1 || got[0].New != "`TemporaryDisk`" {
 		t.Errorf("a value in quotes: got %v", got)
 	}
 
@@ -154,12 +154,12 @@ func TestAZS015(t *testing.T) {
 		"pasted-characters":   "The \u201cname\u201d.",
 		"quoted-value":        "Only \"Fast\" is supported.",
 	} {
-		if len(check(text)) == 0 {
+		if len(check(text, true)) == 0 {
 			t.Errorf("%s: %q should be reported", kind, text)
 		}
 
 		*enabled[kind] = false
-		if got := check(text); len(got) > 0 {
+		if got := check(text, true); len(got) > 0 {
 			t.Errorf("%s switched off: %q still reports %q", kind, text, got[0].Message)
 		}
 		*enabled[kind] = true
@@ -167,5 +167,39 @@ func TestAZS015(t *testing.T) {
 
 	if len(enabled) != 17 {
 		t.Errorf("%d kinds can be switched off, and the test covers 17", len(enabled))
+	}
+
+	// a line break can be looked for in some places only
+	for _, where := range []string{resources, properties, lists, sets} {
+		if err := Analyzer.Flags.Set(lineBreakKind, where); err != nil {
+			t.Fatal(err)
+		}
+		analysistest.Run(t, filepath.Join(filepath.Dir(filename), "testdata"), Analyzer, "azs015"+where)
+
+		if err := Analyzer.Flags.Set(lineBreakKind, "true"); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	for _, where := range []string{resources, lists} {
+		if err := Analyzer.Flags.Set(lineBreakKind, where); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	if len(breaksIn) != 2 || !breaksIn[resources] || !breaksIn[lists] {
+		t.Errorf("two places given: got %v", breaksIn)
+	}
+
+	if err := Analyzer.Flags.Set(lineBreakKind, "false"); err != nil || len(breaksIn) > 0 || len(check("The name\nof it.", true)) > 0 {
+		t.Errorf("line-break set to false: still looked for, in %v (%v)", breaksIn, err)
+	}
+
+	if err := Analyzer.Flags.Set(lineBreakKind, "sometimes"); err == nil {
+		t.Error("a place that is not one should be refused")
+	}
+
+	if err := Analyzer.Flags.Set(lineBreakKind, "true"); err != nil || len(check("The name\nof it.", true)) != 1 {
+		t.Errorf("line-break set back to true: not looked for (%v)", err)
 	}
 }

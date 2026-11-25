@@ -8,6 +8,7 @@ const (
 	TypeBool
 	TypeString
 	TypeList
+	TypeSet
 )
 
 type Schema struct {
