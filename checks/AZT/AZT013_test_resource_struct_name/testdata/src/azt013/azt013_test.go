@@ -10,8 +10,13 @@ type StorageAccountResource struct{}
 
 type StorageAcctTestResource struct{} // want `test resource StorageAcctTestResource is not named after azurerm_storage_account, which it tests - name it StorageAccountResource`
 
-// the generated tests give each word one capital, so this is not the name they look for
-type CdnFrontDoorRuleResource struct{} // want `test resource CdnFrontDoorRuleResource is not named after azurerm_cdn_frontdoor_rule, which it tests - name it CdnFrontdoorRuleResource`
+// capitals are not checked: a product's name is written the way the product writes it
+type CdnFrontDoorRuleResource struct{}
+
+// a resource whose own name ends in resource does not need the word twice
+type SignalrSharedPrivateLinkResource struct{}
+
+type WebPubsubLinkResource struct{} // want `test resource WebPubsubLinkResource is not named after azurerm_web_pubsub_shared_private_link_resource, which it tests - name it WebPubsubSharedPrivateLinkResource`
 
 // a struct shared by several resources can only be named after one of them
 type LoadBalancerResource struct{}
@@ -54,6 +59,18 @@ func TestAccLoadBalancerRule_basic(t *testing.T) {
 	data := acceptance.BuildTestData(t, "azurerm_load_balancer_rule", "test")
 
 	data.ResourceTest(t, LoadBalancerResource{}, []acceptance.TestStep{})
+}
+
+func TestAccSignalrSharedPrivateLinkResource_basic(t *testing.T) {
+	data := acceptance.BuildTestData(t, "azurerm_signalr_shared_private_link_resource", "test")
+
+	data.ResourceTest(t, SignalrSharedPrivateLinkResource{}, []acceptance.TestStep{})
+}
+
+func TestAccWebPubsubSharedPrivateLinkResource_basic(t *testing.T) {
+	data := acceptance.BuildTestData(t, "azurerm_web_pubsub_shared_private_link_resource", "test")
+
+	data.ResourceTest(t, WebPubsubLinkResource{}, []acceptance.TestStep{})
 }
 
 // a struct kept in another package is reported where it is handed over

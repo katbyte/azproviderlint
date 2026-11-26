@@ -6,7 +6,6 @@ import (
 	"go/constant"
 	"go/token"
 	"go/types"
-	"slices"
 	"strings"
 
 	"github.com/katbyte/azproviderlint/lib/astx"
@@ -81,8 +80,11 @@ func run(pass *analysis.Pass) (any, error) {
 	})
 
 	for _, tested := range structs {
-		// azurerm_storage_account is tested by StorageAccountResource: the provider's name dropped, each word given a capital
+		// azurerm_storage_account is tested by StorageAccountResource: the provider's name dropped, each word given a capital. Capitals are not checked,
+		// so HDInsight is fine, a resource whose own name ends in resource does not need the word twice, and a struct shared by several resources
+		// can only be named after one of them.
 		var wanted []string
+		named := false
 		for _, resource := range resources[tested] {
 			_, rest, _ := strings.Cut(resource, "_")
 			var name strings.Builder
@@ -92,11 +94,16 @@ func run(pass *analysis.Pass) (any, error) {
 				}
 			}
 
-			wanted = append(wanted, name.String()+"Resource")
+			want := name.String()
+			if !strings.HasSuffix(want, "Resource") {
+				want += "Resource"
+			}
+
+			wanted = append(wanted, want)
+			named = named || strings.EqualFold(tested.Name(), want) || strings.EqualFold(tested.Name(), name.String()+"Resource")
 		}
 
-		// a struct shared by several resources can only be named after one of them
-		if slices.Contains(wanted, tested.Name()) {
+		if named {
 			continue
 		}
 

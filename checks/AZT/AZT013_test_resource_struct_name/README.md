@@ -30,7 +30,7 @@ type StorageAccountResource struct{}
 
 The struct a test hands to `data.ResourceTest` or another of the `Resource...Test` runners, against the resource the test names in `acceptance.BuildTestData`.
 
-The name wanted is the resource's without the provider, each word given one capital, then `Resource`: `azurerm_cdn_frontdoor_rule` is `CdnFrontdoorRuleResource`, not `CdnFrontDoorRuleResource`.
+The name wanted is the resource's without the provider, each word given a capital, then `Resource`: `azurerm_cdn_frontdoor_rule` is `CdnFrontdoorRuleResource`. Capitals are not checked, so `CdnFrontDoorRuleResource` is fine too. A resource whose own name ends in `resource` does not need the word twice.
 
 A struct is reported once, where it is declared. One used for several resources is fine when it is named after any of them.
 
