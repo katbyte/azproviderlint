@@ -55,16 +55,17 @@ return map[string]*pluginsdk.Schema{
 A resource's own properties, written out as a map in a plugin SDK or framework schema.
 
 - `name`, `resource_group_name` and `location` come before every other property, in that order. A resource need not have all three.
-- a property ending in `_name` or `_id` may sit among them: what the resource sits in, such as `lab_name` or `workspace_id`, is part of its ID.
+- a property that is part of the resource's ID may sit among them. The rule takes one ending in `_name` or `_id`, such as `lab_name` or `workspace_id`, to be, and one that is `Required` and `ForceNew`. It cannot read the ID itself, so a property that only looks the part passes.
+- a `name` that is only read back is not the one the user gives, and goes where the read-only properties do.
 - `tags` comes after every other property the user sets. Properties that are only read back may follow it.
 
 The order of the properties in between is not checked.
 
 These are left alone:
 
-- a block inside the resource
+- a block inside the resource, and what a block holds when a function builds it: a `Resource` with no `Read`
 - a typed resource's `Attributes`, which are only read back
-- data source files
+- data source files, and a function with `DataSource` in its name
 - state migrations
 
 ## Fix

@@ -6,6 +6,8 @@ func location() *pluginsdk.Schema { return nil }
 
 func resource() *pluginsdk.Resource {
 	return &pluginsdk.Resource{
+		Read: nil,
+
 		Schema: map[string]*pluginsdk.Schema{
 			"tags": { // want `property "tags" should come after "sku_name" - it goes last`
 				Type:     pluginsdk.TypeString,
@@ -160,6 +162,100 @@ func afterTags() map[string]*pluginsdk.Schema {
 			Type:     pluginsdk.TypeString,
 			Optional: true,
 			Computed: true,
+		},
+	}
+}
+
+// what a block holds is not a resource, however it is built: a resource says how it is read
+func rule() *pluginsdk.Schema {
+	return &pluginsdk.Schema{
+		Type:     pluginsdk.TypeList,
+		Optional: true,
+		Elem: &pluginsdk.Resource{
+			Schema: map[string]*pluginsdk.Schema{
+				"action": {
+					Type:     pluginsdk.TypeString,
+					Required: true,
+				},
+
+				"name": {
+					Type:     pluginsdk.TypeString,
+					Required: true,
+				},
+			},
+		},
+	}
+}
+
+func header() *pluginsdk.Resource {
+	return &pluginsdk.Resource{
+		Schema: map[string]*pluginsdk.Schema{
+			"action": {
+				Type:     pluginsdk.TypeString,
+				Required: true,
+			},
+
+			"name": {
+				Type:     pluginsdk.TypeString,
+				Required: true,
+			},
+		},
+	}
+}
+
+// a function with DataSource in its name builds one
+func DataSourceThingSchema() map[string]*pluginsdk.Schema {
+	return map[string]*pluginsdk.Schema{
+		"id": {
+			Type:     pluginsdk.TypeString,
+			Computed: true,
+		},
+
+		"name": {
+			Type:     pluginsdk.TypeString,
+			Required: true,
+		},
+	}
+}
+
+// a property that must be given and cannot change is taken as part of the ID, whatever it is called, and a name that is only read back is not
+// the one the user gives
+func identified() map[string]*pluginsdk.Schema {
+	return map[string]*pluginsdk.Schema{
+		"identifier": {
+			Type:     pluginsdk.TypeString,
+			Required: true,
+			ForceNew: true,
+		},
+
+		"resource_group_name": {
+			Type:     pluginsdk.TypeString,
+			Required: true,
+		},
+
+		"description": {
+			Type:     pluginsdk.TypeString,
+			Optional: true,
+		},
+
+		"name": {
+			Type:     pluginsdk.TypeString,
+			Computed: true,
+		},
+	}
+}
+
+// one that can change is an ordinary property
+func ordinary() map[string]*pluginsdk.Schema {
+	return map[string]*pluginsdk.Schema{
+		"sku": {
+			Type:     pluginsdk.TypeString,
+			Required: true,
+		},
+
+		"location": { // want `property "location" should come before "sku" - name, resource_group_name, location go first`
+			Type:     pluginsdk.TypeString,
+			Required: true,
 		},
 	}
 }

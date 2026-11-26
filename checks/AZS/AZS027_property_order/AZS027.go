@@ -96,17 +96,40 @@ func run(pass *analysis.Pass) (any, error) {
 			return true
 		}
 
-		// only the resource's own properties: a block inside it is its own small thing, and what is only read back is kept in Attributes
+		// only the resource's own properties: a block inside it is its own small thing, what is only read back is kept in Attributes, and a
+		// function with DataSource in its name builds one
 		for _, outer := range stack[:len(stack)-1] {
-			if decl, isDecl := outer.(*ast.FuncDecl); properties(outer) || (isDecl && decl.Name.Name == "Attributes") {
+			switch outer := outer.(type) {
+			case *ast.CompositeLit:
+				if properties(outer) || tf.IsSchemaHelperType(pass, outer, "Schema") {
+					return true
+				}
+
+			case *ast.FuncDecl:
+				if outer.Name.Name == "Attributes" || strings.Contains(strings.ToLower(outer.Name.Name), "datasource") {
+					return true
+				}
+			}
+		}
+
+		// a resource written out says how it is read; without that it is what a block holds
+		if holder, isHolder := stack[max(len(stack)-3, 0)].(*ast.CompositeLit); isHolder && tf.IsSchemaHelperType(pass, holder, "Resource") {
+			read := false
+			for _, field := range holder.Elts {
+				pair, isField := field.(*ast.KeyValueExpr)
+				read = read || (isField && strings.HasPrefix(types.ExprString(pair.Key), "Read"))
+			}
+
+			if !read {
 				return true
 			}
 		}
 
-		// each property by name, and whether it is written out as one that is only read back
+		// each property by name, whether it is written out as one that is only read back, and whether it may sit among the first: one that ends
+		// as a parent does, or must be given and cannot change, is taken as part of the resource's ID
 		var names []string
 		var keys []ast.Expr
-		var readOnly []bool
+		var readOnly, parent []bool
 		for _, elt := range lit.Elts {
 			kv, isPair := elt.(*ast.KeyValueExpr)
 			if !isPair {
@@ -123,24 +146,29 @@ func run(pass *analysis.Pass) (any, error) {
 				value = ref.X
 			}
 
-			set, computed := false, false
+			is := map[string]bool{}
 			if property, isProperty := value.(*ast.CompositeLit); isProperty {
 				for _, field := range property.Elts {
 					if pair, isField := field.(*ast.KeyValueExpr); isField && astx.IsTrueConstant(pass, pair.Value) {
-						set, computed = set || types.ExprString(pair.Key) == "Required" || types.ExprString(pair.Key) == "Optional", computed || types.ExprString(pair.Key) == "Computed"
+						is[types.ExprString(pair.Key)] = true
 					}
 				}
 			}
 
-			names, keys, readOnly = append(names, constant.StringVal(name.Value)), append(keys, kv.Key), append(readOnly, computed && !set)
+			ends := false
+			for _, ending := range parents {
+				ends = ends || strings.HasSuffix(constant.StringVal(name.Value), ending)
+			}
+
+			names, keys, readOnly, parent = append(names, constant.StringVal(name.Value)), append(keys, kv.Key), append(readOnly, is["Computed"] && !is["Required"] && !is["Optional"]), append(parent, ends || (is["Required"] && is["ForceNew"]))
 		}
 
 		for i, name := range names {
 			switch {
-			case slices.Contains(first, name):
+			case slices.Contains(first, name) && !readOnly[i]:
 				// only the first properties ranked before it, and what the resource sits in, may be written above it
-				for _, above := range names[:i] {
-					if rank := slices.Index(first, above); rank > slices.Index(first, name) || (rank < 0 && !slices.ContainsFunc(parents, func(ending string) bool { return strings.HasSuffix(above, ending) })) {
+				for j, above := range names[:i] {
+					if rank := slices.Index(first, above); rank > slices.Index(first, name) || (rank < 0 && !parent[j]) {
 						pass.Reportf(keys[i].Pos(), "property %q should come before %q - %s go first", name, above, strings.Join(first, ", "))
 
 						break

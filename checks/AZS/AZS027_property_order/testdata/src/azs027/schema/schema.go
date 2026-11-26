@@ -60,5 +60,6 @@ type Schema struct {
 }
 
 type Resource struct {
+	Read   func() error
 	Schema map[string]*Schema
 }
