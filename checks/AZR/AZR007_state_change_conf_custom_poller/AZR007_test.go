@@ -12,5 +12,5 @@ func TestAZR007(t *testing.T) {
 	t.Parallel()
 
 	_, filename, _, _ := runtime.Caller(0)
-	analysistest.Run(t, filepath.Join(filepath.Dir(filename), "testdata"), Analyzer, "github.com/hashicorp/terraform-provider-azurerm/internal/service/azr007")
+	analysistest.Run(t, filepath.Join(filepath.Dir(filename), "testdata"), Analyzer, "github.com/hashicorp/terraform-provider-azurerm/internal/service/azr007", "github.com/hashicorp/terraform-provider-azurerm/internal/tf/pluginsdk")
 }

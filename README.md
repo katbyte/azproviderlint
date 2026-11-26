@@ -71,7 +71,7 @@ Rules are named `AZ`, a category letter, and a number. The letters follow [tfpro
 | [AZR003](checks/AZR/AZR003_resource_data_get_in_delete) | no d.Get in Delete functions |
 | [AZR004](checks/AZR/AZR004_resource_id_equality_comparison) | compare resource id types with resourceids.Match |
 | [AZR006](checks/AZR/AZR006_stop_context_without_timeouts) | use timeouts wrappers, not StopContext |
-| [AZR007](checks/AZR/AZR007_state_change_conf_custom_poller) | use custom pollers instead of StateChangeConf |
+| [AZR007](checks/AZR/AZR007_state_change_conf_custom_poller) | use custom pollers instead of StateChangeConf and Retry |
 | [AZR008](checks/AZR/AZR008_flatten_returns_nil_slice) | flatten functions must return empty slices/maps, not nil |
 | [AZR009](checks/AZR/AZR009_lifecycle_logging) | no lifecycle narration logging in Create/Read/Update/Delete |
 | [AZR010](checks/AZR/AZR010_flatten_handles_nil_input) | flatten functions handle nil input themselves, not their callers |

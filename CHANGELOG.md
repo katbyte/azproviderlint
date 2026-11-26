@@ -1,3 +1,7 @@
+## Unreleased
+
+- `AZR007`: `Retry` and `RetryContext` are now reported too, as they should be a custom poller ([#134](https://github.com/katbyte/azproviderlint/pull/134))
+
 ## v0.17.1 (2026-11-26)
 
 - `AZS005`: in a framework attribute, `NestedObject` now goes after `DeprecationMessage`, with the other fields that say what it holds ([#124](https://github.com/katbyte/azproviderlint/pull/124))

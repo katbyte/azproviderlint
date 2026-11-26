@@ -19,3 +19,18 @@ type StateChangeConf struct {
 func (c *StateChangeConf) WaitForStateContext(ctx context.Context) (interface{}, error) {
 	return nil, nil
 }
+
+// RetryError is a minimal stand-in for retry.RetryError.
+type RetryError struct{ Err error }
+
+// RetryFunc is the function retried until it succeeds.
+type RetryFunc func() *RetryError
+
+// Retry is a stub matching the real helper's signature.
+func Retry(timeout time.Duration, f RetryFunc) error { return nil }
+
+// RetryContext is a stub matching the real helper's signature.
+func RetryContext(ctx context.Context, timeout time.Duration, f RetryFunc) error { return nil }
+
+// RetryableError is a stub matching the real helper's signature.
+func RetryableError(err error) *RetryError { return &RetryError{Err: err} }
