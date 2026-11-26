@@ -1,3 +1,7 @@
+## Unreleased
+
+- add rule `AZR013`: raw config values read while planning with no `IsKnown` check, which panics when a value is not known yet ([#130](https://github.com/katbyte/azproviderlint/pull/130))
+
 ## v0.17.1 (2026-11-26)
 
 - `AZS005`: in a framework attribute, `NestedObject` now goes after `DeprecationMessage`, with the other fields that say what it holds ([#124](https://github.com/katbyte/azproviderlint/pull/124))
