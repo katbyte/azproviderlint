@@ -1,3 +1,7 @@
+## Unreleased
+
+- add rule `AZR015`: creates of a resource with an identity whose callback sets only the ID, with a fix ([#135](https://github.com/katbyte/azproviderlint/pull/135))
+
 ## v0.17.1 (2026-11-26)
 
 - `AZS005`: in a framework attribute, `NestedObject` now goes after `DeprecationMessage`, with the other fields that say what it holds ([#124](https://github.com/katbyte/azproviderlint/pull/124))
