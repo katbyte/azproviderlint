@@ -126,6 +126,7 @@ Rules are named `AZ`, a category letter, and a number. The letters follow [tfpro
 | [AZT008](checks/AZT/AZT008_test_file_not_named_after_resource) | acceptance tests must be in a file named after the resource's file |
 | [AZT009](checks/AZT/AZT009_testdata_file_missing) | testdata files a test names must exist |
 | [AZT010](checks/AZT/AZT010_testdata_file_unused) | testdata files must be named by a test |
+| [AZT012](checks/AZT/AZT012_basic_test_missing_exists_or_import) | a resource's basic test must check the resource exists and import it |
 
 ### AZN - Naming Conventions
 

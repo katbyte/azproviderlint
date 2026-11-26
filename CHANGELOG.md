@@ -1,3 +1,7 @@
+## Unreleased
+
+- add rule `AZT012`: basic acceptance tests that never check the resource exists, or never import it ([#138](https://github.com/katbyte/azproviderlint/pull/138))
+
 ## v0.17.1 (2026-11-26)
 
 - `AZS005`: in a framework attribute, `NestedObject` now goes after `DeprecationMessage`, with the other fields that say what it holds ([#124](https://github.com/katbyte/azproviderlint/pull/124))
