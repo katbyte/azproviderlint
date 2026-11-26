@@ -37,6 +37,51 @@ func run(pass *analysis.Pass) (any, error) {
 			return
 		}
 
+		// config reports whether an expression is the whole config, and item whether it is one value out of a list or set
+		config := func(e ast.Expr) bool {
+			call, isCall := ast.Unparen(e).(*ast.CallExpr)
+			if !isCall {
+				return false
+			}
+
+			sel, isMethod := call.Fun.(*ast.SelectorExpr)
+
+			return isMethod && (sel.Sel.Name == "GetRawConfig" || sel.Sel.Name == "GetRawPlan")
+		}
+		item := func(e ast.Expr) bool {
+			if index, isIndex := ast.Unparen(e).(*ast.IndexExpr); isIndex {
+				e = index.X
+			}
+
+			call, isCall := ast.Unparen(e).(*ast.CallExpr)
+			if !isCall {
+				return false
+			}
+
+			sel, isMethod := call.Fun.(*ast.SelectorExpr)
+
+			return isMethod && (sel.Sel.Name == "AsValueSlice" || sel.Sel.Name == "Values")
+		}
+
+		// the names given to the whole config, and to one value out of a list or set
+		whole, items := map[types.Object]bool{}, map[types.Object]bool{}
+		ast.Inspect(decl.Body, func(n ast.Node) bool {
+			switch n := n.(type) {
+			case *ast.AssignStmt:
+				if name, isName := n.Lhs[0].(*ast.Ident); isName && len(n.Lhs) == 1 && len(n.Rhs) == 1 {
+					_, isIndex := ast.Unparen(n.Rhs[0]).(*ast.IndexExpr)
+					whole[pass.TypesInfo.ObjectOf(name)], items[pass.TypesInfo.ObjectOf(name)] = config(n.Rhs[0]), isIndex && item(n.Rhs[0])
+				}
+
+			case *ast.RangeStmt:
+				if name, isName := n.Value.(*ast.Ident); isName && item(n.X) {
+					items[pass.TypesInfo.ObjectOf(name)] = true
+				}
+			}
+
+			return true
+		})
+
 		// what is read, where a value is asked whether it is known, and whether any of it is the config of a plan
 		var read []*ast.SelectorExpr
 		known, planning, wholly := map[string]token.Pos{}, false, false
@@ -76,6 +121,12 @@ func run(pass *analysis.Pass) (any, error) {
 				}
 
 			case slices.Contains(reads, sel.Sel.Name):
+				// the config as a whole is always known, and so is a block in a list that is: only what a block holds can be not known yet
+				name, isName := ast.Unparen(sel.X).(*ast.Ident)
+				if config(sel.X) || (isName && whole[pass.TypesInfo.ObjectOf(name)]) || (sel.Sel.Name == "AsValueMap" && (item(sel.X) || (isName && items[pass.TypesInfo.ObjectOf(name)]))) {
+					return true
+				}
+
 				read = append(read, sel)
 			}
 
@@ -87,9 +138,12 @@ func run(pass *analysis.Pass) (any, error) {
 			return
 		}
 
+		// a value read twice with no check is reported where it is first read
+		reported := map[string]bool{}
 		for _, sel := range read {
 			value := types.ExprString(sel.X)
-			if asked, isAsked := known[value]; !isAsked || asked > sel.Pos() {
+			if asked, isAsked := known[value]; (!isAsked || asked > sel.Pos()) && !reported[value] {
+				reported[value] = true
 				pass.Reportf(sel.Pos(), "%s.%s() panics while planning when the value is not known yet - check %s.IsKnown() first", value, sel.Sel.Name, value)
 			}
 		}

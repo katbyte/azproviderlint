@@ -12,3 +12,9 @@ func (Value) AsValueSlice() []Value        { return nil }
 func (Value) AsValueMap() map[string]Value { return nil }
 func (Value) AsString() string             { return "" }
 func (Value) True() bool                   { return false }
+
+type ValueSet struct{}
+
+func (ValueSet) Values() []Value { return nil }
+
+func (Value) AsValueSet() ValueSet { return ValueSet{} }

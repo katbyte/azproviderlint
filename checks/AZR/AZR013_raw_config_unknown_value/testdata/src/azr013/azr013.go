@@ -13,7 +13,8 @@ func customizeDiff(diff *schema.ResourceDiff) error {
 		return nil
 	}
 
-	rule := rules.AsValueSlice()[0]            // want `rules.AsValueSlice\(\) panics while planning`
+	// reported once, where it is first read
+	rule := rules.AsValueSlice()[0]
 	if rule.GetAttr("name").AsString() == "" { // want `rule.GetAttr\("name"\).AsString\(\) panics while planning when the value is not known yet - check rule.GetAttr\("name"\).IsKnown\(\) first`
 		return nil
 	}
@@ -76,3 +77,37 @@ func create(d *schema.ResourceData) error {
 
 // a value that is not the config of a plan is not this rule's
 func other(v cty.Value) int { return v.LengthInt() }
+
+// the config as a whole is always known, and so is a block in a list that is
+func customizeDiffWhole(diff *schema.ResourceDiff) error {
+	rules := diff.GetRawConfig().AsValueMap()["rule"]
+	if !rules.IsKnown() || rules.IsNull() || rules.LengthInt() == 0 {
+		return nil
+	}
+
+	raw := diff.GetRawConfig()
+	_ = raw.AsValueMap()["zones"]
+
+	first := rules.AsValueSlice()[0]
+	_ = first.AsValueMap()["name"]
+	_ = rules.AsValueSlice()[0].AsValueMap()["name"]
+
+	for _, rule := range rules.AsValueSlice() {
+		_ = rule.AsValueMap()["name"]
+	}
+
+	for _, rule := range rules.AsValueSet().Values() {
+		_ = rule.AsValueMap()["name"]
+	}
+
+	// what a block holds can still be not known yet
+	name := first.AsValueMap()["name"]
+	_ = name.AsString() // want `name.AsString\(\) panics while planning`
+
+	// and a plain value out of a list can be too
+	for _, zone := range raw.AsValueMap()["zones"].AsValueSlice() { // want `raw.AsValueMap\(\)\["zones"\].AsValueSlice\(\) panics while planning`
+		_ = zone.AsString() // want `zone.AsString\(\) panics while planning`
+	}
+
+	return nil
+}
