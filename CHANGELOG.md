@@ -1,3 +1,7 @@
+## Unreleased
+
+- add rule `AZT013`: acceptance test resource structs not named after the resource they test, such as `StorageAcctResource` for `azurerm_storage_account` ([#139](https://github.com/katbyte/azproviderlint/pull/139))
+
 ## v0.17.1 (2026-11-26)
 
 - `AZS005`: in a framework attribute, `NestedObject` now goes after `DeprecationMessage`, with the other fields that say what it holds ([#124](https://github.com/katbyte/azproviderlint/pull/124))
