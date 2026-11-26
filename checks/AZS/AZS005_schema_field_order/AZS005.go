@@ -31,7 +31,7 @@ var Analyzer = &analysis.Analyzer{
 // frameworkOrder is the order the fields of a framework attribute or block are written in, and pluginOrder that of a plugin SDK schema: the one
 // most properties in the azurerm, azuread and aws providers already use, with what the property holds last. A field in neither stays where it is.
 var (
-	frameworkOrder = []string{"Description", "MarkdownDescription", "CustomType", "ElementType", "NestedObject", "AttributeTypes", "Required", "Optional", computed, "Default", "Sensitive", "WriteOnly", "Validators", "PlanModifiers", "DeprecationMessage", "Attributes", "Blocks"}
+	frameworkOrder = []string{"Description", "MarkdownDescription", "CustomType", "ElementType", "AttributeTypes", "Required", "Optional", computed, "Default", "Sensitive", "WriteOnly", "Validators", "PlanModifiers", "DeprecationMessage", "NestedObject", "Attributes", "Blocks"}
 	pluginOrder    = []string{"Description", "Type", "Required", "Optional", computed, "ForceNew", "Default", "DefaultFunc", "InputDefault", "Sensitive", "WriteOnly", "MinItems", "MaxItems", "ConfigMode", "ValidateFunc", "ValidateDiagFunc", "StateFunc", "DiffSuppressFunc", "DiffSuppressOnRefresh", "Set", "RequiredWith", "ConflictsWith", "ExactlyOneOf", "AtLeastOneOf", "Deprecated", "Elem"}
 )
 

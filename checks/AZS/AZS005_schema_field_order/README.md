@@ -52,7 +52,7 @@ Every property then reads the same way: what it is, its type, whether it is set,
 
 For a framework attribute or block:
 
-`Description`, `MarkdownDescription`, `CustomType`, `ElementType`, `NestedObject`, `AttributeTypes`, `Required`, `Optional`, `Computed`, `Default`, `Sensitive`, `WriteOnly`, `Validators`, `PlanModifiers`, `DeprecationMessage`, `Attributes`, `Blocks`
+`Description`, `MarkdownDescription`, `CustomType`, `ElementType`, `AttributeTypes`, `Required`, `Optional`, `Computed`, `Default`, `Sensitive`, `WriteOnly`, `Validators`, `PlanModifiers`, `DeprecationMessage`, `NestedObject`, `Attributes`, `Blocks`
 
 For a plugin SDK schema, the same order with its own field names:
 

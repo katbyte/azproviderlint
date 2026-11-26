@@ -1,3 +1,7 @@
+## v0.17.1 (2026-11-26)
+
+- `AZS005`: in a framework attribute, `NestedObject` now goes after `DeprecationMessage`, with the other fields that say what it holds ([#124](https://github.com/katbyte/azproviderlint/pull/124))
+
 ## v0.17.0 (2026-11-25)
 
 - add rule `AZS005`: schema properties whose fields are not written in the agreed order, such as `Computed` before `Optional` ([#116](https://github.com/katbyte/azproviderlint/pull/116))
