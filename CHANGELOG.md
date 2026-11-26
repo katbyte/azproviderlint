@@ -1,3 +1,7 @@
+## Unreleased
+
+- add rule `AZS023`: schema properties whose name starts with `is_`, such as `is_storage_enabled` ([#127](https://github.com/katbyte/azproviderlint/pull/127))
+
 ## v0.17.1 (2026-11-26)
 
 - `AZS005`: in a framework attribute, `NestedObject` now goes after `DeprecationMessage`, with the other fields that say what it holds ([#124](https://github.com/katbyte/azproviderlint/pull/124))
