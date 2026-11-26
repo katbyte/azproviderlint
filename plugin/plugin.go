@@ -70,7 +70,7 @@ func New(settings any) (register.LinterPlugin, error) {
 		}
 		flags, ok := v.(map[string]any)
 		if !ok {
-			return nil, fmt.Errorf("azproviderlint setting %q: expected a map of flag values", rule)
+			return nil, fmt.Errorf("azproviderlint setting `%s`: expected a map of flag values", rule)
 		}
 		s.Flags[rule] = map[string][]string{}
 		for flag, value := range flags {
@@ -105,14 +105,14 @@ func (p *Plugin) BuildAnalyzers() ([]*analysis.Analyzer, error) {
 	// enable/disable entries may name a rule or a category; flag keys must name a rule
 	for _, name := range slices.Concat(p.settings.Enable, p.settings.Disable) {
 		if l := strings.ToLower(name); !known[l] && !categories[l] {
-			return nil, fmt.Errorf("unknown azproviderlint rule or category %q in settings", name)
+			return nil, fmt.Errorf("unknown azproviderlint rule or category `%s` in settings", name)
 		}
 	}
 
 	flags := make(map[string]map[string][]string, len(p.settings.Flags))
 	for name, values := range p.settings.Flags {
 		if !known[strings.ToLower(name)] {
-			return nil, fmt.Errorf("unknown azproviderlint rule %q in settings", name)
+			return nil, fmt.Errorf("unknown azproviderlint rule `%s` in settings", name)
 		}
 		flags[strings.ToLower(name)] = values
 	}
@@ -133,7 +133,7 @@ func (p *Plugin) BuildAnalyzers() ([]*analysis.Analyzer, error) {
 		for flag, values := range flags[strings.ToLower(a.Name)] {
 			for _, value := range values {
 				if err := a.Flags.Set(flag, value); err != nil {
-					return nil, fmt.Errorf("setting %s flag %q: %w", a.Name, flag, err)
+					return nil, fmt.Errorf("setting %s flag `%s`: %w", a.Name, flag, err)
 				}
 			}
 		}

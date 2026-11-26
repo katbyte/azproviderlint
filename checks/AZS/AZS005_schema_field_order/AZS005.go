@@ -51,7 +51,7 @@ func init() {
 	list := func(into *[]string) func(string) error {
 		return func(field string) error {
 			if !token.IsIdentifier(field) || (given[into] && slices.Contains(*into, field)) {
-				return fmt.Errorf("%q is not a field name, or is given twice", field)
+				return fmt.Errorf("`%s` is not a field name, or is given twice", field)
 			}
 
 			if !given[into] {

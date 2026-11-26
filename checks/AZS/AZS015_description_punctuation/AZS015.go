@@ -75,7 +75,7 @@ func init() {
 			on, breaksIn[where] = true, true
 
 		default:
-			return fmt.Errorf("%q is not true, false, %s, %s, %s or %s", where, resources, properties, lists, sets)
+			return fmt.Errorf("`%s` is not true, false, %s, %s, %s or %s", where, resources, properties, lists, sets)
 		}
 
 		return nil

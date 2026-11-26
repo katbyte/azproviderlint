@@ -39,7 +39,7 @@ func init() {
 	Analyzer.Flags.Func("allow", "a name to accept though the provider does not define it, or a pattern for several such as azuread_.*; repeat for more", func(name string) error {
 		pattern, err := regexp.Compile(`^(?:` + name + `)$`)
 		if err != nil {
-			return fmt.Errorf("allow %q is not a pattern: %w", name, err)
+			return fmt.Errorf("allow `%s` is not a pattern: %w", name, err)
 		}
 		allowed = append(allowed, pattern)
 
