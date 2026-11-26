@@ -1,3 +1,7 @@
+## Unreleased
+
+- add rule `AZS027`: resource schemas where `name`, `resource_group_name` and `location` do not come first, or `tags` last ([#141](https://github.com/katbyte/azproviderlint/pull/141))
+
 ## v0.17.1 (2026-11-26)
 
 - `AZS005`: in a framework attribute, `NestedObject` now goes after `DeprecationMessage`, with the other fields that say what it holds ([#124](https://github.com/katbyte/azproviderlint/pull/124))
