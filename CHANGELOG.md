@@ -1,3 +1,7 @@
+## Unreleased
+
+- add rule `AZT011`: acceptance test callbacks that poll with the context they are handed, which has no deadline ([#137](https://github.com/katbyte/azproviderlint/pull/137))
+
 ## v0.17.1 (2026-11-26)
 
 - `AZS005`: in a framework attribute, `NestedObject` now goes after `DeprecationMessage`, with the other fields that say what it holds ([#124](https://github.com/katbyte/azproviderlint/pull/124))
