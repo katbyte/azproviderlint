@@ -126,3 +126,32 @@ func otherWays() map[string]*pluginsdk.Schema {
 }
 
 func version() *pluginsdk.Schema { return nil }
+
+// two properties that are always set cannot be set one without the other
+func required() map[string]*pluginsdk.Schema {
+	return map[string]*pluginsdk.Schema{
+		"connection_string_wo": {
+			Type:      pluginsdk.TypeString,
+			Required:  true,
+			WriteOnly: true,
+		},
+
+		"connection_string_wo_version": {
+			Type:         pluginsdk.TypeInt,
+			Required:     true,
+			ValidateFunc: validation.IntAtLeast(1),
+		},
+
+		// a value that is always set can still be set without a version that is not, and that version still has to be at least 1
+		"key_wo": { // want `"key_wo" can be set without "key_wo_version"`
+			Type:      pluginsdk.TypeString,
+			Required:  true,
+			WriteOnly: true,
+		},
+
+		"key_wo_version": { // want `"key_wo_version" can be set to 0, which is what an unset version is stored as`
+			Type:     pluginsdk.TypeInt,
+			Optional: true,
+		},
+	}
+}

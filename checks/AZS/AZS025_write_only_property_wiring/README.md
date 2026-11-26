@@ -64,7 +64,7 @@ Terraform keeps no write-only value, so it cannot tell when one has changed. The
 For each plugin SDK property with `WriteOnly: true`, written out in a map of properties:
 
 - a `<name>_version` property sits beside it
-- each names the other in `RequiredWith`
+- each names the other in `RequiredWith`, unless the other is `Required` and so always set
 - the version is checked with `validation.IntAtLeast(1)`, or `IntBetween` starting at 1
 - when the name ends in `_wo` and the property without that ending can be set, each names the other in `ConflictsWith` or `ExactlyOneOf`
 

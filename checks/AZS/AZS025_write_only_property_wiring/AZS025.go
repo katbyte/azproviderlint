@@ -113,12 +113,13 @@ func run(pass *analysis.Pass) (any, error) {
 			case keys[version] == nil:
 				pass.Reportf(keys[name].Pos(), "write-only property %q has no %q beside it - nothing says when its value has changed", name, version)
 
-			case !names(name, version, "RequiredWith"):
+			// a version that is always set is set whenever the value is
+			case !names(name, version, "RequiredWith") && !astx.IsTrueConstant(pass, properties[version]["Required"]):
 				pass.Reportf(keys[name].Pos(), "%q can be set without %q - add RequiredWith: []string{%q}", name, version, version)
 			}
 
 			if properties[version] != nil {
-				if !names(version, name, "RequiredWith") {
+				if !names(version, name, "RequiredWith") && !astx.IsTrueConstant(pass, properties[name]["Required"]) {
 					pass.Reportf(keys[version].Pos(), "%q can be set without %q - add RequiredWith: []string{%q}", version, name, name)
 				}
 
