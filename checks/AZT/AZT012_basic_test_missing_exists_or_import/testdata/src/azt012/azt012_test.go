@@ -95,13 +95,47 @@ func TestAccImportState_basic(t *testing.T) {
 }
 
 // a data source has nothing to exist or import
-func TestAccThingDataSource_basic(t *testing.T) {
+func TestAccThingData_basic(t *testing.T) {
 	data := acceptance.BuildTestData(t, "data.azurerm_thing", "test")
 
 	data.DataSourceTest(t, []acceptance.TestStep{
 		{
 			Config: ThingResource{}.basic(data),
 		},
+	})
+}
+
+// a data source tested with the resource's runner is still a data source, by its name or by what its data is built for
+func TestAccThingDataSource_basic(t *testing.T) {
+	data := acceptance.BuildTestData(t, "azurerm_thing", "test")
+	r := ThingResource{}
+
+	data.ResourceTest(t, r, []acceptance.TestStep{
+		{
+			Config: r.basic(data),
+		},
+	})
+}
+
+func TestAccThingLookup_basic(t *testing.T) {
+	data := acceptance.BuildTestData(t, "data.azurerm_thing", "test")
+	r := ThingResource{}
+
+	data.ResourceTest(t, r, []acceptance.TestStep{
+		{
+			Config: r.basic(data),
+		},
+	})
+}
+
+// a step that applies a config and checks the resource exists in one
+func TestAccApplyStep_basic(t *testing.T) {
+	data := acceptance.BuildTestData(t, "azurerm_thing", "test")
+	r := ThingResource{}
+
+	data.ResourceTest(t, r, []acceptance.TestStep{
+		data.ApplyStep(r.basic, r),
+		data.ImportStep(),
 	})
 }
 

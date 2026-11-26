@@ -21,6 +21,8 @@ func (TestData) DataSourceTest(t *testing.T, steps []TestStep) {}
 
 func (TestData) ImportStep(ignore ...string) TestStep { return TestStep{} }
 
+func (TestData) ApplyStep(config func(TestData) string, r any) TestStep { return TestStep{} }
+
 func (TestData) ImportBlockWithIDStep(expectNonEmptyPlan bool) TestStep { return TestStep{} }
 
 func (TestData) RequiresImportErrorStep(config func(TestData) string) TestStep { return TestStep{} }

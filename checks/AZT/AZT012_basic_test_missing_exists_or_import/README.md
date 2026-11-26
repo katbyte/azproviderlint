@@ -47,12 +47,12 @@ func TestAccThing_basic(t *testing.T) {
 
 A function named `TestAcc<X>_basic` that hands a list of steps, written out in place, to `data.ResourceTest` or another of the `Resource...Test` runners.
 
-- the steps must call `ExistsInAzure`
+- the steps must call `ExistsInAzure`, or be made with `data.ApplyStep`, which does
 - the steps must import: `data.ImportStep()` or another helper whose name starts with `Import`, or a step with `ImportState: true`
 
 These are not checked:
 
-- a data source's test, which has nothing to exist or import
+- a data source's test, which has nothing to exist or import: one with `DataSource` in its name, or whose data is built for `data.<type>`
 - steps built by a function
 - any test not named `_basic`
 

@@ -3,6 +3,7 @@ package AZT012
 
 import (
 	"go/ast"
+	"go/constant"
 	"strings"
 
 	"github.com/katbyte/azproviderlint/lib/astx"
@@ -29,26 +30,36 @@ func run(pass *analysis.Pass) (any, error) {
 
 	insp.Preorder([]ast.Node{(*ast.FuncDecl)(nil)}, func(n ast.Node) {
 		decl, isDecl := n.(*ast.FuncDecl)
-		if !isDecl || decl.Body == nil || decl.Recv != nil || !strings.HasPrefix(decl.Name.Name, "TestAcc") || !strings.HasSuffix(decl.Name.Name, "_basic") {
+		if !isDecl || decl.Body == nil || decl.Recv != nil || !strings.HasPrefix(decl.Name.Name, "TestAcc") || !strings.HasSuffix(decl.Name.Name, "_basic") || strings.Contains(decl.Name.Name, "DataSource") {
 			return
 		}
 
 		// the steps of a resource test, when they are written out where the test is run; a data source has nothing to exist or import
 		var steps *ast.CompositeLit
+		dataSource := false
 		ast.Inspect(decl.Body, func(n ast.Node) bool {
 			call, isCall := n.(*ast.CallExpr)
-			if !isCall || len(call.Args) == 0 || steps != nil {
-				return steps == nil
+			if !isCall || len(call.Args) == 0 {
+				return true
 			}
 
-			if fn := astx.CalledFunc(pass, call); fn != nil && fn.Signature().Recv() != nil && strings.HasPrefix(fn.Name(), "Resource") && strings.Contains(fn.Name(), "Test") {
+			fn := astx.CalledFunc(pass, call)
+			if fn == nil {
+				return true
+			}
+
+			if of, isText := pass.TypesInfo.Types[call.Args[min(1, len(call.Args)-1)]]; fn.Name() == "BuildTestData" && isText && of.Value != nil && of.Value.Kind() == constant.String {
+				dataSource = dataSource || strings.HasPrefix(constant.StringVal(of.Value), "data.")
+			}
+
+			if fn.Signature().Recv() != nil && strings.HasPrefix(fn.Name(), "Resource") && strings.Contains(fn.Name(), "Test") && steps == nil {
 				steps, _ = call.Args[len(call.Args)-1].(*ast.CompositeLit)
 			}
 
 			return true
 		})
 
-		if steps == nil {
+		if steps == nil || dataSource {
 			return
 		}
 
@@ -57,7 +68,8 @@ func run(pass *analysis.Pass) (any, error) {
 			switch n := n.(type) {
 			case *ast.CallExpr:
 				if fn := astx.CalledFunc(pass, n); fn != nil {
-					exists, imports = exists || fn.Name() == "ExistsInAzure", imports || strings.HasPrefix(fn.Name(), "Import")
+					// ApplyStep is a step that applies a config and checks the resource exists
+					exists, imports = exists || fn.Name() == "ExistsInAzure" || fn.Name() == "ApplyStep", imports || strings.HasPrefix(fn.Name(), "Import")
 				}
 
 			case *ast.KeyValueExpr:
