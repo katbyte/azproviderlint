@@ -1,0 +1,54 @@
+package azg014
+
+import (
+	"errors"
+	"fmt"
+)
+
+type thingId struct{}
+
+func (thingId) String() string { return "" }
+
+const prefix = "creating"
+
+func wording(id thingId, name string, count int, err error) error {
+	_ = fmt.Errorf("creating %s: %s", id, err)         // want `error is printed with %s - use %\+v, which keeps everything the error says`
+	_ = fmt.Errorf("creating %s: %v", id, err)         // want `error is printed with %v - use %\+v, which keeps everything the error says`
+	_ = fmt.Errorf("creating %q: %+v", name, err)      // want "error message puts a value in quotes with %q - put it in backticks, as the docs do"
+	_ = fmt.Errorf("%d%% of %q: %s", count, name, err) // want `error message puts a value in quotes with %q` `error is printed with %s`
+
+	_ = errors.New("`zones` can't be set with `availability_set_id`") // want `error message has "can't" - write "cannot"`
+	_ = fmt.Errorf("Doesn't exist: %+v", err)                         // want `error message has "Doesn't" - write "Does not"`
+	_ = errors.New("it won't work and shouldn't be tried")            // want `error message has "won't" - write "will not"` `error message has "shouldn't" - write "should not"`
+
+	// a message that is not one plain string is reported as a whole, with no fix
+	_ = fmt.Errorf(prefix+" %s: %s", id, err)  // want `error is printed with %s`
+	_ = fmt.Errorf("creating \"it\": %v", err) // want `error is printed with %v`
+
+	return nil
+}
+
+func fine(id thingId, name string, names []string, width int, err error) error {
+	_ = fmt.Errorf("creating %s: %+v", id, err)
+	_ = fmt.Errorf("creating `%s`: %+v", name, err)
+	_ = errors.New("`zones` cannot be set with `availability_set_id`")
+
+	// wrapping so the caller can ask what the error is
+	_ = fmt.Errorf("creating %s: %w", id, err)
+
+	// what is not text is not a value in the docs' sense, and its quotes are not the same as backticks
+	_ = fmt.Errorf("expected one of %q", names)
+	_ = fmt.Errorf("unexpected character %q", 'a')
+
+	// the text of an error, not the error
+	_ = fmt.Errorf("creating %s: %s", id, err.Error())
+
+	// a place that says which value it prints is not followed
+	_ = fmt.Errorf("creating %[2]s: %[1]s", err, id)
+	_ = fmt.Errorf("creating %*s: %+v", width, name, err)
+
+	// a word this rule does not know is left alone
+	_ = errors.New("the thing ain't there")
+
+	return nil
+}
