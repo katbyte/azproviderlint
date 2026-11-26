@@ -4,6 +4,7 @@ package AZR016
 import (
 	"go/ast"
 	"go/constant"
+	"go/token"
 	"go/types"
 	"strconv"
 	"strings"
@@ -93,9 +94,23 @@ func run(pass *analysis.Pass) (any, error) {
 				continue
 			}
 
+			// "nothing has changed, so there is nothing to do" is not finishing early
+			nothing := false
+			ast.Inspect(check.Cond, func(n ast.Node) bool {
+				if not, isNot := n.(*ast.UnaryExpr); isNot && not.Op == token.NOT {
+					_, negated := changed(not.X)
+					nothing = nothing || negated
+				}
+
+				return !nothing
+			})
+			if nothing {
+				continue
+			}
+
 			for _, later := range block.List[i+1:] {
 				missed, isMissed := changed(later)
-				if !isMissed {
+				if !isMissed || (missed != "" && missed == handled) {
 					continue
 				}
 

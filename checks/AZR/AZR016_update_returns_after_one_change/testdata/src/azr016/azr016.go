@@ -88,3 +88,16 @@ func other(d *schema.ResourceData, ready bool) error {
 
 	return nil
 }
+
+// "nothing has changed, so there is nothing to do" is not finishing early
+func nothing(d *schema.ResourceData) error {
+	if !d.HasChange("retention_days") {
+		return nil
+	}
+
+	if d.HasChange("retention_days") {
+		return send("retention")
+	}
+
+	return nil
+}

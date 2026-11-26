@@ -49,6 +49,7 @@ These are left alone:
 - a return of `fmt.Errorf` or `errors.New`, which refuses the change
 - a return of an error held in a variable
 - an `if` with an `else`
+- an `if` that asks whether something has not changed, as in `if !d.HasChange("sku") { return nil }`
 
 ## Fix
 
