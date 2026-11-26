@@ -76,6 +76,7 @@ Rules are named `AZ`, a category letter, and a number. The letters follow [tfpro
 | [AZR009](checks/AZR/AZR009_lifecycle_logging) | no lifecycle narration logging in Create/Read/Update/Delete |
 | [AZR010](checks/AZR/AZR010_flatten_handles_nil_input) | flatten functions handle nil input themselves, not their callers |
 | [AZR011](checks/AZR/AZR011_typed_type_missing_sdk_assertion) | typed resources must assert the sdk interface they implement |
+| [AZR016](checks/AZR/AZR016_update_returns_after_one_change) | an update must not return after handling one changed property while others are still to be looked at |
 
 ### AZD - Data Sources
 

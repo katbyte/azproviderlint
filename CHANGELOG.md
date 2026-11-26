@@ -1,3 +1,7 @@
+## Unreleased
+
+- add rule `AZR016`: updates that return after handling one changed property, so a second change in the same apply is never sent ([#140](https://github.com/katbyte/azproviderlint/pull/140))
+
 ## v0.17.1 (2026-11-26)
 
 - `AZS005`: in a framework attribute, `NestedObject` now goes after `DeprecationMessage`, with the other fields that say what it holds ([#124](https://github.com/katbyte/azproviderlint/pull/124))
