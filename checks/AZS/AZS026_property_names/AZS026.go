@@ -120,13 +120,14 @@ func run(pass *analysis.Pass) (any, error) {
 		collection := named.Obj().Name() == "Schema" && (strings.HasSuffix(kind, "TypeList") || strings.HasSuffix(kind, "TypeSet")) && inside["Elem"] != nil
 		switch {
 		case boolEnabled && (named.Obj().Name() == "BoolAttribute" || (named.Obj().Name() == "Schema" && strings.HasSuffix(kind, "TypeBool"))):
-			if slices.ContainsFunc(endings, func(ending string) bool {
-				return strings.HasSuffix(name, ending) || name == strings.TrimPrefix(ending, "_")
-			}) {
-				return
+			ends := false
+			for _, ending := range endings {
+				ends = ends || strings.HasSuffix(name, ending) || name == strings.TrimPrefix(ending, "_")
 			}
 
-			pass.Reportf(keys[lit].Pos(), "bool property %q should end in %s", name, strings.Join(endings, " or "))
+			if !ends {
+				pass.Reportf(keys[lit].Pos(), "bool property %q should end in %s", name, strings.Join(endings, " or "))
+			}
 
 		// a block the user writes is one thing each time it is written; one that is only read back is a list of them
 		case blockSingular && collection && many && tf.IsSchemaHelperType(pass, inside["Elem"], "Resource") && (astx.IsTrueConstant(pass, fields["Required"]) || astx.IsTrueConstant(pass, fields["Optional"])):
