@@ -53,7 +53,7 @@ var written = map[string]string{"can't": "cannot", "won't": "will not", "don't":
 // IPv4 and a name from the code such as DecodeDiff.
 var opening = regexp.MustCompile(`^([A-Z][a-z']+)(?:\W|$)`)
 
-var contracted = regexp.MustCompile(`(?i)\b[a-z]+n't\b`)
+var contracted = regexp.MustCompile(`(?i)\b(?:[a-z]+n't|it's)\b`)
 
 // verb is one place in a message where a value is printed: the letter, anything written between the % and it, and which value it prints.
 var verb = regexp.MustCompile(`%([-+# 0]*)([0-9*]*)(\.[0-9*]*)?(\[\d+\])?([a-zA-Z%])`)
@@ -94,6 +94,8 @@ func run(pass *analysis.Pass) (any, error) {
 			d := analysis.Diagnostic{Pos: call.Args[0].Pos(), End: call.Args[0].End(), Message: message}
 			if plain {
 				d.Pos, d.End = lit.Pos()+token.Pos(1+start), lit.Pos()+token.Pos(1+end)
+			}
+			if plain && fix != "" {
 				d.SuggestedFixes = []analysis.SuggestedFix{{Message: fix, TextEdits: []analysis.TextEdit{{Pos: d.Pos, End: d.End, NewText: []byte(replacement)}}}}
 			}
 			pass.Report(d)
@@ -107,7 +109,13 @@ func run(pass *analysis.Pass) (any, error) {
 
 		if contraction {
 			for _, at := range contracted.FindAllStringIndex(text, -1) {
+				// "it's" is "it is", "it has", or "its" spelt wrong, which is for a person to say
 				word := text[at[0]:at[1]]
+				if strings.EqualFold(word, "it's") {
+					report(at[0], at[1], "error message has \""+word+"\" - write \"it is\", \"it has\" or \"its\"", "", "")
+					continue
+				}
+
 				out, isKnown := written[strings.ToLower(word)]
 				if !isKnown {
 					continue
@@ -152,6 +160,9 @@ func run(pass *analysis.Pass) (any, error) {
 
 			bare := at[11]-at[0] == 2
 			switch {
+			case errorVerb && bare && letter == "v" && strings.HasSuffix(text[:at[0]], " +"):
+				report(at[0]-1, at[1], "error message has +%v, with the plus on the wrong side - use %+v", "print it with %+v", "%+v")
+
 			case errorVerb && bare && (letter == "s" || letter == "v") && types.Implements(value, failure):
 				report(at[0], at[1], "error is printed with %"+letter+" - use %+v, which keeps everything the error says", "print it with %+v", "%+v")
 

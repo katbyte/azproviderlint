@@ -35,8 +35,8 @@ return errors.New("`zones` cannot be set with `availability_set_id`")
 The message of a `fmt.Errorf` or `errors.New` call, outside test files.
 
 - `capital`: a message whose first word is a capital and then only small letters. A short form such as `ID`, a name from the code such as `DecodeDiff`, and `Azure`, `Microsoft` and `Terraform` are left alone.
-- `error-verb`: an error printed with `%s` or `%v`. `%w` is left alone: it is how a caller is let ask what the error is.
-- `contraction`: `can't`, `won't`, `don't`, `doesn't`, `didn't`, `isn't`, `aren't`, `wasn't`, `weren't`, `couldn't`, `shouldn't`, `wouldn't`, `hasn't`, `haven't` and `mustn't`.
+- `error-verb`: an error printed with `%s` or `%v`, and `+%v`, which has the plus on the wrong side. `%w` is left alone: it is how a caller is let ask what the error is.
+- `contraction`: `can't`, `won't`, `don't`, `doesn't`, `didn't`, `isn't`, `aren't`, `wasn't`, `weren't`, `couldn't`, `shouldn't`, `wouldn't`, `hasn't`, `haven't` and `mustn't`. `it's` is reported with no fix, as it can be `it is`, `it has` or a misspelt `its`.
 - `quoted-value`, which is off unless asked for: a string printed with `%q`, where the docs use backticks. A list or a number printed with `%q` is left alone.
 
 A message that says which value each place prints, such as `%[2]s`, is not checked.

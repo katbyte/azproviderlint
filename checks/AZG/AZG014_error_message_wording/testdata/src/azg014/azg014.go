@@ -22,6 +22,9 @@ func wording(id thingId, name string, count int, err error) error {
 	_ = errors.New("Expected a name")                                 // want `error message starts with a capital - write "expected"`
 	_ = fmt.Errorf("Creating %s: %+v", id, err)                       // want `error message starts with a capital - write "creating"`
 	_ = errors.New("it won't work and shouldn't be tried")            // want `error message has "won't" - write "will not"` `error message has "shouldn't" - write "should not"`
+	_ = errors.New("once it's enabled it cannot be turned off") // want `error message has "it's" - write "it is", "it has" or "its"`
+	_ = fmt.Errorf("expanding `pool`: +%v", err)   // want `error message has \+%v, with the plus on the wrong side - use %\+v`
+	_ = fmt.Errorf("expanding `pool`: +%v", name)  // want `error message has \+%v, with the plus on the wrong side - use %\+v`
 
 	// a message that is not one plain string is reported as a whole, with no fix
 	_ = fmt.Errorf(prefix+" %s: %s", id, err)  // want `error is printed with %s`
