@@ -27,13 +27,13 @@ var Analyzer = &analysis.Analyzer{
 }
 
 // each kind of wording can be switched off on its own
-var errorVerb, contraction, quotedValue *bool
+var errorVerb, contraction, quotedValue bool
 
 func init() {
 	Analyzer.Flags.Init("AZG014", flag.ContinueOnError)
-	errorVerb = Analyzer.Flags.Bool("error-verb", true, "report an error printed with %s or %v, which should be %+v (false leaves it alone)")
-	contraction = Analyzer.Flags.Bool("contraction", true, "report a contraction such as can't (false leaves it alone)")
-	quotedValue = Analyzer.Flags.Bool("quoted-value", true, "report a value put in quotes with %q, which should be in backticks (false leaves it alone)")
+	Analyzer.Flags.BoolVar(&errorVerb, "error-verb", true, "report an error printed with %s or %v, which should be %+v (false leaves it alone)")
+	Analyzer.Flags.BoolVar(&contraction, "contraction", true, "report a contraction such as can't (false leaves it alone)")
+	Analyzer.Flags.BoolVar(&quotedValue, "quoted-value", true, "report a value put in quotes with %q, which should be in backticks (false leaves it alone)")
 }
 
 // written is each contraction this rule knows, and how it is written out.
@@ -42,7 +42,7 @@ var written = map[string]string{"can't": "cannot", "won't": "will not", "don't":
 var contracted = regexp.MustCompile(`(?i)\b[a-z]+n't\b`)
 
 // verb is one place in a message where a value is printed: the letter, anything written between the % and it, and which value it prints.
-var verb = regexp.MustCompile(`%([-+# 0]*)([0-9*]*)(\.[0-9*]*)?(\[[0-9]+\])?([a-zA-Z%])`)
+var verb = regexp.MustCompile(`%([-+# 0]*)([0-9*]*)(\.[0-9*]*)?(\[\d+\])?([a-zA-Z%])`)
 
 func run(pass *analysis.Pass) (any, error) {
 	insp, ok := pass.ResultOf[inspect.Analyzer].(*inspector.Inspector)
@@ -85,7 +85,7 @@ func run(pass *analysis.Pass) (any, error) {
 			pass.Report(d)
 		}
 
-		if *contraction {
+		if contraction {
 			for _, at := range contracted.FindAllStringIndex(text, -1) {
 				word := text[at[0]:at[1]]
 				out, isKnown := written[strings.ToLower(word)]
@@ -132,10 +132,10 @@ func run(pass *analysis.Pass) (any, error) {
 
 			bare := at[11]-at[0] == 2
 			switch {
-			case *errorVerb && bare && (letter == "s" || letter == "v") && types.Implements(value, failure):
+			case errorVerb && bare && (letter == "s" || letter == "v") && types.Implements(value, failure):
 				report(at[0], at[1], "error is printed with %"+letter+" - use %+v, which keeps everything the error says", "print it with %+v", "%+v")
 
-			case *quotedValue && bare && letter == "q" && types.Identical(value.Underlying(), types.Typ[types.String]) && (!isLit || lit.Value[0] == '"'):
+			case quotedValue && bare && letter == "q" && types.Identical(value.Underlying(), types.Typ[types.String]) && (!isLit || lit.Value[0] == '"'):
 				report(at[0], at[1], "error message puts a value in quotes with %q - put it in backticks, as the docs do", "put it in backticks", "`%s`")
 			}
 		}
