@@ -21,6 +21,19 @@ func resource() *pluginsdk.Resource {
 				ValidateFunc: validation.StringIsNotEmpty,
 			},
 
+			// the two other checks that say only that there is something there
+			"kind": { // want `string property "kind" is only checked for not being empty`
+				Type:         pluginsdk.TypeString,
+				Required:     true,
+				ValidateFunc: validation.StringIsNotWhiteSpace,
+			},
+
+			"plan": { // want `string property "plan" is only checked for not being empty`
+				Type:         pluginsdk.TypeString,
+				Required:     true,
+				ValidateFunc: validation.NoZeroValues,
+			},
+
 			// a provider's own copy of it says no more
 			"sku": { // want `string property "sku" is only checked for not being empty`
 				Type:         pluginsdk.TypeString,

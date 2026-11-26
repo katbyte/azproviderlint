@@ -6,6 +6,7 @@ import (
 	"go/ast"
 	"go/constant"
 	"go/types"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -31,8 +32,11 @@ var strict bool
 
 func init() {
 	Analyzer.Flags.Init("AZS024", flag.ContinueOnError)
-	Analyzer.Flags.BoolVar(&strict, "strict", false, "also report a string whose only validation is that it is not empty: validation.StringIsNotEmpty, or the framework's LengthAtLeast(1)")
+	Analyzer.Flags.BoolVar(&strict, "strict", false, "also report a string whose only validation is that it is not empty: validation.StringIsNotEmpty, StringIsNotWhiteSpace or NoZeroValues, or the framework's LengthAtLeast(1)")
 }
+
+// notEmpty are the checks that say only that a string has something in it.
+var notEmpty = []string{"StringIsNotEmpty", "StringIsNotWhiteSpace", "NoZeroValues"}
 
 // element is what a list or set says about the schema of the values in it: the name of the property, and whether the user sets it.
 type element struct {
@@ -51,8 +55,9 @@ func run(pass *analysis.Pass) (any, error) {
 	// a property is named by its key in the map it sits in, and a list is met before the schema of its values is
 	keys, elements := map[*ast.CompositeLit]ast.Expr{}, map[*ast.CompositeLit]element{}
 	insp.Preorder([]ast.Node{(*ast.CompositeLit)(nil)}, func(n ast.Node) {
+		// a schema made up inside a test is never shipped
 		lit, isLit := n.(*ast.CompositeLit)
-		if !isLit {
+		if !isLit || strings.HasSuffix(pass.Fset.Position(n.Pos()).Filename, "_test.go") {
 			return
 		}
 
@@ -114,7 +119,7 @@ func run(pass *analysis.Pass) (any, error) {
 
 			// when strict, being told a string is not empty does not count
 			check := types.ExprString(fields["ValidateFunc"])
-			weak = strict && fields["ValidateDiagFunc"] == nil && (check == "StringIsNotEmpty" || strings.HasSuffix(check, ".StringIsNotEmpty"))
+			weak = strict && fields["ValidateDiagFunc"] == nil && slices.Contains(notEmpty, check[strings.LastIndex(check, ".")+1:])
 
 			validated := (fields["ValidateFunc"] != nil && !astx.IsNilValue(pass, fields["ValidateFunc"])) || (fields["ValidateDiagFunc"] != nil && !astx.IsNilValue(pass, fields["ValidateDiagFunc"]))
 			if !set || (validated && !weak) || !strings.HasSuffix(kind, "TypeString") {

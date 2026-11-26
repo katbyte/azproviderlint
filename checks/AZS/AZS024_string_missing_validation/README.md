@@ -80,12 +80,13 @@ These are not reported:
 - a property with `Deprecated` or `DeprecationMessage` set, which is on its way out
 - a property whose whole schema comes from a function, such as `commonschema.Location()`
 - anything in a package named `migration` or `migrations`, which is what old state looked like
+- a schema in a test file, which is never shipped
 
 Adding validation to a property that has shipped can refuse a value that used to work. Take care that what is added is no stricter than the API.
 
 ## Options
 
-`strict: true` also reports a string whose only validation is that it is not empty: `validation.StringIsNotEmpty`, or the framework's `stringvalidator.LengthAtLeast(1)` on its own. It is off by default.
+`strict: true` also reports a string whose only validation is that it is not empty: `validation.StringIsNotEmpty`, `StringIsNotWhiteSpace` or `NoZeroValues`, or the framework's `stringvalidator.LengthAtLeast(1)` on its own. It is off by default.
 
 ```go
 "name": {
