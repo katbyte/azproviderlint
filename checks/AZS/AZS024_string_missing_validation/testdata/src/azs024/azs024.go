@@ -4,6 +4,8 @@ import (
 	fwschema "azs024/framework/schema"
 	"azs024/other"
 	"azs024/pluginsdk"
+	"azs024/stringvalidator"
+	"azs024/validation"
 )
 
 func notEmpty(any, string) ([]string, []error) { return nil, nil }
@@ -23,6 +25,13 @@ func resource() *pluginsdk.Resource {
 				Type:         pluginsdk.TypeString,
 				Optional:     true,
 				ValidateFunc: notEmpty,
+			},
+
+			// not being empty is validation enough until the rule is strict
+			"description": {
+				Type:         pluginsdk.TypeString,
+				Optional:     true,
+				ValidateFunc: validation.StringIsNotEmpty,
 			},
 
 			"tier": {
@@ -155,6 +164,11 @@ func framework() fwschema.Schema {
 			"sku": fwschema.StringAttribute{
 				Optional:   true,
 				Validators: []any{notEmpty},
+			},
+
+			"description": fwschema.StringAttribute{
+				Optional:   true,
+				Validators: []any{stringvalidator.LengthAtLeast(1)},
 			},
 
 			"tier": fwschema.StringAttribute{

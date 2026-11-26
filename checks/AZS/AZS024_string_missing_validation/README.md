@@ -71,7 +71,7 @@ the strings in "zones" have no validation - add a ValidateFunc that checks what 
 - the strings in a list or set that is `Required` or `Optional`: the `Elem` needs one
 - a framework `StringAttribute` that is `Required` or `Optional`: it needs `Validators`
 
-The rule only looks for validation being there. Whether it checks enough, such as `validation.StringIsNotEmpty` on a name the API has rules for, is for a reviewer.
+The rule only looks for validation being there. Whether it checks enough is for a reviewer, unless `strict` is set.
 
 These are not reported:
 
@@ -82,6 +82,36 @@ These are not reported:
 - anything in a package named `migration` or `migrations`, which is what old state looked like
 
 Adding validation to a property that has shipped can refuse a value that used to work. Take care that what is added is no stricter than the API.
+
+## Options
+
+`strict: true` also reports a string whose only validation is that it is not empty: `validation.StringIsNotEmpty`, or the framework's `stringvalidator.LengthAtLeast(1)` on its own. It is off by default.
+
+```go
+"name": {
+	Type:         pluginsdk.TypeString,
+	Required:     true,
+	ValidateFunc: validation.StringIsNotEmpty,
+},
+```
+
+```text
+string property "name" is only checked for not being empty - add a ValidateFunc that checks what the API accepts
+```
+
+```yaml
+linters:
+  settings:
+    custom:
+      azproviderlint:
+        settings:
+          AZS024:
+            strict: true
+```
+
+```sh
+azproviderlint -AZS024 -AZS024.strict ./...
+```
 
 ## Fix
 

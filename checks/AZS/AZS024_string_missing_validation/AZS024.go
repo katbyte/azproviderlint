@@ -2,6 +2,7 @@
 package AZS024
 
 import (
+	"flag"
 	"go/ast"
 	"go/constant"
 	"go/types"
@@ -23,6 +24,14 @@ var Analyzer = &analysis.Analyzer{
 	URL:      "https://github.com/katbyte/azproviderlint/blob/main/checks/AZS/AZS024_string_missing_validation/README.md",
 	Requires: []*analysis.Analyzer{inspect.Analyzer},
 	Run:      run,
+}
+
+// strict is whether a string that is only checked for not being empty is reported too.
+var strict bool
+
+func init() {
+	Analyzer.Flags.Init("AZS024", flag.ContinueOnError)
+	Analyzer.Flags.BoolVar(&strict, "strict", false, "also report a string whose only validation is that it is not empty: validation.StringIsNotEmpty, or the framework's LengthAtLeast(1)")
 }
 
 // element is what a list or set says about the schema of the values in it: the name of the property, and whether the user sets it.
@@ -83,14 +92,16 @@ func run(pass *analysis.Pass) (any, error) {
 		}
 
 		set, kind := astx.IsTrueConstant(pass, fields["Required"]) || astx.IsTrueConstant(pass, fields["Optional"]), types.ExprString(fields["Type"])
+		var weak bool
 		name, add := keys[lit], "a ValidateFunc that checks"
 		_, isElement := elements[lit]
 		switch named.Obj().Name() {
 		case "StringAttribute":
-			if list, isList := fields["Validators"].(*ast.CompositeLit); !set || (fields["Validators"] != nil && (!isList || len(list.Elts) > 0)) {
+			list, isList := fields["Validators"].(*ast.CompositeLit)
+			weak, add = strict && isList && len(list.Elts) == 1 && strings.HasSuffix(types.ExprString(list.Elts[0]), "LengthAtLeast(1)"), "Validators that check"
+			if !set || (fields["Validators"] != nil && (!isList || len(list.Elts) > 0) && !weak) {
 				return
 			}
-			add = "Validators that check"
 
 		case "Schema":
 			// the values of a list or set are checked one by one; those of a map cannot be
@@ -101,8 +112,12 @@ func run(pass *analysis.Pass) (any, error) {
 				set, name = elements[lit].set, elements[lit].of
 			}
 
+			// when strict, being told a string is not empty does not count
+			check := types.ExprString(fields["ValidateFunc"])
+			weak = strict && fields["ValidateDiagFunc"] == nil && (check == "StringIsNotEmpty" || strings.HasSuffix(check, ".StringIsNotEmpty"))
+
 			validated := (fields["ValidateFunc"] != nil && !astx.IsNilValue(pass, fields["ValidateFunc"])) || (fields["ValidateDiagFunc"] != nil && !astx.IsNilValue(pass, fields["ValidateDiagFunc"]))
-			if !set || validated || !strings.HasSuffix(kind, "TypeString") {
+			if !set || (validated && !weak) || !strings.HasSuffix(kind, "TypeString") {
 				return
 			}
 
@@ -110,15 +125,27 @@ func run(pass *analysis.Pass) (any, error) {
 			return
 		}
 
-		what := "string property has"
+		what := "string property"
 		if isElement {
-			what = "the strings in this property have"
+			what = "the strings in this property"
 		}
 		if tv, isName := pass.TypesInfo.Types[name]; isName && tv.Value != nil && tv.Value.Kind() == constant.String {
-			what = "string property " + strconv.Quote(constant.StringVal(tv.Value)) + " has"
+			what = "string property " + strconv.Quote(constant.StringVal(tv.Value))
 			if isElement {
-				what = "the strings in " + strconv.Quote(constant.StringVal(tv.Value)) + " have"
+				what = "the strings in " + strconv.Quote(constant.StringVal(tv.Value))
 			}
+		}
+
+		wrong := "has no validation"
+		switch {
+		case weak && isElement:
+			wrong = "are only checked for not being empty"
+
+		case weak:
+			wrong = "is only checked for not being empty"
+
+		case isElement:
+			wrong = "have no validation"
 		}
 
 		at := ast.Node(lit)
@@ -126,7 +153,7 @@ func run(pass *analysis.Pass) (any, error) {
 			at = keys[lit]
 		}
 
-		pass.Reportf(at.Pos(), "%s no validation - add %s what the API accepts", what, add)
+		pass.Reportf(at.Pos(), "%s %s - add %s what the API accepts", what, wrong, add)
 	})
 
 	return nil, nil
