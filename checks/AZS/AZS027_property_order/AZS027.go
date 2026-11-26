@@ -9,6 +9,7 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/katbyte/azproviderlint/lib/astx"
 	"github.com/katbyte/azproviderlint/lib/tf"
 	"golang.org/x/tools/go/analysis"
 	"golang.org/x/tools/go/analysis/passes/inspect"
@@ -28,6 +29,9 @@ var Analyzer = &analysis.Analyzer{
 // first are the properties that open a schema, in order, and last the ones that close it. Each default is replaced by the first one given.
 var first, last, givenFirst, givenLast = []string{"name", "resource_group_name", "location"}, []string{"tags"}, false, false
 
+// parents are what the name of a property ends in when it says what the resource sits in, which is part of its ID and may sit among the first.
+var parents, givenParents = []string{"_name", "_id"}, false
+
 func init() {
 	Analyzer.Flags.Init("AZS027", flag.ContinueOnError)
 	Analyzer.Flags.Func("first", "a property that goes first, in the order they are given; repeat for each, which replaces the default of name, resource_group_name and location", func(name string) error {
@@ -35,6 +39,14 @@ func init() {
 			first, givenFirst = nil, true
 		}
 		first = append(first, name)
+
+		return nil
+	})
+	Analyzer.Flags.Func("parent-ending", "what the name of a property that may sit among the first ends in; repeat for each, which replaces the default of _name and _id", func(ending string) error {
+		if !givenParents {
+			parents, givenParents = nil, true
+		}
+		parents = append(parents, ending)
 
 		return nil
 	})
@@ -91,22 +103,44 @@ func run(pass *analysis.Pass) (any, error) {
 			}
 		}
 
+		// each property by name, and whether it is written out as one that is only read back
 		var names []string
 		var keys []ast.Expr
+		var readOnly []bool
 		for _, elt := range lit.Elts {
-			if kv, isPair := elt.(*ast.KeyValueExpr); isPair {
-				if name, isName := pass.TypesInfo.Types[kv.Key]; isName && name.Value != nil && name.Value.Kind() == constant.String {
-					names, keys = append(names, constant.StringVal(name.Value)), append(keys, kv.Key)
+			kv, isPair := elt.(*ast.KeyValueExpr)
+			if !isPair {
+				continue
+			}
+
+			name, isName := pass.TypesInfo.Types[kv.Key]
+			if !isName || name.Value == nil || name.Value.Kind() != constant.String {
+				continue
+			}
+
+			value := kv.Value
+			if ref, isRef := value.(*ast.UnaryExpr); isRef {
+				value = ref.X
+			}
+
+			set, computed := false, false
+			if property, isProperty := value.(*ast.CompositeLit); isProperty {
+				for _, field := range property.Elts {
+					if pair, isField := field.(*ast.KeyValueExpr); isField && astx.IsTrueConstant(pass, pair.Value) {
+						set, computed = set || types.ExprString(pair.Key) == "Required" || types.ExprString(pair.Key) == "Optional", computed || types.ExprString(pair.Key) == "Computed"
+					}
 				}
 			}
+
+			names, keys, readOnly = append(names, constant.StringVal(name.Value)), append(keys, kv.Key), append(readOnly, computed && !set)
 		}
 
 		for i, name := range names {
 			switch {
 			case slices.Contains(first, name):
-				// nothing but the first properties ranked before it may be written above it
+				// only the first properties ranked before it, and what the resource sits in, may be written above it
 				for _, above := range names[:i] {
-					if rank := slices.Index(first, above); rank < 0 || rank > slices.Index(first, name) {
+					if rank := slices.Index(first, above); rank > slices.Index(first, name) || (rank < 0 && !slices.ContainsFunc(parents, func(ending string) bool { return strings.HasSuffix(above, ending) })) {
 						pass.Reportf(keys[i].Pos(), "property %q should come before %q - %s go first", name, above, strings.Join(first, ", "))
 
 						break
@@ -114,8 +148,9 @@ func run(pass *analysis.Pass) (any, error) {
 				}
 
 			case slices.Contains(last, name):
-				for _, below := range names[i+1:] {
-					if !slices.Contains(last, below) {
+				// what is only read back is listed after everything the user sets
+				for j, below := range names[i+1:] {
+					if !slices.Contains(last, below) && !readOnly[i+1+j] {
 						pass.Reportf(keys[i].Pos(), "property %q should come after %q - it goes last", name, below)
 
 						break

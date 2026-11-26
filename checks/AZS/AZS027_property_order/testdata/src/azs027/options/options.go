@@ -1,11 +1,21 @@
-// Package options is checked with display_name and then name going first, and timeouts last.
+// Package options is checked with display_name and then name going first, timeouts last, and only a name ending _parent allowed among the first.
 package options
 
 import "azs027/pluginsdk"
 
 func resource() map[string]*pluginsdk.Schema {
 	return map[string]*pluginsdk.Schema{
+		"thing_parent": {
+			Type:     pluginsdk.TypeString,
+			Required: true,
+		},
+
 		"name": {
+			Type:     pluginsdk.TypeString,
+			Required: true,
+		},
+
+		"workspace_id": {
 			Type:     pluginsdk.TypeString,
 			Required: true,
 		},

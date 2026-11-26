@@ -55,7 +55,8 @@ return map[string]*pluginsdk.Schema{
 A resource's own properties, written out as a map in a plugin SDK or framework schema.
 
 - `name`, `resource_group_name` and `location` come before every other property, in that order. A resource need not have all three.
-- `tags` comes after every other property.
+- a property ending in `_name` or `_id` may sit among them: what the resource sits in, such as `lab_name` or `workspace_id`, is part of its ID.
+- `tags` comes after every other property the user sets. Properties that are only read back may follow it.
 
 The order of the properties in between is not checked.
 
@@ -72,7 +73,7 @@ None is offered.
 
 ## Options
 
-`first` is the properties that go first, in order, and `last` the ones that go last. Each replaces its default.
+`first` is the properties that go first, in order, and `last` the ones that go last. `parent-ending` is what a property that may sit among the first ends in. Each replaces its default.
 
 ```yaml
 linters:
@@ -83,6 +84,7 @@ linters:
           AZS027:
             first: [name, resource_group_name, location]
             last: [tags]
+            parent-ending: [_name, _id]
 ```
 
 ```sh

@@ -105,3 +105,61 @@ func (ThingResource) Attributes() map[string]*pluginsdk.Schema {
 		},
 	}
 }
+
+// what the resource sits in is part of its ID, so it may sit among the first, and what is only read back is listed after tags
+func child() map[string]*pluginsdk.Schema {
+	return map[string]*pluginsdk.Schema{
+		"name": {
+			Type:     pluginsdk.TypeString,
+			Required: true,
+		},
+
+		"lab_name": {
+			Type:     pluginsdk.TypeString,
+			Required: true,
+		},
+
+		"resource_group_name": {
+			Type:     pluginsdk.TypeString,
+			Required: true,
+		},
+
+		"workspace_id": {
+			Type:     pluginsdk.TypeString,
+			Required: true,
+		},
+
+		"location": location(),
+
+		"tags": {
+			Type:     pluginsdk.TypeString,
+			Optional: true,
+		},
+
+		"endpoint": {
+			Type:     pluginsdk.TypeString,
+			Computed: true,
+		},
+	}
+}
+
+// what the user can set as well as read back is not read-only, and a property from a function cannot be read
+func afterTags() map[string]*pluginsdk.Schema {
+	return map[string]*pluginsdk.Schema{
+		"tags": { // want `property "tags" should come after "zone" - it goes last`
+			Type:     pluginsdk.TypeString,
+			Optional: true,
+		},
+
+		"endpoint": {
+			Type:     pluginsdk.TypeString,
+			Computed: true,
+		},
+
+		"zone": {
+			Type:     pluginsdk.TypeString,
+			Optional: true,
+			Computed: true,
+		},
+	}
+}

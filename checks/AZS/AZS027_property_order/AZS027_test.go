@@ -15,7 +15,7 @@ func TestAZS027(t *testing.T) {
 	analysistest.Run(t, filepath.Join(filepath.Dir(filename), "testdata"), Analyzer, "azs027", "azs027/migration")
 
 	// the options are package state, so this cannot run beside anything else
-	for _, option := range [][2]string{{"first", "display_name"}, {"first", "name"}, {"last", "timeouts"}} {
+	for _, option := range [][2]string{{"first", "display_name"}, {"first", "name"}, {"last", "timeouts"}, {"parent-ending", "_parent"}} {
 		if err := Analyzer.Flags.Set(option[0], option[1]); err != nil {
 			t.Fatal(err)
 		}
@@ -23,4 +23,5 @@ func TestAZS027(t *testing.T) {
 	analysistest.Run(t, filepath.Join(filepath.Dir(filename), "testdata"), Analyzer, "azs027/options")
 
 	first, last, givenFirst, givenLast = []string{"name", "resource_group_name", "location"}, []string{"tags"}, false, false
+	parents, givenParents = []string{"_name", "_id"}, false
 }
