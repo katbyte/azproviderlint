@@ -85,7 +85,7 @@ func run(pass *analysis.Pass) (any, error) {
 	}
 
 	if fixWith != fixPointerFrom && fixWith != fixNone {
-		return nil, fmt.Errorf("AZG008: invalid fix-with flag `%s`: expected `%s` or `%s`", fixWith, fixPointerFrom, fixNone)
+		return nil, fmt.Errorf("AZG008: invalid fix-with flag %q: expected %q or %q", fixWith, fixPointerFrom, fixNone)
 	}
 
 	nilguard.ForEachFunc(pass, insp, checkTests, func(body *ast.BlockStmt, params map[types.Object]bool, parents map[ast.Node]ast.Node) {

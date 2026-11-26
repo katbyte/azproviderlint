@@ -18,7 +18,9 @@ func wording(id thingId, name string, count int, err error) error {
 	_ = fmt.Errorf("%d%% of %q: %s", count, name, err) // want `error message puts a value in quotes with %q` `error is printed with %s`
 
 	_ = errors.New("`zones` can't be set with `availability_set_id`") // want `error message has "can't" - write "cannot"`
-	_ = fmt.Errorf("Doesn't exist: %+v", err)                         // want `error message has "Doesn't" - write "Does not"`
+	_ = fmt.Errorf("Doesn't exist: %+v", err)                         // want `error message has "Doesn't" - write "does not"`
+	_ = errors.New("Expected a name")                                 // want `error message starts with a capital - write "expected"`
+	_ = fmt.Errorf("Creating %s: %+v", id, err)                       // want `error message starts with a capital - write "creating"`
 	_ = errors.New("it won't work and shouldn't be tried")            // want `error message has "won't" - write "will not"` `error message has "shouldn't" - write "should not"`
 
 	// a message that is not one plain string is reported as a whole, with no fix
@@ -46,6 +48,14 @@ func fine(id thingId, name string, names []string, width int, err error) error {
 	// a place that says which value it prints is not followed
 	_ = fmt.Errorf("creating %[2]s: %[1]s", err, id)
 	_ = fmt.Errorf("creating %*s: %+v", width, name, err)
+
+	// a short form or a name may start a message, and so may a value
+	_ = errors.New("ID was not found")
+	_ = errors.New("IPv4 is not supported")
+	_ = errors.New("Azure refused the request")
+	_ = errors.New("DecodeDiff was handed nothing")
+	_ = errors.New("IotHub was not found")
+	_ = fmt.Errorf("`%s` is not a name", name)
 
 	// a word this rule does not know is left alone
 	_ = errors.New("the thing ain't there")

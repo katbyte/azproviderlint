@@ -8,6 +8,7 @@ import (
 	"go/token"
 	"go/types"
 	"regexp"
+	"slices"
 	"strings"
 
 	"github.com/katbyte/azproviderlint/lib/astx"
@@ -16,28 +17,41 @@ import (
 	"golang.org/x/tools/go/ast/inspector"
 )
 
-// Analyzer checks the wording of the errors a provider makes, so a user reads every one the same way: the error underneath printed in full,
-// words written out, and values in backticks as the docs have them.
+// Analyzer checks the wording of the errors a provider makes, so a user reads every one the same way: starting in lower case, the error
+// underneath printed in full and words written out. It can also ask for values in backticks, as the docs have them.
 var Analyzer = &analysis.Analyzer{
 	Name:     "AZG014",
-	Doc:      "check that error messages print the error underneath in full, have no contractions, and put values in backticks",
+	Doc:      "check that error messages start in lower case, print the error underneath in full, and have no contractions",
 	URL:      "https://github.com/katbyte/azproviderlint/blob/main/checks/AZG/AZG014_error_message_wording/README.md",
 	Requires: []*analysis.Analyzer{inspect.Analyzer},
 	Run:      run,
 }
 
 // each kind of wording can be switched off on its own
-var errorVerb, contraction, quotedValue bool
+var capital, errorVerb, contraction, quotedValue bool
+
+// names are the words a message may start with a capital for. Words given as options are added to these.
+var names = []string{"Azure", "Microsoft", "Terraform"}
 
 func init() {
 	Analyzer.Flags.Init("AZG014", flag.ContinueOnError)
+	Analyzer.Flags.BoolVar(&capital, "capital", true, "report a message that starts with a capital letter (false leaves it alone)")
+	Analyzer.Flags.Func("name", "a name a message may start with a capital for, such as Azure; repeat for each, which adds to the ones the rule knows", func(name string) error {
+		names = append(names, name)
+
+		return nil
+	})
 	Analyzer.Flags.BoolVar(&errorVerb, "error-verb", true, "report an error printed with %s or %v, which should be %+v (false leaves it alone)")
 	Analyzer.Flags.BoolVar(&contraction, "contraction", true, "report a contraction such as can't (false leaves it alone)")
-	Analyzer.Flags.BoolVar(&quotedValue, "quoted-value", true, "report a value put in quotes with %q, which should be in backticks (false leaves it alone)")
+	Analyzer.Flags.BoolVar(&quotedValue, "quoted-value", false, "also report a value put in quotes with %q, which the docs put in backticks")
 }
 
 // written is each contraction this rule knows, and how it is written out.
 var written = map[string]string{"can't": "cannot", "won't": "will not", "don't": "do not", "doesn't": "does not", "didn't": "did not", "isn't": "is not", "aren't": "are not", "wasn't": "was not", "weren't": "were not", "couldn't": "could not", "shouldn't": "should not", "wouldn't": "would not", "hasn't": "has not", "haven't": "have not", "mustn't": "must not"}
+
+// opening is the word a message starts with when that is a capital and then only small letters, which leaves alone a short form such as ID or
+// IPv4 and a name from the code such as DecodeDiff.
+var opening = regexp.MustCompile(`^([A-Z][a-z']+)(?:\W|$)`)
 
 var contracted = regexp.MustCompile(`(?i)\b[a-z]+n't\b`)
 
@@ -85,6 +99,12 @@ func run(pass *analysis.Pass) (any, error) {
 			pass.Report(d)
 		}
 
+		// an error is read after what it happened in, as in "creating Thing: expected a name"
+		// a contraction that starts a message is written out in lower case below, in one fix
+		if word := opening.FindStringSubmatch(text); capital && word != nil && !slices.Contains(names, word[1]) && written[strings.ToLower(word[1])] == "" {
+			report(0, len(word[1]), "error message starts with a capital - write \""+strings.ToLower(word[1])+"\"", "start it in lower case", strings.ToLower(word[1]))
+		}
+
 		if contraction {
 			for _, at := range contracted.FindAllStringIndex(text, -1) {
 				word := text[at[0]:at[1]]
@@ -93,7 +113,7 @@ func run(pass *analysis.Pass) (any, error) {
 					continue
 				}
 
-				if word[0] != out[0] {
+				if word[0] != out[0] && !capital {
 					out = strings.ToUpper(out[:1]) + out[1:]
 				}
 				report(at[0], at[1], "error message has \""+word+"\" - write \""+out+"\"", "write it out", out)

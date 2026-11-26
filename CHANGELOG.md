@@ -1,6 +1,6 @@
 ## Unreleased
 
-- add rule `AZG014`: error messages that print an error with `%s` or `%v`, use a contraction, or put a value in quotes with `%q`, with fixes ([#133](https://github.com/katbyte/azproviderlint/pull/133))
+- add rule `AZG014`: error messages that start with a capital, print an error with `%s` or `%v`, or use a contraction, with fixes ([#133](https://github.com/katbyte/azproviderlint/pull/133))
 
 ## v0.17.1 (2026-11-26)
 

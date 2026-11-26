@@ -88,10 +88,10 @@ func run(pass *analysis.Pass) (any, error) {
 	}
 
 	if use != useNew && use != usePointerTo {
-		return nil, fmt.Errorf("AZG002: invalid use flag `%s`: expected `%s` or `%s`", use, useNew, usePointerTo)
+		return nil, fmt.Errorf("AZG002: invalid use flag %q: expected %q or %q", use, useNew, usePointerTo)
 	}
 	if fixPointerCopy != fixPointerCopyNone && fixPointerCopy != fixPointerCopyCopy && fixPointerCopy != fixPointerCopyShare {
-		return nil, fmt.Errorf("AZG002: invalid fix-pointer-copy flag `%s`: expected `%s`, `%s` or `%s`", fixPointerCopy, fixPointerCopyNone, fixPointerCopyCopy, fixPointerCopyShare)
+		return nil, fmt.Errorf("AZG002: invalid fix-pointer-copy flag %q: expected %q, %q or %q", fixPointerCopy, fixPointerCopyNone, fixPointerCopyCopy, fixPointerCopyShare)
 	}
 
 	allowed := map[string]bool{}
@@ -101,7 +101,7 @@ func run(pass *analysis.Pass) (any, error) {
 			continue
 		}
 		if form != usePointerTo {
-			return nil, fmt.Errorf("AZG002: invalid allow flag entry `%s`: expected `%s`", form, usePointerTo)
+			return nil, fmt.Errorf("AZG002: invalid allow flag entry %q: expected %q", form, usePointerTo)
 		}
 		allowed[form] = true
 	}
