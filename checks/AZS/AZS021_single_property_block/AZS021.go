@@ -35,8 +35,9 @@ func run(pass *analysis.Pass) (any, error) {
 	// a block is named by its key in the map it sits in, which is met before the block is
 	keys := map[*ast.CompositeLit]ast.Expr{}
 	insp.Preorder([]ast.Node{(*ast.CompositeLit)(nil)}, func(n ast.Node) {
+		// a schema made up inside a test is never shipped
 		lit, isLit := n.(*ast.CompositeLit)
-		if !isLit {
+		if !isLit || strings.HasSuffix(pass.Fset.Position(n.Pos()).Filename, "_test.go") {
 			return
 		}
 
@@ -106,17 +107,17 @@ func run(pass *analysis.Pass) (any, error) {
 			return
 		}
 
-		// a comment on a line of its own, right above the block or above one of its fields, says why the block is kept
+		// a comment on a line of its own right above the block says why it is kept; one inside it is about a field, and a note for a linter is not a reason
 		for _, comment := range file.Comments {
 			line := tfile.Line(comment.Pos())
-			if strings.TrimSpace(string(src[tfile.Offset(tfile.LineStart(line)):tfile.Offset(comment.Pos())])) != "" {
+			if strings.TrimSpace(string(src[tfile.Offset(tfile.LineStart(line)):tfile.Offset(comment.Pos())])) != "" || tfile.Line(comment.End()) != tfile.Line(start.Pos())-1 {
 				continue
 			}
 
-			above := tfile.Line(comment.End()) == tfile.Line(start.Pos())-1
-			inside := comment.Pos() > lit.Lbrace && comment.End() < lit.Rbrace && (comment.End() < properties.Lbrace || comment.Pos() > properties.Rbrace)
-			if above || inside {
-				return
+			for _, written := range comment.List {
+				if text := strings.TrimSpace(strings.TrimPrefix(written.Text, "//")); text != "" && !strings.Contains(text, "lintignore:") && !strings.Contains(text, "nolint") && !strings.Contains(text, "azignore:") {
+					return
+				}
 			}
 		}
 
@@ -128,7 +129,7 @@ func run(pass *analysis.Pass) (any, error) {
 			property = fmt.Sprintf("only %q", constant.StringVal(name.Value))
 		}
 
-		pass.Reportf(start.Pos(), "%s can be given once and holds %s - make it a property of its own, or say why the block is kept in a comment above it", block, property)
+		pass.Reportf(start.Pos(), "%s can be given once and holds %s - move it out of the block, or say why the block is kept in a comment above it", block, property)
 	})
 
 	return nil, nil

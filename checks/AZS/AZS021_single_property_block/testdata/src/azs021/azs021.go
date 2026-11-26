@@ -8,7 +8,7 @@ import (
 func resource() *pluginsdk.Resource {
 	return &pluginsdk.Resource{
 		Schema: map[string]*pluginsdk.Schema{
-			"certificate": { // want `block "certificate" can be given once and holds only "thumbprint" - make it a property of its own, or say why the block is kept in a comment above it`
+			"certificate": { // want `block "certificate" can be given once and holds only "thumbprint" - move it out of the block, or say why the block is kept in a comment above it`
 				Type:     pluginsdk.TypeList,
 				Optional: true,
 				MaxItems: 1,
@@ -72,14 +72,29 @@ func resource() *pluginsdk.Resource {
 				},
 			},
 
-			"network": {
+			"network": { // want `block "network" can be given once and holds only "subnet_id"`
 				Type:     pluginsdk.TypeList,
 				Optional: true,
-				// kept as a block: the API is adding more to it
+				// a comment inside the block is about the field under it, not about why the block is kept
 				MaxItems: 1,
 				Elem: &pluginsdk.Resource{
 					Schema: map[string]*pluginsdk.Schema{
 						"subnet_id": {
+							Type:     pluginsdk.TypeString,
+							Required: true,
+						},
+					},
+				},
+			},
+
+			// lintignore:XS003
+			"route": { // want `block "route" can be given once and holds only "prefix"`
+				Type:     pluginsdk.TypeList,
+				Optional: true,
+				MaxItems: 1,
+				Elem: &pluginsdk.Resource{
+					Schema: map[string]*pluginsdk.Schema{
+						"prefix": {
 							Type:     pluginsdk.TypeString,
 							Required: true,
 						},
@@ -178,7 +193,7 @@ func encryption() *pluginsdk.Resource { return &pluginsdk.Resource{} }
 func replication() map[string]*pluginsdk.Schema { return nil }
 
 func scaling() *pluginsdk.Schema {
-	return &pluginsdk.Schema{ // want `block can be given once and holds only "capacity" - make it a property of its own, or say why the block is kept in a comment above it`
+	return &pluginsdk.Schema{ // want `block can be given once and holds only "capacity" - move it out of the block, or say why the block is kept in a comment above it`
 		Type:     pluginsdk.TypeList,
 		Optional: true,
 		MaxItems: 1,

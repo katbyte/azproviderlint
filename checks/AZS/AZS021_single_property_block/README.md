@@ -23,7 +23,7 @@ The block only adds a level of nesting: the property can sit where the block doe
 ```
 
 ```text
-block "certificate" can be given once and holds only "thumbprint" - make it a property of its own, or say why the block is kept in a comment above it
+block "certificate" can be given once and holds only "thumbprint" - move it out of the block, or say why the block is kept in a comment above it
 ```
 
 ## Passing Code
@@ -56,12 +56,13 @@ block "certificate" can be given once and holds only "thumbprint" - make it a pr
 
 A plugin SDK list or set with `MaxItems: 1`, whose `Elem` is a `pluginsdk.Resource` with its properties written out.
 
-The comment is on a line of its own, right above the block or above one of its fields. A comment at the end of a line does not count, nor does one on the property inside.
+The comment is on a line of its own, right above the block. A comment inside the block is about the field under it and does not count, nor does one at the end of a line, nor a note for a linter such as `// lintignore:XS003`.
 
 These are not checked:
 
 - a block whose properties come from a function
 - a framework attribute or block
+- a schema in a test file, which is never shipped
 - anything in a package named `migration` or `migrations`, which is what old state looked like
 
 Flattening a block that has shipped is a breaking change. Until the next major version, give it the comment.
