@@ -15,12 +15,12 @@ func TestAZS026(t *testing.T) {
 	analysistest.Run(t, filepath.Join(filepath.Dir(filename), "testdata"), Analyzer, "azs026", "azs026/migration")
 
 	// the options are package state, so this cannot run beside anything else
-	for _, option := range [][2]string{{"block-singular", "false"}, {"bool-ending", "_required"}, {"bool-ending", "_enabled"}, {"singular-word", "settings"}, {"plural-word", "sheep"}} {
+	for _, option := range [][2]string{{"block-singular", "false"}, {"bool-ending", "_required"}, {"bool-ending", "_enabled"}, {"singular-word", "settings"}, {"plural-word", "sheep"}, {"trailing-word", "dark"}} {
 		if err := Analyzer.Flags.Set(option[0], option[1]); err != nil {
 			t.Fatal(err)
 		}
 	}
 	analysistest.Run(t, filepath.Join(filepath.Dir(filename), "testdata"), Analyzer, "azs026/options")
 
-	blockSingular, endings, givenEndings, singular, plural = true, []string{"_enabled"}, false, singular[:len(singular)-1], plural[:len(plural)-1]
+	blockSingular, endings, givenEndings, singular, plural, trailing = true, []string{"_enabled"}, false, singular[:len(singular)-1], plural[:len(plural)-1], trailing[:len(trailing)-1]
 }

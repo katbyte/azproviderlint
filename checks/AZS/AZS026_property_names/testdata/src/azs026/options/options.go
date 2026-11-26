@@ -1,4 +1,4 @@
-// Package options is checked with blocks switched off, bools allowed to end in _required or _enabled, "settings" not a plural and "sheep" one.
+// Package options is checked with blocks switched off, bools allowed to end in _required or _enabled, "settings" not a plural, "sheep" one, and "dark" allowed after the plural.
 package options
 
 import "azs026/pluginsdk"
@@ -32,6 +32,14 @@ func resource() map[string]*pluginsdk.Schema {
 		},
 
 		"sheep": {
+			Type:     pluginsdk.TypeList,
+			Optional: true,
+			Elem: &pluginsdk.Schema{
+				Type: pluginsdk.TypeString,
+			},
+		},
+
+		"preview_images_dark": {
 			Type:     pluginsdk.TypeList,
 			Optional: true,
 			Elem: &pluginsdk.Schema{

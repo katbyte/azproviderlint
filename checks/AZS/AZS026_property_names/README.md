@@ -58,7 +58,9 @@ list "zone" has a singular name - it holds many values, so name it in the plural
 - `block-singular`: a plugin SDK list or set of blocks that the user sets, with a plural name. One that is only read back is a list of them, and is left alone.
 - `list-plural`: a plugin SDK list or set of plain values with a singular name.
 
-A name is plural when its last word ends in `s`, but not in `ss`, `us` or `is`. The rule knows these words are not plurals: `alias`, `aws`, `cors`, `dns`, `https`, `kms`, `kubernetes`, `nfs`, `os`, `redis`, `sas`, `series`, `tls`. And that these are: `criteria`, `data`, `media`, `metadata`.
+A word is plural when it ends in `s`, but not in `ss`, `us` or `is`. The rule knows these words are not plurals: `alias`, `analytics`, `aws`, `contains`, `cors`, `diagnostics`, `dns`, `equals`, `https`, `insights`, `kms`, `kubernetes`, `nfs`, `os`, `redis`, `sas`, `series`, `tls`, `windows`. And that these are: `apis`, `cpus`, `criteria`, `gpus`, `uris`, `vcpus`. `data`, `list`, `media` and `metadata` have no other form, and are fine as either.
+
+A block is named by its last word. A list is plural when its last word is, or the word before one of these: `after`, `allowed`, `base64`, `for`, `from`, `in`, `not`, `of`, `only`, `to`, `with`. So `days_of_week` and `tables_to_include` are plural.
 
 These are not checked:
 
@@ -74,7 +76,7 @@ None is offered.
 
 ## Options
 
-Each kind can be switched off on its own. `bool-ending` is what a bool may end in, and replaces `_enabled`. `singular-word` and `plural-word` add to the words the rule knows.
+Each kind can be switched off on its own. `bool-ending` is what a bool may end in, and replaces `_enabled`. `singular-word` and `plural-word` add to the words the rule knows, and a word given as both is fine as either. `trailing-word` adds a word that may come after the plural in a list's name.
 
 ```yaml
 linters:
@@ -87,6 +89,7 @@ linters:
             bool-ending: [_enabled, _required, _accepted]
             singular-word: [settings]
             plural-word: [sheep]
+            trailing-word: [dark]
 ```
 
 ```sh

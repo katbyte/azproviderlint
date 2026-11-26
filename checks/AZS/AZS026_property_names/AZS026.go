@@ -33,8 +33,12 @@ var boolEnabled, blockSingular, listPlural bool
 // endings are what a bool's name may end in. The default is replaced by the first one given.
 var endings, givenEndings = []string{"_enabled"}, false
 
-// singular are words ending in s that are not plurals, and plural are plurals with no s. Words given as options are added to these.
-var singular, plural = []string{"alias", "aws", "cors", "dns", "https", "kms", "kubernetes", "nfs", "os", "redis", "sas", "series", "tls"}, []string{"criteria", "data", "media", "metadata"}
+// singular are words ending in s that are not plurals, and plural are plurals the ending does not show. A word in both, such as data, has no
+// other form and is fine as either. Words given as options are added to these.
+var singular, plural = []string{"alias", "analytics", "aws", "contains", "cors", "data", "diagnostics", "dns", "equals", "https", "insights", "kms", "kubernetes", "list", "media", "metadata", "nfs", "os", "redis", "sas", "series", "tls", "windows"}, []string{"apis", "cpus", "criteria", "data", "gpus", "list", "media", "metadata", "uris", "vcpus"}
+
+// trailing are the words that may come after the plural in a list's name, as in days_of_week. Words given as options are added to these.
+var trailing = []string{"after", "allowed", "base64", "for", "from", "in", "not", "of", "only", "to", "with"}
 
 func init() {
 	Analyzer.Flags.Init("AZS026", flag.ContinueOnError)
@@ -56,6 +60,11 @@ func init() {
 	})
 	Analyzer.Flags.Func("plural-word", "a plural that does not end in s, such as data; repeat for each, which adds to the ones the rule knows", func(word string) error {
 		plural = append(plural, word)
+
+		return nil
+	})
+	Analyzer.Flags.Func("trailing-word", "a word that may come after the plural in a list's name, such as of in days_of_week; repeat for each, which adds to the ones the rule knows", func(word string) error {
+		trailing = append(trailing, word)
 
 		return nil
 	})
@@ -115,8 +124,16 @@ func run(pass *analysis.Pass) (any, error) {
 		}
 
 		name, kind := constant.StringVal(key.Value), types.ExprString(fields["Type"])
-		last := name[strings.LastIndex(name, "_")+1:]
-		many := slices.Contains(plural, last) || (strings.HasSuffix(last, "s") && !strings.HasSuffix(last, "ss") && !strings.HasSuffix(last, "us") && !strings.HasSuffix(last, "is") && !slices.Contains(singular, last))
+		words := strings.Split(name, "_")
+		last := words[len(words)-1]
+
+		// a list's name is plural when its last word is, or the word before one that may trail it, as in days_of_week
+		many := false
+		for i, word := range words {
+			if i == len(words)-1 || slices.Contains(trailing, words[i+1]) {
+				many = many || slices.Contains(plural, word) || (strings.HasSuffix(word, "s") && !strings.HasSuffix(word, "ss") && !strings.HasSuffix(word, "us") && !strings.HasSuffix(word, "is") && !slices.Contains(singular, word))
+			}
+		}
 		collection := named.Obj().Name() == "Schema" && (strings.HasSuffix(kind, "TypeList") || strings.HasSuffix(kind, "TypeSet")) && inside["Elem"] != nil
 		switch {
 		case boolEnabled && (named.Obj().Name() == "BoolAttribute" || (named.Obj().Name() == "Schema" && strings.HasSuffix(kind, "TypeBool"))):
@@ -130,7 +147,7 @@ func run(pass *analysis.Pass) (any, error) {
 			}
 
 		// a block the user writes is one thing each time it is written; one that is only read back is a list of them
-		case blockSingular && collection && many && tf.IsSchemaHelperType(pass, inside["Elem"], "Resource") && (astx.IsTrueConstant(pass, fields["Required"]) || astx.IsTrueConstant(pass, fields["Optional"])):
+		case blockSingular && collection && (slices.Contains(plural, last) || (strings.HasSuffix(last, "s") && !strings.HasSuffix(last, "ss") && !strings.HasSuffix(last, "us") && !strings.HasSuffix(last, "is"))) && !slices.Contains(singular, last) && tf.IsSchemaHelperType(pass, inside["Elem"], "Resource") && (astx.IsTrueConstant(pass, fields["Required"]) || astx.IsTrueConstant(pass, fields["Optional"])):
 			pass.Reportf(keys[lit].Pos(), "block %s has a plural name - a block is one thing each time it is written, so name it in the singular", strconv.Quote(name))
 
 		case listPlural && collection && !many && tf.IsSchemaHelperType(pass, inside["Elem"], "Schema"):
