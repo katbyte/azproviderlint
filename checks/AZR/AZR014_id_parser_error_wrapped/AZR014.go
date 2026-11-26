@@ -6,8 +6,11 @@ import (
 	"go/token"
 	"go/types"
 	"regexp"
+	"slices"
+	"strings"
 
 	"github.com/katbyte/azproviderlint/lib/astx"
+	"github.com/katbyte/azproviderlint/lib/tf"
 	"golang.org/x/tools/go/analysis"
 	"golang.org/x/tools/go/analysis/passes/inspect"
 	"golang.org/x/tools/go/ast/inspector"
@@ -32,40 +35,76 @@ func run(pass *analysis.Pass) (any, error) {
 		return nil, nil
 	}
 
+	// a state migration reads IDs as they used to be, and says so, and a test's errors are not read by a user
+	if tf.InStateMigration(pass) {
+		return nil, nil
+	}
+
 	wrapped := map[*ast.File][]*ast.CallExpr{}
 	insp.WithStack([]ast.Node{(*ast.IfStmt)(nil)}, func(n ast.Node, push bool, stack []ast.Node) bool {
 		check, isIf := n.(*ast.IfStmt)
-		if !push || !isIf || len(check.Body.List) != 1 || len(stack) < 2 {
+		if !push || !isIf || len(stack) < 2 || strings.HasSuffix(pass.Fset.Position(n.Pos()).Filename, "_test.go") {
 			return true
 		}
 
-		// the parse is the statement the check starts with, or the one before it
-		parse := check.Init
-		if parse == nil {
-			var stmts []ast.Stmt
+		// the error that is checked
+		cond, isCompare := check.Cond.(*ast.BinaryExpr)
+		if !isCompare || cond.Op != token.NEQ {
+			return true
+		}
+
+		failed, isIdent := ast.Unparen(cond.X).(*ast.Ident)
+		if !isIdent || pass.TypesInfo.ObjectOf(failed) == nil {
+			return true
+		}
+
+		// where it was last set: the statement the check starts with, or the nearest one above it that sets it
+		before := []ast.Stmt{check.Init}
+		if check.Init == nil {
+			before = nil
 			switch in := stack[len(stack)-2].(type) {
 			case *ast.BlockStmt:
-				stmts = in.List
+				before = in.List[:slices.Index(in.List, ast.Stmt(check))]
 
 			case *ast.CaseClause:
-				stmts = in.Body
+				before = in.Body[:slices.Index(in.Body, ast.Stmt(check))]
 			}
+		}
 
-			for i, stmt := range stmts {
-				if stmt == check && i > 0 {
-					parse = stmts[i-1]
+		var call *ast.CallExpr
+		for i := len(before) - 1; i >= 0 && call == nil; i-- {
+			// a statement that sets it anywhere inside, such as in one arm of an if, is where the search ends
+			sets := false
+			ast.Inspect(before[i], func(n ast.Node) bool {
+				inner, isInner := n.(*ast.AssignStmt)
+				if !isInner {
+					return true
 				}
+
+				for _, to := range inner.Lhs {
+					name, isName := to.(*ast.Ident)
+					sets = sets || (isName && pass.TypesInfo.ObjectOf(name) == pass.TypesInfo.ObjectOf(failed))
+				}
+
+				return true
+			})
+			if !sets {
+				continue
 			}
+
+			assign, isAssign := before[i].(*ast.AssignStmt)
+			if !isAssign || len(assign.Lhs) != 2 || len(assign.Rhs) != 1 {
+				return true
+			}
+
+			parse, isCall := assign.Rhs[0].(*ast.CallExpr)
+			if !isCall {
+				return true
+			}
+			call = parse
 		}
 
-		assign, isAssign := parse.(*ast.AssignStmt)
-		if !isAssign || len(assign.Lhs) != 2 || len(assign.Rhs) != 1 {
-			return true
-		}
-
-		call, isCall := assign.Rhs[0].(*ast.CallExpr)
-		failed, isIdent := assign.Lhs[1].(*ast.Ident)
-		if !isCall || !isIdent || pass.TypesInfo.ObjectOf(failed) == nil {
+		if call == nil {
 			return true
 		}
 
@@ -78,20 +117,19 @@ func run(pass *analysis.Pass) (any, error) {
 			return true
 		}
 
-		cond, isCompare := check.Cond.(*ast.BinaryExpr)
-		ret, isReturn := check.Body.List[0].(*ast.ReturnStmt)
-		if !isCompare || cond.Op != token.NEQ || !astx.IsUseOf(pass, cond.X, pass.TypesInfo.ObjectOf(failed)) || !isReturn || len(ret.Results) == 0 {
-			return true
-		}
+		// wrapped wherever the check does it: returned, or added to a list of errors
+		ast.Inspect(check.Body, func(n ast.Node) bool {
+			wrap, isWrap := n.(*ast.CallExpr)
+			if !isWrap || len(wrap.Args) == 0 || !astx.IsUseOf(pass, wrap.Args[len(wrap.Args)-1], pass.TypesInfo.ObjectOf(failed)) {
+				return true
+			}
 
-		wrap, isWrap := ret.Results[len(ret.Results)-1].(*ast.CallExpr)
-		if !isWrap || len(wrap.Args) == 0 || !astx.IsUseOf(pass, wrap.Args[len(wrap.Args)-1], pass.TypesInfo.ObjectOf(failed)) {
-			return true
-		}
+			if errorf := astx.CalledFunc(pass, wrap); errorf != nil && errorf.FullName() == "fmt.Errorf" {
+				wrapped[astx.EnclosingFile(pass, wrap.Pos())] = append(wrapped[astx.EnclosingFile(pass, wrap.Pos())], wrap)
+			}
 
-		if errorf := astx.CalledFunc(pass, wrap); errorf != nil && errorf.Pkg() != nil && errorf.Pkg().Path() == "fmt" && errorf.Name() == "Errorf" {
-			wrapped[astx.EnclosingFile(pass, wrap.Pos())] = append(wrapped[astx.EnclosingFile(pass, wrap.Pos())], wrap)
-		}
+			return true
+		})
 
 		return true
 	})

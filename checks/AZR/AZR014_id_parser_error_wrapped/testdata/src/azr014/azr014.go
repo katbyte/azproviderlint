@@ -65,12 +65,18 @@ func general(input string) error {
 	return nil
 }
 
-// a check that does more than return is left alone, and so is an error that is not the parser's
+// an error that is not the parser's is left alone, and so is one set again before it is checked
 func more(input string) error {
 	id, err := things.ParseThingID(input)
 	if err != nil {
 		input = ""
-		return fmt.Errorf("parsing %q: %+v", input, err)
+		return fmt.Errorf("parsing %q: %+v", input, err) // want `the ID parser's error already says what is wrong with the ID`
+	}
+
+	other, err := things.ParseThingID(input)
+	err = check(other)
+	if err != nil {
+		return fmt.Errorf("checking %q: %+v", input, err)
 	}
 
 	if _, err = things.ValidateThingID(input); err != nil {
@@ -78,6 +84,47 @@ func more(input string) error {
 	}
 
 	_ = id
+
+	return nil
+}
+
+func check(*things.ThingId) error { return nil }
+
+// added to a list of errors, or checked a line or two after the parse
+func list(inputs []string) (errs []error) {
+	for _, input := range inputs {
+		id, err := things.ParseThingID(input)
+		if err != nil {
+			errs = append(errs, fmt.Errorf("parsing %q: %+v", input, err)) // want `the ID parser's error already says what is wrong with the ID`
+			continue
+		}
+
+		other, err := things.ParseThingID(input)
+		_ = id
+		if err != nil {
+			errs = append(errs, fmt.Errorf("parsing %q: %+v", input, err)) // want `the ID parser's error already says what is wrong with the ID`
+		}
+
+		_ = other
+	}
+
+	return errs
+}
+
+// an error set again in one arm of an if is no longer the parser's
+func again(input string, ready bool) error {
+	id, err := things.ParseThingID(input)
+	if err != nil {
+		return err
+	}
+
+	if ready {
+		err = check(id)
+	}
+
+	if err != nil {
+		return fmt.Errorf("checking %q: %+v", input, err)
+	}
 
 	return nil
 }

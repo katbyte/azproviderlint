@@ -24,13 +24,13 @@ if err != nil {
 
 ## What is checked
 
-A call to a function named `Parse<X>ID` or `Parse<X>IDInsensitively` that gives back an ID with an `ID()` method, followed by an `if err != nil` that does nothing but return that error inside `fmt.Errorf`.
+A call to a function named `Parse<X>ID` or `Parse<X>IDInsensitively` that gives back an ID with an `ID()` method, followed by an `if err != nil` that puts that error inside `fmt.Errorf`, whether it is returned or added to a list of errors.
 
 These are not checked:
 
 - what reads any ID, such as `resourceids.ParseAzureResourceID`, where saying which ID was wanted adds to the error
 - a provider's own parsers that are not named `Parse<X>ID`
-- a check that does more than return
+- test files, and state migrations, which read IDs as they used to be and say so
 
 ## Fix
 
