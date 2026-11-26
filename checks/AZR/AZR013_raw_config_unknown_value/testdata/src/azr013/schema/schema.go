@@ -10,3 +10,7 @@ func (*ResourceDiff) GetRawConfig() cty.Value { return cty.Value{} }
 type ResourceData struct{}
 
 func (*ResourceData) GetRawConfig() cty.Value { return cty.Value{} }
+
+type Schema struct {
+	DiffSuppressFunc func(k, old, new string, d *ResourceData) bool
+}

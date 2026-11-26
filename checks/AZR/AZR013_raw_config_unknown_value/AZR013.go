@@ -31,12 +31,9 @@ func run(pass *analysis.Pass) (any, error) {
 		return nil, nil
 	}
 
-	insp.Preorder([]ast.Node{(*ast.FuncDecl)(nil)}, func(n ast.Node) {
-		decl, isDecl := n.(*ast.FuncDecl)
-		if !isDecl || decl.Body == nil {
-			return
-		}
-
+	// check looks at one function. planning says it is known to run while planning, which a function that reads the config of a plan shows by itself.
+	at := map[token.Pos]bool{}
+	check := func(body *ast.BlockStmt, planning bool) {
 		// config reports whether an expression is the whole config, and item whether it is one value out of a list or set
 		config := func(e ast.Expr) bool {
 			call, isCall := ast.Unparen(e).(*ast.CallExpr)
@@ -65,7 +62,7 @@ func run(pass *analysis.Pass) (any, error) {
 
 		// the names given to the whole config, and to one value out of a list or set
 		whole, items := map[types.Object]bool{}, map[types.Object]bool{}
-		ast.Inspect(decl.Body, func(n ast.Node) bool {
+		ast.Inspect(body, func(n ast.Node) bool {
 			switch n := n.(type) {
 			case *ast.AssignStmt:
 				if name, isName := n.Lhs[0].(*ast.Ident); isName && len(n.Lhs) == 1 && len(n.Rhs) == 1 {
@@ -84,8 +81,8 @@ func run(pass *analysis.Pass) (any, error) {
 
 		// what is read, where a value is asked whether it is known, and whether any of it is the config of a plan
 		var read []*ast.SelectorExpr
-		known, planning, wholly := map[string]token.Pos{}, false, false
-		ast.Inspect(decl.Body, func(n ast.Node) bool {
+		known, wholly := map[string]token.Pos{}, false
+		ast.Inspect(body, func(n ast.Node) bool {
 			call, isCall := n.(*ast.CallExpr)
 			if !isCall {
 				return true
@@ -142,9 +139,35 @@ func run(pass *analysis.Pass) (any, error) {
 		reported := map[string]bool{}
 		for _, sel := range read {
 			value := types.ExprString(sel.X)
-			if asked, isAsked := known[value]; (!isAsked || asked > sel.Pos()) && !reported[value] {
-				reported[value] = true
+			if asked, isAsked := known[value]; (!isAsked || asked > sel.Pos()) && !reported[value] && !at[sel.Pos()] {
+				reported[value], at[sel.Pos()] = true, true
 				pass.Reportf(sel.Pos(), "%s.%s() panics while planning when the value is not known yet - check %s.IsKnown() first", value, sel.Sel.Name, value)
+			}
+		}
+	}
+
+	decls := map[types.Object]*ast.FuncDecl{}
+	insp.Preorder([]ast.Node{(*ast.FuncDecl)(nil)}, func(n ast.Node) {
+		if decl, isDecl := n.(*ast.FuncDecl); isDecl && decl.Body != nil {
+			decls[pass.TypesInfo.Defs[decl.Name]] = decl
+			check(decl.Body, false)
+		}
+	})
+
+	// what decides whether a change is shown runs while planning too, and is handed the plan's config as a ResourceData
+	insp.Preorder([]ast.Node{(*ast.KeyValueExpr)(nil)}, func(n ast.Node) {
+		kv, isPair := n.(*ast.KeyValueExpr)
+		if !isPair || types.ExprString(kv.Key) != "DiffSuppressFunc" {
+			return
+		}
+
+		switch suppress := ast.Unparen(kv.Value).(type) {
+		case *ast.FuncLit:
+			check(suppress.Body, true)
+
+		case *ast.Ident:
+			if decl := decls[pass.TypesInfo.Uses[suppress]]; decl != nil {
+				check(decl.Body, true)
 			}
 		}
 	})

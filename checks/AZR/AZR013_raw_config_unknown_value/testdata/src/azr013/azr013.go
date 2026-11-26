@@ -111,3 +111,33 @@ func customizeDiffWhole(diff *schema.ResourceDiff) error {
 
 	return nil
 }
+
+// what decides whether a change is shown runs while planning too
+var suppressed = map[string]*schema.Schema{
+	"address_prefixes": {
+		DiffSuppressFunc: func(_, old, new string, d *schema.ResourceData) bool {
+			pool := d.GetRawConfig().AsValueMap()["ip_address_pool"]
+			if !pool.IsNull() && len(pool.AsValueSlice()) > 0 { // want `pool.AsValueSlice\(\) panics while planning`
+				return true
+			}
+
+			return false
+		},
+	},
+
+	"zones": {
+		DiffSuppressFunc: suppressZones,
+	},
+
+	"name": {
+		DiffSuppressFunc: func(_, old, new string, d *schema.ResourceData) bool {
+			pool := d.GetRawConfig().AsValueMap()["ip_address_pool"]
+
+			return pool.IsKnown() && !pool.IsNull() && pool.LengthInt() > 0
+		},
+	},
+}
+
+func suppressZones(_, old, new string, d *schema.ResourceData) bool {
+	return d.GetRawConfig().AsValueMap()["zones"].LengthInt() > 0 // want `LengthInt\(\) panics while planning`
+}

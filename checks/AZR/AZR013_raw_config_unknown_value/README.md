@@ -30,7 +30,7 @@ func(ctx context.Context, diff *pluginsdk.ResourceDiff, meta any) error {
 
 ## What is checked
 
-A function that reads `GetRawConfig()` or `GetRawPlan()` from a `ResourceDiff`. In it, each `cty.Value` asked for `LengthInt`, `AsValueSlice`, `AsValueMap`, `AsValueSet`, `ElementIterator`, `AsString`, `AsBigFloat`, `True` or `False` has to be asked `IsKnown()` earlier in the function.
+A function that reads `GetRawConfig()` or `GetRawPlan()` from a `ResourceDiff`, and a `DiffSuppressFunc`, which runs while planning too. In it, each `cty.Value` asked for `LengthInt`, `AsValueSlice`, `AsValueMap`, `AsValueSet`, `ElementIterator`, `AsString`, `AsBigFloat`, `True` or `False` has to be asked `IsKnown()` earlier in the function.
 
 Each value is asked for itself: a list that is known can hold a value that is not. A value read twice with no check is reported once, where it is first read. A function that asks any value `IsWhollyKnown()` is left alone.
 
@@ -38,7 +38,7 @@ These are not checked:
 
 - the config as a whole, `GetRawConfig().AsValueMap()`, which is always known
 - a block out of a list or set read as a map, `rules.AsValueSlice()[0].AsValueMap()`: the list is what has to be known
-- the raw config of a `ResourceData`, where every value is known by the time the change is made
+- the raw config of a `ResourceData` outside a `DiffSuppressFunc`, where every value is known by the time the change is made
 - a helper that is handed a value and does not read the plan itself
 
 ## Fix
