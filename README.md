@@ -115,7 +115,9 @@ Rules are named `AZ`, a category letter, and a number. The letters follow [tfpro
 | [AZS022](checks/AZS/AZS022_string_on_off_values) | a string that only takes Enabled or Disabled must be a bool |
 | [AZS023](checks/AZS/AZS023_property_is_prefix) | property names must not start with is_ |
 | [AZS024](checks/AZS/AZS024_string_missing_validation) | string properties must be validated |
-| [AZS025](checks/AZS/AZS025_write_only_property_wiring) | a write-only property must be tied to its version and to the property it stands in for |
+| [AZS025](checks/AZS/AZS025_number_missing_validation) | number properties must be validated |
+| [AZS027](checks/AZS/AZS027_property_order) | name, resource_group_name and location must come first in a resource schema, and tags last |
+| [AZS029](checks/AZS/AZS029_write_only_property_wiring) | a write-only property must be tied to its version and to the property it stands in for |
 
 ### AZC - Clients & SDK Usage
 
