@@ -7,6 +7,9 @@ type TestStep struct {
 	Config      string
 	Check       any
 	ImportState bool
+	ExpectError any
+	PlanOnly    bool
+	Destroy     bool
 }
 
 type TestData struct{ ResourceName string }
@@ -38,3 +41,7 @@ func (That) ExistsInAzure(r any) any { return nil }
 func (That) Key(name string) That { return That{} }
 
 func (That) HasValue(value string) any { return nil }
+
+func (That) DoesNotExistInAzure(r any) any { return nil }
+
+func RequiresImportError(resourceType string) any { return nil }

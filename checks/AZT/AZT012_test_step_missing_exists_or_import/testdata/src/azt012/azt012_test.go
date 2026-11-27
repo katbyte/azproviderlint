@@ -10,6 +10,8 @@ type ThingResource struct{}
 
 func (ThingResource) basic(data acceptance.TestData) string { return "" }
 
+func (ThingResource) complete(data acceptance.TestData) string { return "" }
+
 func TestAccThing_basic(t *testing.T) {
 	data := acceptance.BuildTestData(t, "azurerm_thing", "test")
 	r := ThingResource{}
@@ -25,34 +27,19 @@ func TestAccThing_basic(t *testing.T) {
 	})
 }
 
-func TestAccNoChecks_basic(t *testing.T) { // want `TestAccNoChecks_basic never checks the resource exists - add check.That\(data.ResourceName\).ExistsInAzure\(r\) to a step` `TestAccNoChecks_basic never imports the resource - add data.ImportStep\(\) after the config is applied`
+func TestAccNoChecks_basic(t *testing.T) {
 	data := acceptance.BuildTestData(t, "azurerm_thing", "test")
 	r := ThingResource{}
 
 	data.ResourceTest(t, r, []acceptance.TestStep{
-		{
+		{ // want `step 1 of TestAccNoChecks_basic never checks the resource exists - add check.That\(data.ResourceName\).ExistsInAzure\(r\) to its Check` `step 1 of TestAccNoChecks_basic is not followed by an import step - add data.ImportStep\(\) after it`
 			Config: r.basic(data),
 		},
 	})
 }
 
-// checking a value is not checking the resource is there, and failing to import one that exists is not importing it
-func TestAccOtherChecks_basic(t *testing.T) { // want `TestAccOtherChecks_basic never checks the resource exists` `TestAccOtherChecks_basic never imports the resource`
-	data := acceptance.BuildTestData(t, "azurerm_thing", "test")
-	r := ThingResource{}
-
-	data.ResourceSequentialTest(t, r, []acceptance.TestStep{
-		{
-			Config: r.basic(data),
-			Check: acceptance.ComposeTestCheckFunc(
-				acceptance.CheckThat(data.ResourceName).Key("name").HasValue("thing"),
-			),
-		},
-		data.RequiresImportErrorStep(r.basic),
-	})
-}
-
-func TestAccNoImport_basic(t *testing.T) { // want `TestAccNoImport_basic never imports the resource`
+// every step that applies a config is held to this, not only the first or the basic test's
+func TestAccThing_update(t *testing.T) {
 	data := acceptance.BuildTestData(t, "azurerm_thing", "test")
 	r := ThingResource{}
 
@@ -60,6 +47,62 @@ func TestAccNoImport_basic(t *testing.T) { // want `TestAccNoImport_basic never 
 		{
 			Config: r.basic(data),
 			Check:  acceptance.CheckThat(data.ResourceName).ExistsInAzure(r),
+		},
+		data.ImportStep(),
+		{ // want `step 3 of TestAccThing_update is not followed by an import step`
+			Config: r.complete(data),
+			Check:  acceptance.CheckThat(data.ResourceName).ExistsInAzure(r),
+		},
+		{ // want `step 4 of TestAccThing_update never checks the resource exists`
+			Config: r.basic(data),
+		},
+		data.ImportStep(),
+		data.ApplyStep(r.complete, r), // want `step 6 of TestAccThing_update is not followed by an import step`
+	})
+}
+
+// checking a value is not checking the resource is there
+func TestAccOtherChecks_basic(t *testing.T) {
+	data := acceptance.BuildTestData(t, "azurerm_thing", "test")
+	r := ThingResource{}
+
+	data.ResourceSequentialTest(t, r, []acceptance.TestStep{
+		{ // want `step 1 of TestAccOtherChecks_basic never checks the resource exists`
+			Config: r.basic(data),
+			Check: acceptance.ComposeTestCheckFunc(
+				acceptance.CheckThat(data.ResourceName).Key("name").HasValue("thing"),
+			),
+		},
+		data.ImportStep(),
+	})
+}
+
+// trying to create the resource again, to show the provider refuses to, follows the step that made it
+func TestAccThing_requiresImport(t *testing.T) {
+	data := acceptance.BuildTestData(t, "azurerm_thing", "test")
+	r := ThingResource{}
+
+	data.ResourceTest(t, r, []acceptance.TestStep{
+		{
+			Config: r.basic(data),
+			Check:  acceptance.CheckThat(data.ResourceName).ExistsInAzure(r),
+		},
+		data.RequiresImportErrorStep(r.basic),
+	})
+}
+
+func TestAccThing_requiresImportWrittenOut(t *testing.T) {
+	data := acceptance.BuildTestData(t, "azurerm_thing", "test")
+	r := ThingResource{}
+
+	data.ResourceTest(t, r, []acceptance.TestStep{
+		{
+			Config: r.basic(data),
+			Check:  acceptance.CheckThat(data.ResourceName).ExistsInAzure(r),
+		},
+		{
+			Config:      r.basic(data),
+			ExpectError: acceptance.RequiresImportError("azurerm_thing"),
 		},
 	})
 }
@@ -90,6 +133,31 @@ func TestAccImportState_basic(t *testing.T) {
 		{
 			Config:      r.basic(data),
 			ImportState: true,
+		},
+	})
+}
+
+// a step that expects an error, only plans, destroys, or checks the resource is gone has nothing to exist or import
+func TestAccThing_noResource(t *testing.T) {
+	data := acceptance.BuildTestData(t, "azurerm_thing", "test")
+	r := ThingResource{}
+
+	data.ResourceTest(t, r, []acceptance.TestStep{
+		{
+			Config:      r.basic(data),
+			ExpectError: nil,
+		},
+		{
+			Config:   r.basic(data),
+			PlanOnly: true,
+		},
+		{
+			Config:  r.basic(data),
+			Destroy: true,
+		},
+		{
+			Config: r.basic(data),
+			Check:  acceptance.CheckThat(data.ResourceName).DoesNotExistInAzure(r),
 		},
 	})
 }
@@ -139,18 +207,7 @@ func TestAccApplyStep_basic(t *testing.T) {
 	})
 }
 
-// only the basic test is held to this, and steps built somewhere else cannot be read
-func TestAccThing_update(t *testing.T) {
-	data := acceptance.BuildTestData(t, "azurerm_thing", "test")
-	r := ThingResource{}
-
-	data.ResourceTest(t, r, []acceptance.TestStep{
-		{
-			Config: r.basic(data),
-		},
-	})
-}
-
+// steps built somewhere else cannot be read
 func TestAccBuilt_basic(t *testing.T) {
 	data := acceptance.BuildTestData(t, "azurerm_thing", "test")
 

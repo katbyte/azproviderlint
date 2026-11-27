@@ -4,7 +4,7 @@
 - add rule `AZS025`: write-only properties not tied to their version, or to the property they stand in for ([#131](https://github.com/katbyte/azproviderlint/pull/131))
 - add rule `AZR015`: creates of a resource with an identity whose callback sets only the ID, with a fix ([#135](https://github.com/katbyte/azproviderlint/pull/135))
 - add rule `AZT011`: acceptance test callbacks that poll with the context they are handed, which has no deadline ([#137](https://github.com/katbyte/azproviderlint/pull/137))
-- add rule `AZT012`: basic acceptance tests that never check the resource exists, or never import it ([#138](https://github.com/katbyte/azproviderlint/pull/138))
+- add rule `AZT012`: acceptance test steps that never check the resource exists, or are not followed by an import step ([#138](https://github.com/katbyte/azproviderlint/pull/138))
 
 ## v0.17.1 (2026-11-26)
 

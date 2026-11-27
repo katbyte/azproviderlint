@@ -14,7 +14,7 @@ import (
 	AZT009 "github.com/katbyte/azproviderlint/checks/AZT/AZT009_testdata_file_missing"
 	AZT010 "github.com/katbyte/azproviderlint/checks/AZT/AZT010_testdata_file_unused"
 	AZT011 "github.com/katbyte/azproviderlint/checks/AZT/AZT011_test_callback_poll_without_deadline"
-	AZT012 "github.com/katbyte/azproviderlint/checks/AZT/AZT012_basic_test_missing_exists_or_import"
+	AZT012 "github.com/katbyte/azproviderlint/checks/AZT/AZT012_test_step_missing_exists_or_import"
 )
 
 // Checks contains all AZT (acceptance testing) analyzers.
