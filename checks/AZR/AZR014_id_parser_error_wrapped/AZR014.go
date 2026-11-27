@@ -40,8 +40,8 @@ func run(pass *analysis.Pass) (any, error) {
 		return nil, nil
 	}
 
-	// each wrap by file, and the statement that read the ID whose error it wraps
-	wrapped, parsedBy := map[*ast.File][]*ast.CallExpr{}, map[*ast.CallExpr]*ast.AssignStmt{}
+	// each wrap by file, the statement that read the ID whose error it wraps, and the check that statement sits right above
+	wrapped, parsedBy, checkedBy := map[*ast.File][]*ast.CallExpr{}, map[*ast.CallExpr]*ast.AssignStmt{}, map[*ast.CallExpr]*ast.IfStmt{}
 	insp.WithStack([]ast.Node{(*ast.IfStmt)(nil)}, func(n ast.Node, push bool, stack []ast.Node) bool {
 		check, isIf := n.(*ast.IfStmt)
 		if !push || !isIf || len(stack) < 2 || strings.HasSuffix(pass.Fset.Position(n.Pos()).Filename, "_test.go") {
@@ -74,6 +74,7 @@ func run(pass *analysis.Pass) (any, error) {
 
 		var call *ast.CallExpr
 		var parsed *ast.AssignStmt
+		var above *ast.IfStmt
 		for i := len(before) - 1; i >= 0 && call == nil; i-- {
 			// a statement that sets it anywhere inside, such as in one arm of an if, is where the search ends
 			sets := false
@@ -104,6 +105,9 @@ func run(pass *analysis.Pass) (any, error) {
 				return true
 			}
 			call, parsed = parse, assign
+			if i == len(before)-1 && check.Init == nil {
+				above = check
+			}
 		}
 
 		if call == nil {
@@ -127,7 +131,7 @@ func run(pass *analysis.Pass) (any, error) {
 			}
 
 			if errorf := astx.CalledFunc(pass, wrap); errorf != nil && errorf.FullName() == "fmt.Errorf" {
-				wrapped[astx.EnclosingFile(pass, wrap.Pos())], parsedBy[wrap] = append(wrapped[astx.EnclosingFile(pass, wrap.Pos())], wrap), parsed
+				wrapped[astx.EnclosingFile(pass, wrap.Pos())], parsedBy[wrap], checkedBy[wrap] = append(wrapped[astx.EnclosingFile(pass, wrap.Pos())], wrap), parsed, above
 			}
 
 			return true
@@ -187,11 +191,28 @@ func run(pass *analysis.Pass) (any, error) {
 					// a variable declared somewhere else would be left unused there
 					fixable = fixable && pass.TypesInfo.Defs[name] != nil
 					renamed[pass.TypesInfo.ObjectOf(name)] = true
-					edits = append(edits, analysis.TextEdit{Pos: name.Pos(), End: name.End(), NewText: []byte("_")})
 
-					// := needs a new name on its left, which the error may not be
-					if failure, isFailure := parsedBy[wrap].Lhs[1].(*ast.Ident); isFailure && parsedBy[wrap].Tok == token.DEFINE && pass.TypesInfo.Defs[failure] == nil {
-						edits = append(edits, analysis.TextEdit{Pos: parsedBy[wrap].TokPos, End: parsedBy[wrap].TokPos + 2, NewText: []byte("=")})
+					// with nothing left to keep, the read moves into the check, as in if _, err := ...; err != nil, when the error is made by the
+					// read, used nowhere past the check, and no comment sits between the two
+					assign, check := parsedBy[wrap], checkedBy[wrap]
+					failure, isFailure := assign.Lhs[1].(*ast.Ident)
+					src, err := pass.ReadFile(pass.Fset.File(assign.Pos()).Name())
+					inside := check != nil && isFailure && err == nil && pass.TypesInfo.Defs[failure] != nil && astx.UseCount(pass, file, pass.TypesInfo.Defs[failure]) == astx.UseCount(pass, check, pass.TypesInfo.Defs[failure])
+					for _, comment := range file.Comments {
+						inside = inside && (comment.End() <= assign.End() || comment.Pos() >= check.Cond.Pos())
+					}
+
+					switch {
+					case inside:
+						read := string(src[pass.Fset.File(assign.Pos()).Offset(failure.Pos()):pass.Fset.File(assign.Pos()).Offset(assign.End())])
+						edits = append(edits, analysis.TextEdit{Pos: assign.Pos(), End: check.Cond.Pos(), NewText: []byte("if _, " + read + "; ")})
+
+					case isFailure && assign.Tok == token.DEFINE && pass.TypesInfo.Defs[failure] == nil:
+						// := needs a new name on its left, which the error is not
+						edits = append(edits, analysis.TextEdit{Pos: name.Pos(), End: name.End(), NewText: []byte("_")}, analysis.TextEdit{Pos: assign.TokPos, End: assign.TokPos + 2, NewText: []byte("=")})
+
+					default:
+						edits = append(edits, analysis.TextEdit{Pos: name.Pos(), End: name.End(), NewText: []byte("_")})
 					}
 				}
 			}

@@ -1,6 +1,6 @@
 ## Unreleased
 
-- `AZR014`: the fix no longer leaves an unused variable behind, and takes out the `fmt` import when it removes the last use of it ([#143](https://github.com/katbyte/azproviderlint/pull/143))
+- `AZR014`: the fix no longer leaves an unused variable behind, moving a read it no longer needs into the `if`, and takes out the `fmt` import when it removes the last use of it ([#143](https://github.com/katbyte/azproviderlint/pull/143), [#144](https://github.com/katbyte/azproviderlint/pull/144))
 
 ## v0.18.0 (2026-11-27)
 
