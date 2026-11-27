@@ -1,4 +1,4 @@
-package AZS025
+package property
 
 import (
 	"path/filepath"
@@ -8,9 +8,9 @@ import (
 	"golang.org/x/tools/go/analysis/analysistest"
 )
 
-func TestAZS025(t *testing.T) {
+func TestFacts(t *testing.T) {
 	t.Parallel()
 
 	_, filename, _, _ := runtime.Caller(0)
-	analysistest.Run(t, filepath.Join(filepath.Dir(filename), "testdata"), Analyzer, "azs025")
+	analysistest.Run(t, filepath.Join(filepath.Dir(filename), "testdata"), Analyzer, "helpers")
 }

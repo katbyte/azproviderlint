@@ -25,8 +25,9 @@ import (
 	AZS022 "github.com/katbyte/azproviderlint/checks/AZS/AZS022_string_on_off_values"
 	AZS023 "github.com/katbyte/azproviderlint/checks/AZS/AZS023_property_is_prefix"
 	AZS024 "github.com/katbyte/azproviderlint/checks/AZS/AZS024_string_missing_validation"
-	AZS025 "github.com/katbyte/azproviderlint/checks/AZS/AZS025_write_only_property_wiring"
+	AZS025 "github.com/katbyte/azproviderlint/checks/AZS/AZS025_number_missing_validation"
 	AZS027 "github.com/katbyte/azproviderlint/checks/AZS/AZS027_property_order"
+	AZS029 "github.com/katbyte/azproviderlint/checks/AZS/AZS029_write_only_property_wiring"
 )
 
 // Checks contains all AZS (schema & typed SDK model) analyzers.
@@ -54,4 +55,5 @@ var Checks = []*analysis.Analyzer{
 	AZS024.Analyzer,
 	AZS025.Analyzer,
 	AZS027.Analyzer,
+	AZS029.Analyzer,
 }

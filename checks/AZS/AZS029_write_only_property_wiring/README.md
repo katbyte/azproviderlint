@@ -1,6 +1,6 @@
-# AZS025 - a write-only property must be tied to its version and to the property it stands in for
+# AZS029 - a write-only property must be tied to its version and to the property it stands in for
 
-AZS025 reports a write-only property that is not tied to its version, or to the property it stands in for.
+AZS029 reports a write-only property that is not tied to its version, or to the property it stands in for.
 
 Terraform keeps no write-only value, so it cannot tell when one has changed. The version beside it is what says so. Unless the schema ties them together, a user can set a value that is never sent, or set the same secret two ways at once.
 
@@ -82,10 +82,10 @@ None is offered.
 
 ## Ignoring Reports
 
-Put `//azignore:AZS025 - <reason>` at the end of the reported line, or on the line above it. The reason is required.
+Put `//azignore:AZS029 - <reason>` at the end of the reported line, or on the line above it. The reason is required.
 
 ```go
-"password_wo": { //azignore:AZS025 - <reason>
+"password_wo": { //azignore:AZS029 - <reason>
 ```
 
 Under golangci-lint, `//nolint:azproviderlint` in the same place also works, but it silences every azproviderlint check on that line.

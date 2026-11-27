@@ -11,6 +11,9 @@ type (
 const (
 	TypeBool   = schema.TypeBool
 	TypeInt    = schema.TypeInt
+	TypeFloat  = schema.TypeFloat
 	TypeString = schema.TypeString
 	TypeList   = schema.TypeList
+	TypeSet    = schema.TypeSet
+	TypeMap    = schema.TypeMap
 )
