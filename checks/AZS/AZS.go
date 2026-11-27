@@ -23,6 +23,7 @@ import (
 	AZS019 "github.com/katbyte/azproviderlint/checks/AZS/AZS019_description_question"
 	AZS020 "github.com/katbyte/azproviderlint/checks/AZS/AZS020_description_unknown_name"
 	AZS022 "github.com/katbyte/azproviderlint/checks/AZS/AZS022_string_on_off_values"
+	AZS025 "github.com/katbyte/azproviderlint/checks/AZS/AZS025_write_only_property_wiring"
 )
 
 // Checks contains all AZS (schema & typed SDK model) analyzers.
@@ -46,4 +47,5 @@ var Checks = []*analysis.Analyzer{
 	AZS019.Analyzer,
 	AZS020.Analyzer,
 	AZS022.Analyzer,
+	AZS025.Analyzer,
 }
