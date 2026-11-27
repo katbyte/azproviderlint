@@ -2,6 +2,7 @@
 package AZS025
 
 import (
+	"flag"
 	"go/constant"
 	"strconv"
 
@@ -19,15 +20,31 @@ var Analyzer = &analysis.Analyzer{
 	Run:      run,
 }
 
+// strict is whether a number that is only checked for not being zero or negative is reported too.
+var strict bool
+
+func init() {
+	Analyzer.Flags.Init("AZS025", flag.ContinueOnError)
+	Analyzer.Flags.BoolVar(&strict, "strict", false, "also report a number whose only validation is that it is not zero, or at least 0 or 1: validation.IntAtLeast(0) or (1), FloatAtLeast(0) or (1), IntPositive, IntNotInSlice([]int{0}) or NoZeroValues, or the framework's AtLeast(0) or (1) and NoneOf(0)")
+}
+
 func run(pass *analysis.Pass) (any, error) {
 	for _, value := range property.Values(pass) {
-		if (value.Kind != property.Int && value.Kind != property.Float) || value.Checked {
+		// when strict, being told a number is not zero or negative does not count
+		weak := strict && value.Loose
+		if (value.Kind != property.Int && value.Kind != property.Float) || (value.Checked && !weak) {
 			continue
 		}
 
 		what, wrong := "number property", "has no validation"
 		if value.Element {
 			what, wrong = "the numbers in this property", "have no validation"
+		}
+		if weak {
+			wrong = "is only checked for not being zero or negative"
+			if value.Element {
+				wrong = "are only checked for not being zero or negative"
+			}
 		}
 		if tv, isName := pass.TypesInfo.Types[value.Name]; isName && tv.Value != nil && tv.Value.Kind() == constant.String {
 			what = "number property " + strconv.Quote(constant.StringVal(tv.Value))

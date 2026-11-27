@@ -31,7 +31,7 @@ func init() {
 func run(pass *analysis.Pass) (any, error) {
 	for _, value := range property.Values(pass) {
 		// when strict, being told a string is not empty does not count
-		weak := strict && value.OnlyNotEmpty
+		weak := strict && value.Loose
 		if value.Kind != property.String || (value.Checked && !weak) {
 			continue
 		}

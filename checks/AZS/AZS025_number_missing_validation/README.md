@@ -49,7 +49,7 @@ the numbers in "ports" have no validation - add a ValidateFunc that checks what 
 
 A schema handed back by a function is followed into whichever package the function is in. One in the provider's own code is reported where it is written. One from another module, such as go-azure-helpers, is reported where it is used, as the provider cannot change it.
 
-The rule only looks for validation being there. Whether it checks enough is for a reviewer.
+The rule only looks for validation being there. Whether it checks enough is for a reviewer, unless `strict` is set.
 
 These are not reported:
 
@@ -60,6 +60,36 @@ These are not reported:
 - a schema in a test file, which is never shipped
 
 Adding validation to a property that has shipped can refuse a value that used to work. Take care that what is added is no stricter than the API.
+
+## Options
+
+`strict: true` also reports a number whose only validation is that it is not zero, or at least 0 or 1: `validation.IntAtLeast(0)` or `(1)`, `FloatAtLeast(0)` or `(1)`, `IntPositive`, `IntNotInSlice([]int{0})` or `NoZeroValues`, or the framework's `AtLeast(0)` or `(1)` or `NoneOf(0)` on its own. A lowest value above 1 is one the API asks for, and is left alone. It is off by default.
+
+```go
+"count": {
+	Type:         pluginsdk.TypeInt,
+	Optional:     true,
+	ValidateFunc: validation.IntAtLeast(1),
+},
+```
+
+```text
+number property "count" is only checked for not being zero or negative - add a ValidateFunc that checks what the API accepts
+```
+
+```yaml
+linters:
+  settings:
+    custom:
+      azproviderlint:
+        settings:
+          AZS025:
+            strict: true
+```
+
+```sh
+azproviderlint -AZS025 -AZS025.strict ./...
+```
 
 ## Fix
 
