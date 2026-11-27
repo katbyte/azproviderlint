@@ -61,6 +61,7 @@ Rules are named `AZ`, a category letter, and a number. The letters follow [tfpro
 | [AZP005](checks/AZP/AZP005_case_insensitive_segments_feature_flag) | do not set the case-insensitive segments feature flag |
 | [AZP006](checks/AZP/AZP006_helper_package_not_named_helpers) | a service's shared code belongs in helpers, not helper |
 | [AZP007](checks/AZP/AZP007_moved_urls) | URLs must use the address the page has moved to |
+| [AZP008](checks/AZP/AZP008_error_message_format) | error messages must be formatted correctly |
 
 ### AZR - Resource Implementation
 
@@ -71,11 +72,16 @@ Rules are named `AZ`, a category letter, and a number. The letters follow [tfpro
 | [AZR003](checks/AZR/AZR003_resource_data_get_in_delete) | no d.Get in Delete functions |
 | [AZR004](checks/AZR/AZR004_resource_id_equality_comparison) | compare resource id types with resourceids.Match |
 | [AZR006](checks/AZR/AZR006_stop_context_without_timeouts) | use timeouts wrappers, not StopContext |
-| [AZR007](checks/AZR/AZR007_state_change_conf_custom_poller) | use custom pollers instead of StateChangeConf |
+| [AZR007](checks/AZR/AZR007_state_change_conf_custom_poller) | use custom pollers instead of StateChangeConf and Retry |
 | [AZR008](checks/AZR/AZR008_flatten_returns_nil_slice) | flatten functions must return empty slices/maps, not nil |
 | [AZR009](checks/AZR/AZR009_lifecycle_logging) | no lifecycle narration logging in Create/Read/Update/Delete |
 | [AZR010](checks/AZR/AZR010_flatten_handles_nil_input) | flatten functions handle nil input themselves, not their callers |
 | [AZR011](checks/AZR/AZR011_typed_type_missing_sdk_assertion) | typed resources must assert the sdk interface they implement |
+| [AZR012](checks/AZR/AZR012_import_check_ignores_overwrite_flag) | the already-exists check on create must sit inside the overwrite feature flag check |
+| [AZR013](checks/AZR/AZR013_raw_config_unknown_value) | raw config read while planning must be checked with IsKnown first |
+| [AZR014](checks/AZR/AZR014_id_parser_error_wrapped) | an ID parser's error must be returned as it is |
+| [AZR015](checks/AZR/AZR015_create_callback_missing_identity) | the create callback of a resource with an identity must set the identity too |
+| [AZR016](checks/AZR/AZR016_update_returns_after_one_change) | an update must not return after handling one changed property while others are still to be looked at |
 
 ### AZD - Data Sources
 
@@ -106,7 +112,10 @@ Rules are named `AZ`, a category letter, and a number. The letters follow [tfpro
 | [AZS018](checks/AZS/AZS018_description_note) | resource and property **descriptions** must not have a note in them |
 | [AZS019](checks/AZS/AZS019_description_question) | resource and property **descriptions** must not be a question |
 | [AZS020](checks/AZS/AZS020_description_unknown_name) | resource and property **descriptions** must not name a resource or property that does not exist |
+| [AZS022](checks/AZS/AZS022_string_on_off_values) | a string that only takes Enabled or Disabled must be a bool |
+| [AZS023](checks/AZS/AZS023_property_is_prefix) | property names must not start with is_ |
 | [AZS024](checks/AZS/AZS024_string_missing_validation) | string properties must be validated |
+| [AZS025](checks/AZS/AZS025_write_only_property_wiring) | a write-only property must be tied to its version and to the property it stands in for |
 
 ### AZC - Clients & SDK Usage
 
@@ -127,6 +136,8 @@ Rules are named `AZ`, a category letter, and a number. The letters follow [tfpro
 | [AZT008](checks/AZT/AZT008_test_file_not_named_after_resource) | acceptance tests must be in a file named after the resource's file |
 | [AZT009](checks/AZT/AZT009_testdata_file_missing) | testdata files a test names must exist |
 | [AZT010](checks/AZT/AZT010_testdata_file_unused) | testdata files must be named by a test |
+| [AZT011](checks/AZT/AZT011_test_callback_poll_without_deadline) | a test callback must give its context a deadline before polling with it |
+| [AZT013](checks/AZT/AZT013_test_resource_struct_name) | an acceptance test's resource struct must be named after the resource |
 
 ### AZN - Naming Conventions
 

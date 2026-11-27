@@ -4,6 +4,7 @@ import (
 	"go/ast"
 	"go/token"
 	"slices"
+	"strconv"
 	"strings"
 	"sync"
 
@@ -35,6 +36,33 @@ func DeleteLine(pass *analysis.Pass, node ast.Node) analysis.TextEdit {
 		}
 	}
 	return analysis.TextEdit{Pos: start, End: end}
+}
+
+// DeleteImport returns the edit removing the import of path from file, for a fix that takes away the last use of it: the whole import
+// declaration when it is the only import there, otherwise its own line. It is nil when the file does not import path.
+func DeleteImport(pass *analysis.Pass, file *ast.File, path string) *analysis.TextEdit {
+	for _, decl := range file.Decls {
+		gen, isGen := decl.(*ast.GenDecl)
+		if !isGen || gen.Tok != token.IMPORT {
+			continue
+		}
+
+		for _, spec := range gen.Specs {
+			imp, isImport := spec.(*ast.ImportSpec)
+			if !isImport || imp.Path.Value != strconv.Quote(path) {
+				continue
+			}
+
+			edit := DeleteLine(pass, imp)
+			if len(gen.Specs) == 1 {
+				edit = DeleteLine(pass, gen)
+			}
+
+			return &edit
+		}
+	}
+
+	return nil
 }
 
 // claims holds, for each file, the bytes each rule's fixes rewrite.
