@@ -76,6 +76,9 @@ Rules are named `AZ`, a category letter, and a number. The letters follow [tfpro
 | [AZR009](checks/AZR/AZR009_lifecycle_logging) | no lifecycle narration logging in Create/Read/Update/Delete |
 | [AZR010](checks/AZR/AZR010_flatten_handles_nil_input) | flatten functions handle nil input themselves, not their callers |
 | [AZR011](checks/AZR/AZR011_typed_type_missing_sdk_assertion) | typed resources must assert the sdk interface they implement |
+| [AZR012](checks/AZR/AZR012_import_check_ignores_overwrite_flag) | the already-exists check on create must sit inside the overwrite feature flag check |
+| [AZR015](checks/AZR/AZR015_create_callback_missing_identity) | the create callback of a resource with an identity must set the identity too |
+| [AZR016](checks/AZR/AZR016_update_returns_after_one_change) | an update must not return after handling one changed property while others are still to be looked at |
 
 ### AZD - Data Sources
 
@@ -106,6 +109,9 @@ Rules are named `AZ`, a category letter, and a number. The letters follow [tfpro
 | [AZS018](checks/AZS/AZS018_description_note) | resource and property **descriptions** must not have a note in them |
 | [AZS019](checks/AZS/AZS019_description_question) | resource and property **descriptions** must not be a question |
 | [AZS020](checks/AZS/AZS020_description_unknown_name) | resource and property **descriptions** must not name a resource or property that does not exist |
+| [AZS022](checks/AZS/AZS022_string_on_off_values) | a string that only takes Enabled or Disabled must be a bool |
+| [AZS023](checks/AZS/AZS023_property_is_prefix) | property names must not start with is_ |
+| [AZS025](checks/AZS/AZS025_write_only_property_wiring) | a write-only property must be tied to its version and to the property it stands in for |
 
 ### AZC - Clients & SDK Usage
 
@@ -126,6 +132,7 @@ Rules are named `AZ`, a category letter, and a number. The letters follow [tfpro
 | [AZT008](checks/AZT/AZT008_test_file_not_named_after_resource) | acceptance tests must be in a file named after the resource's file |
 | [AZT009](checks/AZT/AZT009_testdata_file_missing) | testdata files a test names must exist |
 | [AZT010](checks/AZT/AZT010_testdata_file_unused) | testdata files must be named by a test |
+| [AZT011](checks/AZT/AZT011_test_callback_poll_without_deadline) | a test callback must give its context a deadline before polling with it |
 | [AZT013](checks/AZT/AZT013_test_resource_struct_name) | an acceptance test's resource struct must be named after the resource |
 
 ### AZN - Naming Conventions
