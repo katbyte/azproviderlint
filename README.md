@@ -61,6 +61,7 @@ Rules are named `AZ`, a category letter, and a number. The letters follow [tfpro
 | [AZP005](checks/AZP/AZP005_case_insensitive_segments_feature_flag) | do not set the case-insensitive segments feature flag |
 | [AZP006](checks/AZP/AZP006_helper_package_not_named_helpers) | a service's shared code belongs in helpers, not helper |
 | [AZP007](checks/AZP/AZP007_moved_urls) | URLs must use the address the page has moved to |
+| [AZP008](checks/AZP/AZP008_error_message_format) | error messages must be formatted correctly |
 
 ### AZR - Resource Implementation
 
@@ -113,6 +114,7 @@ Rules are named `AZ`, a category letter, and a number. The letters follow [tfpro
 | [AZS020](checks/AZS/AZS020_description_unknown_name) | resource and property **descriptions** must not name a resource or property that does not exist |
 | [AZS022](checks/AZS/AZS022_string_on_off_values) | a string that only takes Enabled or Disabled must be a bool |
 | [AZS023](checks/AZS/AZS023_property_is_prefix) | property names must not start with is_ |
+| [AZS024](checks/AZS/AZS024_string_missing_validation) | string properties must be validated |
 | [AZS025](checks/AZS/AZS025_write_only_property_wiring) | a write-only property must be tied to its version and to the property it stands in for |
 | [AZS026](checks/AZS/AZS026_bool_name_ending) | a bool property must end in _enabled, or a word for its state such as _required |
 | [AZS028](checks/AZS/AZS028_list_property_names) | a list or set of blocks must have a singular name, and a list or set of values a plural one |

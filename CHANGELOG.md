@@ -2,6 +2,8 @@
 
 - `AZR014`: the fix no longer leaves an unused variable behind, moving a read it no longer needs into the `if`, and takes out the `fmt` import when it removes the last use of it ([#143](https://github.com/katbyte/azproviderlint/pull/143), [#144](https://github.com/katbyte/azproviderlint/pull/144))
 - `AZR007`: `Retry` and `RetryContext` are now reported too, as they should be a custom poller ([#134](https://github.com/katbyte/azproviderlint/pull/134))
+- add rule `AZP008`: error messages not formatted correctly, such as starting with a capital or using a contraction, with fixes ([#133](https://github.com/katbyte/azproviderlint/pull/133))
+- add rule `AZS024`: string properties the user sets that have no validation ([#128](https://github.com/katbyte/azproviderlint/pull/128))
 - add rule `AZS026`: bool properties not ending in `_enabled`, or a word for their state such as `_required` ([#136](https://github.com/katbyte/azproviderlint/pull/136))
 - add rule `AZS028`: lists and sets of blocks with a plural name, and lists and sets of values with a singular one ([#136](https://github.com/katbyte/azproviderlint/pull/136))
 
