@@ -24,6 +24,7 @@ import (
 	AZS020 "github.com/katbyte/azproviderlint/checks/AZS/AZS020_description_unknown_name"
 	AZS022 "github.com/katbyte/azproviderlint/checks/AZS/AZS022_string_on_off_values"
 	AZS023 "github.com/katbyte/azproviderlint/checks/AZS/AZS023_property_is_prefix"
+	AZS024 "github.com/katbyte/azproviderlint/checks/AZS/AZS024_string_missing_validation"
 	AZS025 "github.com/katbyte/azproviderlint/checks/AZS/AZS025_write_only_property_wiring"
 )
 
@@ -49,5 +50,6 @@ var Checks = []*analysis.Analyzer{
 	AZS020.Analyzer,
 	AZS022.Analyzer,
 	AZS023.Analyzer,
+	AZS024.Analyzer,
 	AZS025.Analyzer,
 }
