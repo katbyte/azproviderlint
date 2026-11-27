@@ -1,5 +1,6 @@
 ## Unreleased
 
+- add rule `AZR012`: creates that return the "already exists" error without asking whether the provider is set to overwrite ([#129](https://github.com/katbyte/azproviderlint/pull/129))
 - add rule `AZS025`: write-only properties not tied to their version, or to the property they stand in for ([#131](https://github.com/katbyte/azproviderlint/pull/131))
 
 ## v0.17.1 (2026-11-26)
