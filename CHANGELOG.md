@@ -1,3 +1,7 @@
+## Unreleased
+
+- `AZR014`: the fix no longer leaves an unused variable behind, and takes out the `fmt` import when it removes the last use of it ([#143](https://github.com/katbyte/azproviderlint/pull/143))
+
 ## v0.18.0 (2026-11-27)
 
 - add rule `AZR012`: creates that return the "already exists" error without asking whether the provider is set to overwrite ([#129](https://github.com/katbyte/azproviderlint/pull/129))

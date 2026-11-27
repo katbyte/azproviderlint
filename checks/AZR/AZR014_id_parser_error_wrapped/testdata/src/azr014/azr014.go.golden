@@ -128,3 +128,58 @@ func again(input string, ready bool) error {
 
 	return nil
 }
+
+// an ID read only to be printed in the message is not kept once the message goes
+func printed(input string) error {
+	_, err := things.ParseThingID(input)
+	if err != nil {
+		return err // want `the ID parser's error already says what is wrong with the ID`
+	}
+
+	return nil
+}
+
+func printedAgain(input string) error {
+	var err error
+	if input == "" {
+		return err
+	}
+
+	_, err = things.ParseThingID(input)
+	if err != nil {
+		return err // want `the ID parser's error already says what is wrong with the ID`
+	}
+
+	return nil
+}
+
+func printedInCheck(input string) error {
+	if _, err := things.ParseThingID(input); err != nil {
+		return err // want `the ID parser's error already says what is wrong with the ID`
+	}
+
+	return nil
+}
+
+// an ID used again after the check is kept
+func used(input string) (string, error) {
+	id, err := things.ParseThingID(input)
+	if err != nil {
+		return "", err // want `the ID parser's error already says what is wrong with the ID`
+	}
+
+	return id.ID(), nil
+}
+
+// an ID declared before it is read would be left unused there, so there is no fix
+func declared(input string) error {
+	var id *things.ThingId
+	var err error
+
+	id, err = things.ParseThingID(input)
+	if err != nil {
+		return fmt.Errorf("parsing %s: %+v", id, err) // want `the ID parser's error already says what is wrong with the ID`
+	}
+
+	return nil
+}
