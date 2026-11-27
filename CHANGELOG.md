@@ -8,6 +8,7 @@
 - add rule `AZS022`: string properties that only take two values meaning on and off, such as `Enabled` and `Disabled` ([#126](https://github.com/katbyte/azproviderlint/pull/126))
 - add rule `AZS023`: schema properties whose name starts with `is_`, such as `is_storage_enabled` ([#127](https://github.com/katbyte/azproviderlint/pull/127))
 - add rule `AZT013`: acceptance test resource structs not named after the resource they test, such as `StorageAcctResource` for `azurerm_storage_account` ([#139](https://github.com/katbyte/azproviderlint/pull/139))
+- add rule `AZR014`: ID parser errors wrapped in another message, with a fix ([#132](https://github.com/katbyte/azproviderlint/pull/132))
 
 ## v0.17.1 (2026-11-26)
 

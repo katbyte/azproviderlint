@@ -77,6 +77,7 @@ Rules are named `AZ`, a category letter, and a number. The letters follow [tfpro
 | [AZR010](checks/AZR/AZR010_flatten_handles_nil_input) | flatten functions handle nil input themselves, not their callers |
 | [AZR011](checks/AZR/AZR011_typed_type_missing_sdk_assertion) | typed resources must assert the sdk interface they implement |
 | [AZR012](checks/AZR/AZR012_import_check_ignores_overwrite_flag) | the already-exists check on create must sit inside the overwrite feature flag check |
+| [AZR014](checks/AZR/AZR014_id_parser_error_wrapped) | an ID parser's error must be returned as it is |
 | [AZR015](checks/AZR/AZR015_create_callback_missing_identity) | the create callback of a resource with an identity must set the identity too |
 | [AZR016](checks/AZR/AZR016_update_returns_after_one_change) | an update must not return after handling one changed property while others are still to be looked at |
 
