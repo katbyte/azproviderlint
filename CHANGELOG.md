@@ -1,6 +1,23 @@
 ## Unreleased
 
+- `AZR014`: the fix no longer leaves an unused variable behind, moving a read it no longer needs into the `if`, and takes out the `fmt` import when it removes the last use of it ([#143](https://github.com/katbyte/azproviderlint/pull/143), [#144](https://github.com/katbyte/azproviderlint/pull/144))
+- `AZR007`: `Retry` and `RetryContext` are now reported too, as they should be a custom poller ([#134](https://github.com/katbyte/azproviderlint/pull/134))
+- add rule `AZP008`: error messages not formatted correctly, such as starting with a capital or using a contraction, with fixes ([#133](https://github.com/katbyte/azproviderlint/pull/133))
+- add rule `AZS024`: string properties the user sets that have no validation ([#128](https://github.com/katbyte/azproviderlint/pull/128))
 - add rule `AZS027`: resource schemas where `name`, `resource_group_name` and `location` do not come first, or `tags` last ([#141](https://github.com/katbyte/azproviderlint/pull/141))
+
+## v0.18.0 (2026-11-27)
+
+- add rule `AZR012`: creates that return the "already exists" error without asking whether the provider is set to overwrite ([#129](https://github.com/katbyte/azproviderlint/pull/129))
+- add rule `AZS025`: write-only properties not tied to their version, or to the property they stand in for ([#131](https://github.com/katbyte/azproviderlint/pull/131))
+- add rule `AZR015`: creates of a resource with an identity whose callback sets only the ID, with a fix ([#135](https://github.com/katbyte/azproviderlint/pull/135))
+- add rule `AZT011`: acceptance test callbacks that poll with the context they are handed, which has no deadline ([#137](https://github.com/katbyte/azproviderlint/pull/137))
+- add rule `AZR016`: updates that return after handling one changed property, so a second change in the same apply is never sent ([#140](https://github.com/katbyte/azproviderlint/pull/140))
+- add rule `AZS022`: string properties that only take two values meaning on and off, such as `Enabled` and `Disabled` ([#126](https://github.com/katbyte/azproviderlint/pull/126))
+- add rule `AZS023`: schema properties whose name starts with `is_`, such as `is_storage_enabled` ([#127](https://github.com/katbyte/azproviderlint/pull/127))
+- add rule `AZT013`: acceptance test resource structs not named after the resource they test, such as `StorageAcctResource` for `azurerm_storage_account` ([#139](https://github.com/katbyte/azproviderlint/pull/139))
+- add rule `AZR014`: ID parser errors wrapped in another message, with a fix ([#132](https://github.com/katbyte/azproviderlint/pull/132))
+- add rule `AZR013`: raw config values read while planning with no `IsKnown` check, which panics when a value is not known yet ([#130](https://github.com/katbyte/azproviderlint/pull/130))
 
 ## v0.17.1 (2026-11-26)
 

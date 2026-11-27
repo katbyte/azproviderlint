@@ -1,10 +1,12 @@
-# AZR007 - use custom pollers instead of StateChangeConf
+# AZR007 - use custom pollers instead of StateChangeConf and Retry
 
-AZR007 reports `StateChangeConf{...}` literals.
+AZR007 reports `StateChangeConf{...}` literals, and calls to `Retry` and `RetryContext`.
 
-`StateChangeConf` is the plugin SDK's old way of waiting for something to reach a state. The provider now prefers custom pollers: a small type that implements the [go-azure-sdk](https://github.com/hashicorp/go-azure-sdk) `pollers.PollerType` interface, run with `pollers.NewPoller(...).PollUntilDone(ctx)`. See the [new resource guide](https://github.com/hashicorp/terraform-provider-azurerm/blob/main/contributing/topics/guide-new-resource.md).
+`StateChangeConf` is the plugin SDK's old way of waiting for something to reach a state, and `Retry` builds one to run a function until it stops failing. The provider now prefers custom pollers: a small type that implements the [go-azure-sdk](https://github.com/hashicorp/go-azure-sdk) `pollers.PollerType` interface, run with `pollers.NewPoller(...).PollUntilDone(ctx)`. See the [new resource guide](https://github.com/hashicorp/terraform-provider-azurerm/blob/main/contributing/topics/guide-new-resource.md).
 
-The check resolves the literal's type, so it catches `pluginsdk.StateChangeConf`, `retry.StateChangeConf`, and `resource.StateChangeConf` under any import alias, by value or by pointer. It does not look inside helpers such as `pluginsdk.Retry()` that build a `StateChangeConf` for you.
+The check resolves the literal's type, so it catches `pluginsdk.StateChangeConf`, `retry.StateChangeConf`, and `resource.StateChangeConf` under any import alias, by value or by pointer.
+
+`Retry` and `RetryContext` are caught as the plugin SDK's own, and as a provider's wrapper of them in a package named `pluginsdk`.
 
 ## Flagged Code
 
@@ -16,6 +18,16 @@ stateConf := &pluginsdk.StateChangeConf{
 	Timeout: 10 * time.Minute,
 }
 result, err := stateConf.WaitForStateContext(ctx)
+```
+
+```go
+return pluginsdk.Retry(d.Timeout(pluginsdk.TimeoutCreate), func() *pluginsdk.RetryError {
+	if _, err := client.Create(ctx, id, payload); err != nil {
+		return pluginsdk.RetryableError(err)
+	}
+
+	return nil
+})
 ```
 
 ## Passing Code
