@@ -34,7 +34,11 @@ These are not checked:
 
 ## Fix
 
-The `fmt.Errorf` call is replaced with the error. An ID that was read only to be printed in the message becomes `_`, and the last fix in a file that then has no other use of `fmt` removes the import.
+The `fmt.Errorf` call is replaced with the error.
+
+An ID that was read only to be printed in the message is dropped. The read moves into the check, as in `if _, err := ...; err != nil`. Where the error is used after the check, or something sits between the two, it becomes `_, err :=` instead.
+
+The last fix in a file that then has no other use of `fmt` removes the import.
 
 There is no fix where the ID was declared before it was read, which would leave that variable unused.
 

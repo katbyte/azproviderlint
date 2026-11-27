@@ -129,7 +129,7 @@ func again(input string, ready bool) error {
 	return nil
 }
 
-// an ID read only to be printed in the message is not kept once the message goes
+// an ID read only to be printed in the message is not kept once the message goes, and the read moves into the check
 func printed(input string) error {
 	id, err := things.ParseThingID(input)
 	if err != nil {
@@ -177,6 +177,36 @@ func declared(input string) error {
 	var err error
 
 	id, err = things.ParseThingID(input)
+	if err != nil {
+		return fmt.Errorf("parsing %s: %+v", id, err) // want `the ID parser's error already says what is wrong with the ID`
+	}
+
+	return nil
+}
+
+// the read stays where it is when the error is used past the check, a comment sits between them, or something else does
+func errorUsedAfter(input string) error {
+	id, err := things.ParseThingID(input)
+	if err != nil {
+		return fmt.Errorf("parsing %s: %+v", id, err) // want `the ID parser's error already says what is wrong with the ID`
+	}
+
+	return err
+}
+
+func commentBetween(input string) error {
+	id, err := things.ParseThingID(input)
+	// the input came from the API
+	if err != nil {
+		return fmt.Errorf("parsing %s: %+v", id, err) // want `the ID parser's error already says what is wrong with the ID`
+	}
+
+	return nil
+}
+
+func lineBetween(input string) error {
+	id, err := things.ParseThingID(input)
+	input = ""
 	if err != nil {
 		return fmt.Errorf("parsing %s: %+v", id, err) // want `the ID parser's error already says what is wrong with the ID`
 	}
