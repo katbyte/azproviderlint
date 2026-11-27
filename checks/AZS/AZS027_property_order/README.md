@@ -61,6 +61,8 @@ A resource's own properties, written out as a map in a plugin SDK or framework s
 
 The order of the properties in between is not checked.
 
+A property whose schema a function hands back, such as `commonschema.LocationComputed()`, is read for whether it is only read back, in whichever package the function is.
+
 These are left alone:
 
 - a block inside the resource, and what a block holds when a function builds it: a `Resource` with no `Read`

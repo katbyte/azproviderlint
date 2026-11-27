@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/katbyte/azproviderlint/lib/astx"
+	"github.com/katbyte/azproviderlint/lib/property"
 	"github.com/katbyte/azproviderlint/lib/tf"
 	"golang.org/x/tools/go/analysis"
 	"golang.org/x/tools/go/analysis/passes/inspect"
@@ -22,7 +23,7 @@ var Analyzer = &analysis.Analyzer{
 	Name:     "AZS027",
 	Doc:      "check that name, resource_group_name and location come first in a resource's schema, and tags last",
 	URL:      "https://github.com/katbyte/azproviderlint/blob/main/checks/AZS/AZS027_property_order/README.md",
-	Requires: []*analysis.Analyzer{inspect.Analyzer},
+	Requires: []*analysis.Analyzer{inspect.Analyzer, property.Analyzer},
 	Run:      run,
 }
 
@@ -153,6 +154,11 @@ func run(pass *analysis.Pass) (any, error) {
 						is[types.ExprString(pair.Key)] = true
 					}
 				}
+			}
+
+			// one whose schema a function hands back, such as commonschema.LocationComputed(), says what it is there
+			if given, isGiven := property.Of(pass, kv.Value); isGiven {
+				is["Required"], is["Optional"], is["Computed"] = given.Required, given.Optional, given.Computed
 			}
 
 			ends := false

@@ -1,6 +1,10 @@
 package azs027
 
-import "azs027/pluginsdk"
+import (
+	"github.com/hashicorp/go-azure-helpers/resourcemanager/commonschema"
+
+	"azs027/pluginsdk"
+)
 
 func location() *pluginsdk.Schema { return nil }
 
@@ -256,6 +260,29 @@ func ordinary() map[string]*pluginsdk.Schema {
 		"location": { // want `property "location" should come before "sku" - name, resource_group_name, location go first`
 			Type:     pluginsdk.TypeString,
 			Required: true,
+		},
+	}
+}
+
+// a property whose schema a function hands back is read for what it is: a location that is only read back goes with the others that are
+func readBack() *pluginsdk.Resource {
+	return &pluginsdk.Resource{
+		Read: nil,
+
+		Schema: map[string]*pluginsdk.Schema{
+			"name": {
+				Type:     pluginsdk.TypeString,
+				Required: true,
+			},
+
+			"sku_name": {
+				Type:     pluginsdk.TypeString,
+				Required: true,
+			},
+
+			"tags": commonschema.Tags(),
+
+			"location": commonschema.LocationComputed(),
 		},
 	}
 }
