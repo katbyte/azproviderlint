@@ -81,3 +81,28 @@ func validAnonymousLiteral() {
 	conf := struct{ Target []string }{Target: []string{"Done"}}
 	_ = conf
 }
+
+// Should be flagged: the provider's wrapper, and the SDK helpers it wraps.
+func retries(ctx context.Context) error {
+	if err := pluginsdk.Retry(time.Minute, func() *pluginsdk.RetryError { // want `prefer a Custom Poller over Retry`
+		return pluginsdk.RetryableError(nil)
+	}); err != nil {
+		return err
+	}
+
+	_ = retry.Retry(time.Minute, nil) // want `prefer a Custom Poller over Retry`
+
+	return retry.RetryContext(ctx, time.Minute, nil) // want `prefer a Custom Poller over RetryContext`
+}
+
+type client struct{}
+
+func (client) Retry(time.Duration) error { return nil }
+
+func Retry() error { return nil }
+
+// Should NOT be flagged: a method or a function of another package that shares the name.
+func validOtherRetries() {
+	_ = client{}.Retry(time.Minute)
+	_ = Retry()
+}
