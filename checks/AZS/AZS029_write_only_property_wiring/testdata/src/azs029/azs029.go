@@ -1,8 +1,8 @@
-package azs025
+package azs029
 
 import (
-	"azs025/pluginsdk"
-	"azs025/validation"
+	"azs029/pluginsdk"
+	"azs029/validation"
 )
 
 // the value, its version and the property it stands in for, each tied to the others
