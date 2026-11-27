@@ -102,7 +102,7 @@ func run(pass *analysis.Pass) (any, error) {
 				}
 			}
 			if removed == len(uses) {
-				importEdit = deleteLogImport(pass, file)
+				importEdit = astx.DeleteImport(pass, file, "log")
 			}
 		}
 		for i, f := range findings {
@@ -158,30 +158,6 @@ func logPackageUses(pass *analysis.Pass, file *ast.File) []*ast.Ident {
 		return true
 	})
 	return uses
-}
-
-// deleteLogImport returns the edit removing the `log` import: its whole declaration when it
-// stands alone, otherwise just its line inside the import block.
-func deleteLogImport(pass *analysis.Pass, file *ast.File) *analysis.TextEdit {
-	for _, decl := range file.Decls {
-		gen, ok := decl.(*ast.GenDecl)
-		if !ok || gen.Tok != token.IMPORT {
-			continue
-		}
-		for _, spec := range gen.Specs {
-			imp, ok := spec.(*ast.ImportSpec)
-			if !ok || imp.Path.Value != `"log"` {
-				continue
-			}
-			if len(gen.Specs) == 1 {
-				e := astx.DeleteLine(pass, gen)
-				return &e
-			}
-			e := astx.DeleteLine(pass, imp)
-			return &e
-		}
-	}
-	return nil
 }
 
 // enclosingFile returns the file in the pass containing pos.
