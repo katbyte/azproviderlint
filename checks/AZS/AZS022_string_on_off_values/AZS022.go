@@ -26,7 +26,7 @@ var Analyzer = &analysis.Analyzer{
 }
 
 // onOff holds the pairs of values that mean on and off, in lower case: each value with the one it goes with.
-var onOff = map[string]string{"enabled": "disabled", "disabled": "enabled", "enable": "disable", "disable": "enable", "on": "off", "off": "on"}
+var onOff = map[string]string{"enabled": "disabled", "disabled": "enabled", "enable": "disable", "disable": "enable", "on": "off", "off": "on", "true": "false", "false": "true"}
 
 func run(pass *analysis.Pass) (any, error) {
 	insp, ok := pass.ResultOf[inspect.Analyzer].(*inspector.Inspector)

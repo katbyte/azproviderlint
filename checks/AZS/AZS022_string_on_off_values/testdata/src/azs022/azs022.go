@@ -54,6 +54,12 @@ func resource() *pluginsdk.Resource {
 				ValidateFunc: validation.StringInSlice([]string{"Disable", "Enable"}, false), // want `string property "backup" only takes "Disable" and "Enable" - make it a bool`
 			},
 
+			"encrypted": {
+				Type:         pluginsdk.TypeString,
+				Optional:     true,
+				ValidateFunc: validation.StringInSlice([]string{"true", "false"}, false), // want `string property "encrypted" only takes "true" and "false" - make it a bool`
+			},
+
 			// a third value is more than a bool can say
 			"encryption": {
 				Type:         pluginsdk.TypeString,

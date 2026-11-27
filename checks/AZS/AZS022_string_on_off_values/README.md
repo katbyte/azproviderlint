@@ -38,7 +38,7 @@ The bool is named for what it turns on, ending in `_enabled`, and the two words 
 
 ## What is checked
 
-The pairs are `Enabled` and `Disabled`, `Enable` and `Disable`, and `On` and `Off`, in any case and either order.
+The pairs are `Enabled` and `Disabled`, `Enable` and `Disable`, `On` and `Off`, and `true` and `false`, in any case and either order.
 
 The values are read from:
 
