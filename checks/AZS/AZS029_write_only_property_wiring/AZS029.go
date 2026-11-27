@@ -1,5 +1,5 @@
-// Package AZS025 defines an analyzer that reports a write-only property that is not tied to its version and to the property it stands in for.
-package AZS025
+// Package AZS029 defines an analyzer that reports a write-only property that is not tied to its version and to the property it stands in for.
+package AZS029
 
 import (
 	"go/ast"
@@ -17,9 +17,9 @@ import (
 // Analyzer checks the three properties a write-only value is made of: the value itself, the version that says it has changed, and the property it
 // stands in for. Terraform keeps no write-only value, so only the schema stops them being set in a way that never sends a change.
 var Analyzer = &analysis.Analyzer{
-	Name:     "AZS025",
+	Name:     "AZS029",
 	Doc:      "check that a write-only property is tied to its version and to the property it stands in for",
-	URL:      "https://github.com/katbyte/azproviderlint/blob/main/checks/AZS/AZS025_write_only_property_wiring/README.md",
+	URL:      "https://github.com/katbyte/azproviderlint/blob/main/checks/AZS/AZS029_write_only_property_wiring/README.md",
 	Requires: []*analysis.Analyzer{inspect.Analyzer},
 	Run:      run,
 }
