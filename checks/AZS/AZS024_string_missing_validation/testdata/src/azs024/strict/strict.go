@@ -2,6 +2,8 @@
 package strict
 
 import (
+	"github.com/hashicorp/go-azure-helpers/resourcemanager/commonschema"
+
 	fwschema "azs024/framework/schema"
 	"azs024/pluginsdk"
 	"azs024/stringvalidator"
@@ -15,6 +17,8 @@ func noError(any, string) error { return nil }
 func resource() *pluginsdk.Resource {
 	return &pluginsdk.Resource{
 		Schema: map[string]*pluginsdk.Schema{
+			"name_from": commonschema.Name(), // want `string property "name_from" is only checked for not being empty in commonschema.Name\(\)`
+
 			"name": { // want `string property "name" is only checked for not being empty - add a ValidateFunc that checks what the API accepts`
 				Type:         pluginsdk.TypeString,
 				Required:     true,

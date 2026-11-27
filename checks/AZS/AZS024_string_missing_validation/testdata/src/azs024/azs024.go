@@ -1,6 +1,8 @@
 package azs024
 
 import (
+	"github.com/hashicorp/go-azure-helpers/resourcemanager/commonschema"
+
 	fwschema "azs024/framework/schema"
 	"azs024/other"
 	"azs024/pluginsdk"
@@ -133,10 +135,33 @@ func resource() *pluginsdk.Resource {
 				Optional:   true,
 				Deprecated: "use `sku`",
 			},
+
+			// a schema from a function outside the provider is reported where it is used, as that is where it can be changed
+			"helper_zone":     commonschema.ZoneSingleOptionalComputed(), // want `string property "helper_zone" has no validation in commonschema.ZoneSingleOptionalComputed\(\) - add a ValidateFunc that checks what the API accepts`
+			"zone_optional":   commonschema.ZoneSingleOptional(),         // want `string property "zone_optional" has no validation in commonschema.ZoneSingleOptional\(\)`
+			"helper_zones":    commonschema.ZonesMultipleOptional(),      // want `the strings in "helper_zones" have no validation in commonschema.ZonesMultipleOptional\(\)`
+			"helper_location": commonschema.Location(),
+			"name_from":       commonschema.Name(),
+			"zone_computed":   commonschema.ZoneComputed(),
+			"zone_from_here":  property(),
+
+			"zone_list": {
+				Type:     pluginsdk.TypeList,
+				Optional: true,
+				Elem:     commonschema.Zone(), // want `the strings in "zone_list" have no validation in commonschema.Zone\(\)`
+			},
+
+			// what the user does not set is left alone, wherever its values come from
+			"zone_list_computed": {
+				Type:     pluginsdk.TypeList,
+				Computed: true,
+				Elem:     commonschema.Zone(),
+			},
 		},
 	}
 }
 
+// a function in the provider is reported where its schema is written, and not again where it is used
 func property() *pluginsdk.Schema {
 	return &pluginsdk.Schema{ // want `string property has no validation - add a ValidateFunc that checks what the API accepts`
 		Type:     pluginsdk.TypeString,

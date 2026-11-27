@@ -71,6 +71,12 @@ the strings in "zones" have no validation - add a ValidateFunc that checks what 
 - the strings in a list or set that is `Required` or `Optional`: the `Elem` needs one
 - a framework `StringAttribute` that is `Required` or `Optional`: it needs `Validators`
 
+A schema handed back by a function is followed into whichever package the function is in. One in the provider's own code is reported where it is written. One from another module, such as `commonschema.ZoneSingleOptionalComputed()` from go-azure-helpers, is reported where it is used, as the provider cannot change it:
+
+```text
+string property "zone" has no validation in commonschema.ZoneSingleOptionalComputed() - add a ValidateFunc that checks what the API accepts
+```
+
 The rule only looks for validation being there. Whether it checks enough is for a reviewer, unless `strict` is set.
 
 These are not reported:
@@ -78,7 +84,6 @@ These are not reported:
 - a property that is only `Computed`, which the user does not set
 - the strings in a map, which cannot be checked one by one
 - a property with `Deprecated` or `DeprecationMessage` set, which is on its way out
-- a property whose whole schema comes from a function, such as `commonschema.Location()`
 - anything in a package named `migration` or `migrations`, which is what old state looked like
 - a schema in a test file, which is never shipped
 
