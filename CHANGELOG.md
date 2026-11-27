@@ -4,6 +4,7 @@
 - add rule `AZS025`: write-only properties not tied to their version, or to the property they stand in for ([#131](https://github.com/katbyte/azproviderlint/pull/131))
 - add rule `AZR015`: creates of a resource with an identity whose callback sets only the ID, with a fix ([#135](https://github.com/katbyte/azproviderlint/pull/135))
 - add rule `AZT011`: acceptance test callbacks that poll with the context they are handed, which has no deadline ([#137](https://github.com/katbyte/azproviderlint/pull/137))
+- add rule `AZR016`: updates that return after handling one changed property, so a second change in the same apply is never sent ([#140](https://github.com/katbyte/azproviderlint/pull/140))
 
 ## v0.17.1 (2026-11-26)
 
