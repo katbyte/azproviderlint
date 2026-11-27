@@ -148,8 +148,8 @@ func run(pass *analysis.Pass) (any, error) {
 			}
 
 			is := map[string]bool{}
-			if property, isProperty := value.(*ast.CompositeLit); isProperty {
-				for _, field := range property.Elts {
+			if written, isWritten := value.(*ast.CompositeLit); isWritten {
+				for _, field := range written.Elts {
 					if pair, isField := field.(*ast.KeyValueExpr); isField && astx.IsTrueConstant(pass, pair.Value) {
 						is[types.ExprString(pair.Key)] = true
 					}
