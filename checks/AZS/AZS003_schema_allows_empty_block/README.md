@@ -12,6 +12,8 @@ An empty block comes through as a `nil` list element. Expand functions usually d
 
 This is a heuristic. A block whose expand function handles the nil element is safe in practice but is still reported. Suppress those with an `//azignore:AZS003` comment.
 
+Properties a function hands back, one at a time, as the block's `Elem` or as its `Schema`, are read for what they are, in whichever package the function is. A block with a property that cannot be read, such as one in a variable, is not reported.
+
 Ported from [tfproviderlint PR #236 (XS003)](https://github.com/bflad/tfproviderlint/pull/236). The `pluginsdk` aliases used in azurerm are recognised.
 
 ## Flagged Code

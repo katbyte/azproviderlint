@@ -8,6 +8,7 @@ import (
 	"go/token"
 
 	"github.com/katbyte/azproviderlint/lib/astx"
+	"github.com/katbyte/azproviderlint/lib/property"
 	"github.com/katbyte/azproviderlint/lib/tf"
 	"golang.org/x/tools/go/analysis"
 	"golang.org/x/tools/go/analysis/passes/inspect"
@@ -24,7 +25,7 @@ var Analyzer = &analysis.Analyzer{
 	Name:     "AZS003",
 	Doc:      "check for list blocks that allow empty blocks because every property is optional with no default or constraint",
 	URL:      "https://github.com/katbyte/azproviderlint/blob/main/checks/AZS/AZS003_schema_allows_empty_block/README.md",
-	Requires: []*analysis.Analyzer{inspect.Analyzer},
+	Requires: []*analysis.Analyzer{inspect.Analyzer, property.Analyzer},
 	Run:      run,
 }
 
@@ -68,6 +69,17 @@ func run(pass *analysis.Pass) (any, error) {
 			return
 		}
 
+		const message = "schema allows an empty block as every property is optional with no default - add AtLeastOneOf/ExactlyOneOf constraints, a Required property, or a Default so empty blocks cannot crash expand functions or cause spurious diffs"
+
+		// properties a function hands back, as the Elem or its Schema, are read there; one that cannot be read may be the one that stops it
+		if given, isGiven := property.BlockOf(pass, fields["Elem"]); isGiven {
+			if given.Known && given.Properties > 0 && !given.Stops {
+				pass.Reportf(cl.Pos(), message)
+			}
+
+			return
+		}
+
 		ref, ok := fields["Elem"].(*ast.UnaryExpr)
 		if !ok || ref.Op != token.AND {
 			return
@@ -75,6 +87,14 @@ func run(pass *analysis.Pass) (any, error) {
 
 		resource, ok := ref.X.(*ast.CompositeLit)
 		if !ok || !tf.IsSchemaHelperType(pass, resource, "Resource") {
+			return
+		}
+
+		if given, isGiven := property.BlockOf(pass, compositeLitFields(resource)["Schema"]); isGiven {
+			if given.Known && given.Properties > 0 && !given.Stops {
+				pass.Reportf(cl.Pos(), message)
+			}
+
 			return
 		}
 
@@ -94,19 +114,27 @@ func run(pass *analysis.Pass) (any, error) {
 				value = addr.X
 			}
 
-			// a property defined elsewhere (variable/function) cannot be inspected - stay quiet
-			property, ok := value.(*ast.CompositeLit)
+			// a property from a function says whether it stops the block being empty; one from a variable cannot be read, so stay quiet
+			if given, isGiven := property.Of(pass, kv.Value); isGiven {
+				if given.Required || given.Default || given.OneOf {
+					return
+				}
+
+				continue
+			}
+
+			written, ok := value.(*ast.CompositeLit)
 			if !ok {
 				return
 			}
 
-			propertyFields := compositeLitFields(property)
+			propertyFields := compositeLitFields(written)
 			if astx.IsTrueConstant(pass, propertyFields["Required"]) || isSet(propertyFields["Default"]) || isSet(propertyFields["DefaultFunc"]) || isSet(propertyFields["AtLeastOneOf"]) || isSet(propertyFields["ExactlyOneOf"]) {
 				return
 			}
 		}
 
-		pass.Reportf(cl.Pos(), "schema allows an empty block as every property is optional with no default - add AtLeastOneOf/ExactlyOneOf constraints, a Required property, or a Default so empty blocks cannot crash expand functions or cause spurious diffs")
+		pass.Reportf(cl.Pos(), message)
 	})
 
 	return nil, nil

@@ -100,7 +100,7 @@ func otherWays() map[string]*pluginsdk.Schema {
 			ConflictsWith: together,
 		},
 
-		// a version whose schema comes from a function cannot be read
+		// a version from a function that hands back nothing readable is there, but what it says cannot be read
 		"token_wo_version": version(),
 
 		// a property that is only read back cannot be set beside the write-only one
@@ -153,5 +153,62 @@ func required() map[string]*pluginsdk.Schema {
 			Type:     pluginsdk.TypeInt,
 			Optional: true,
 		},
+	}
+}
+
+// a property whose schema a function hands back is read for what it is, but its lists could name anything
+func fromFunctions() map[string]*pluginsdk.Schema {
+	return map[string]*pluginsdk.Schema{
+		"secret_wo": writeOnly(), // want `write-only property "secret_wo" has no "secret_wo_version" beside it`
+
+		"pin_wo": {
+			Type:         pluginsdk.TypeString,
+			Optional:     true,
+			WriteOnly:    true,
+			RequiredWith: []string{"pin_wo_version"},
+		},
+
+		"pin_wo_version": anyVersion(), // want `"pin_wo_version" can be set to 0, which is what an unset version is stored as`
+
+		"phrase": optional(),
+
+		"phrase_wo": { // want `"phrase_wo" and "phrase" can both be set - add ConflictsWith: \[\]string\{"phrase"\}`
+			Type:         pluginsdk.TypeString,
+			Optional:     true,
+			WriteOnly:    true,
+			RequiredWith: []string{"phrase_wo_version"},
+		},
+
+		"phrase_wo_version": countedVersion(),
+	}
+}
+
+func writeOnly() *pluginsdk.Schema {
+	return &pluginsdk.Schema{
+		Type:      pluginsdk.TypeString,
+		Optional:  true,
+		WriteOnly: true,
+	}
+}
+
+func anyVersion() *pluginsdk.Schema {
+	return &pluginsdk.Schema{
+		Type:     pluginsdk.TypeInt,
+		Optional: true,
+	}
+}
+
+func countedVersion() *pluginsdk.Schema {
+	return &pluginsdk.Schema{
+		Type:         pluginsdk.TypeInt,
+		Optional:     true,
+		ValidateFunc: validation.IntAtLeast(1),
+	}
+}
+
+func optional() *pluginsdk.Schema {
+	return &pluginsdk.Schema{
+		Type:     pluginsdk.TypeString,
+		Optional: true,
 	}
 }
