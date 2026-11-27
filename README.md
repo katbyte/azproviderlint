@@ -106,7 +106,8 @@ Rules are named `AZ`, a category letter, and a number. The letters follow [tfpro
 | [AZS018](checks/AZS/AZS018_description_note) | resource and property **descriptions** must not have a note in them |
 | [AZS019](checks/AZS/AZS019_description_question) | resource and property **descriptions** must not be a question |
 | [AZS020](checks/AZS/AZS020_description_unknown_name) | resource and property **descriptions** must not name a resource or property that does not exist |
-| [AZS026](checks/AZS/AZS026_property_names) | a bool must end in _enabled, a block must have a singular name, and a list of values a plural one |
+| [AZS026](checks/AZS/AZS026_bool_name_ending) | a bool property must end in _enabled, or a word for its state such as _required |
+| [AZS028](checks/AZS/AZS028_list_property_names) | a list or set of blocks must have a singular name, and a list or set of values a plural one |
 
 ### AZC - Clients & SDK Usage
 

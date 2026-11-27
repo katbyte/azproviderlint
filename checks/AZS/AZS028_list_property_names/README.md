@@ -1,17 +1,12 @@
-# AZS026 - a bool must end in _enabled, a block must have a singular name, and a list of values a plural one
+# AZS028 - a list or set of blocks must have a singular name, and a list or set of values a plural one
 
-AZS026 reports a property whose name does not say what it holds the way the provider's others do.
+AZS028 reports a list or set property whose name does not say how it is written.
 
-A user guesses how to write a property from its name: `compression_enabled` is on or off, `rule` is written once per rule, `zones` takes several values.
+A user guesses how to write a property from its name: `rule` is a block written once per rule, `zones` takes several values.
 
 ## Flagged Code
 
 ```go
-"zone_redundant": {
-	Type:     pluginsdk.TypeBool,
-	Optional: true,
-},
-
 "rules": {
 	Type:     pluginsdk.TypeList,
 	Optional: true,
@@ -26,7 +21,6 @@ A user guesses how to write a property from its name: `compression_enabled` is o
 ```
 
 ```text
-bool property "zone_redundant" should end in _enabled
 block "rules" has a plural name - a block is one thing each time it is written, so name it in the singular
 list "zone" has a singular name - it holds many values, so name it in the plural
 ```
@@ -34,11 +28,6 @@ list "zone" has a singular name - it holds many values, so name it in the plural
 ## Passing Code
 
 ```go
-"zone_redundancy_enabled": {
-	Type:     pluginsdk.TypeBool,
-	Optional: true,
-},
-
 "rule": {
 	Type:     pluginsdk.TypeList,
 	Optional: true,
@@ -54,7 +43,6 @@ list "zone" has a singular name - it holds many values, so name it in the plural
 
 ## What is checked
 
-- `bool-enabled`: a bool, in a plugin SDK or framework schema, whose name is not `enabled` and does not end in `_enabled`.
 - `block-singular`: a plugin SDK list or set of blocks that the user sets, with a plural name. One that is only read back is a list of them, and is left alone.
 - `list-plural`: a plugin SDK list or set of plain values with a singular name.
 
@@ -76,7 +64,7 @@ None is offered.
 
 ## Options
 
-Each kind can be switched off on its own. `bool-ending` is what a bool may end in, and replaces `_enabled`. `singular-word` and `plural-word` add to the words the rule knows, and a word given as both is fine as either. `trailing-word` adds a word that may come after the plural in a list's name.
+Each kind can be switched off on its own. `singular-word` and `plural-word` add to the words the rule knows, and a word given as both is fine as either. `trailing-word` adds a word that may come after the plural in a list's name.
 
 ```yaml
 linters:
@@ -84,24 +72,23 @@ linters:
     custom:
       azproviderlint:
         settings:
-          AZS026:
+          AZS028:
             block-singular: false
-            bool-ending: [_enabled, _required, _accepted]
             singular-word: [settings]
             plural-word: [sheep]
             trailing-word: [dark]
 ```
 
 ```sh
-azproviderlint -AZS026 -AZS026.bool-ending=_enabled -AZS026.bool-ending=_required ./...
+azproviderlint -AZS028 -AZS028.singular-word=settings -AZS028.plural-word=sheep ./...
 ```
 
 ## Ignoring Reports
 
-Put `//azignore:AZS026 - <reason>` at the end of the reported line, or on the line above it. The reason is required.
+Put `//azignore:AZS028 - <reason>` at the end of the reported line, or on the line above it. The reason is required.
 
 ```go
-"zone_redundant": { //azignore:AZS026 - <reason>
+"zone": { //azignore:AZS028 - <reason>
 ```
 
 Under golangci-lint, `//nolint:azproviderlint` in the same place also works, but it silences every azproviderlint check on that line.

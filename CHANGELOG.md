@@ -1,6 +1,7 @@
 ## Unreleased
 
-- add rule `AZS026`: bools not ending in `_enabled`, blocks with a plural name, and lists of values with a singular one ([#136](https://github.com/katbyte/azproviderlint/pull/136))
+- add rule `AZS026`: bool properties not ending in `_enabled`, or a word for their state such as `_required` ([#136](https://github.com/katbyte/azproviderlint/pull/136))
+- add rule `AZS028`: lists and sets of blocks with a plural name, and lists and sets of values with a singular one ([#136](https://github.com/katbyte/azproviderlint/pull/136))
 
 ## v0.17.1 (2026-11-26)
 

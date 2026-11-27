@@ -1,5 +1,5 @@
-// Package AZS026 defines an analyzer that reports a property whose name does not say what it holds the way the provider's others do.
-package AZS026
+// Package AZS028 defines an analyzer that reports a list or set property whose name is not singular for a block or plural for values.
+package AZS028
 
 import (
 	"flag"
@@ -17,21 +17,18 @@ import (
 	"golang.org/x/tools/go/ast/inspector"
 )
 
-// Analyzer checks three things a property's name says about it: a bool ends in _enabled, a block the user writes once per thing has a singular
-// name, and a list of plain values has a plural one.
+// Analyzer checks what a list or set property's name says about it: a block the user writes once per thing has a singular name, and a list of
+// plain values has a plural one.
 var Analyzer = &analysis.Analyzer{
-	Name:     "AZS026",
-	Doc:      "check that a bool ends in _enabled, a block has a singular name, and a list of values has a plural one",
-	URL:      "https://github.com/katbyte/azproviderlint/blob/main/checks/AZS/AZS026_property_names/README.md",
+	Name:     "AZS028",
+	Doc:      "check that a list or set of blocks has a singular name, and a list or set of values a plural one",
+	URL:      "https://github.com/katbyte/azproviderlint/blob/main/checks/AZS/AZS028_list_property_names/README.md",
 	Requires: []*analysis.Analyzer{inspect.Analyzer},
 	Run:      run,
 }
 
 // each kind of name can be switched off on its own
-var boolEnabled, blockSingular, listPlural bool
-
-// endings are what a bool's name may end in. The default is replaced by the first one given.
-var endings, givenEndings = []string{"_enabled"}, false
+var blockSingular, listPlural bool
 
 // singular are words ending in s that are not plurals, and plural are plurals the ending does not show. A word in both, such as data, has no
 // other form and is fine as either. Words given as options are added to these.
@@ -41,18 +38,9 @@ var singular, plural = []string{"alias", "analytics", "aws", "contains", "cors",
 var trailing = []string{"after", "allowed", "base64", "for", "from", "in", "not", "of", "only", "to", "with"}
 
 func init() {
-	Analyzer.Flags.Init("AZS026", flag.ContinueOnError)
-	Analyzer.Flags.BoolVar(&boolEnabled, "bool-enabled", true, "report a bool that does not end in _enabled (false leaves it alone)")
+	Analyzer.Flags.Init("AZS028", flag.ContinueOnError)
 	Analyzer.Flags.BoolVar(&blockSingular, "block-singular", true, "report a block with a plural name (false leaves it alone)")
 	Analyzer.Flags.BoolVar(&listPlural, "list-plural", true, "report a list of values with a singular name (false leaves it alone)")
-	Analyzer.Flags.Func("bool-ending", "what a bool's name may end in, such as _required; repeat for each, which replaces the default of _enabled", func(ending string) error {
-		if !givenEndings {
-			endings, givenEndings = nil, true
-		}
-		endings = append(endings, ending)
-
-		return nil
-	})
 	Analyzer.Flags.Func("singular-word", "a word ending in s that is not a plural, such as dns; repeat for each, which adds to the ones the rule knows", func(word string) error {
 		singular = append(singular, word)
 
@@ -136,16 +124,6 @@ func run(pass *analysis.Pass) (any, error) {
 		}
 		collection := named.Obj().Name() == "Schema" && (strings.HasSuffix(kind, "TypeList") || strings.HasSuffix(kind, "TypeSet")) && inside["Elem"] != nil
 		switch {
-		case boolEnabled && (named.Obj().Name() == "BoolAttribute" || (named.Obj().Name() == "Schema" && strings.HasSuffix(kind, "TypeBool"))):
-			ends := false
-			for _, ending := range endings {
-				ends = ends || strings.HasSuffix(name, ending) || name == strings.TrimPrefix(ending, "_")
-			}
-
-			if !ends {
-				pass.Reportf(keys[lit].Pos(), "bool property %q should end in %s", name, strings.Join(endings, " or "))
-			}
-
 		// a block the user writes is one thing each time it is written; one that is only read back is a list of them
 		case blockSingular && collection && (slices.Contains(plural, last) || (strings.HasSuffix(last, "s") && !strings.HasSuffix(last, "ss") && !strings.HasSuffix(last, "us") && !strings.HasSuffix(last, "is"))) && !slices.Contains(singular, last) && tf.IsSchemaHelperType(pass, inside["Elem"], "Resource") && (astx.IsTrueConstant(pass, fields["Required"]) || astx.IsTrueConstant(pass, fields["Optional"])):
 			pass.Reportf(keys[lit].Pos(), "block %s has a plural name - a block is one thing each time it is written, so name it in the singular", strconv.Quote(name))
