@@ -92,11 +92,13 @@ Reported on any such field:
 
 Reported on a field nested in a computed-only block, or listed in `Attributes()`: `Optional: true` and `Required: true`.
 
+A property, block or element that a function hands back is reported once where it is used, when it can be set or has any of the above, in whichever package the function is. The function may be shared with a field the user sets, so there is no fix.
+
 Not reported:
 
 - attributes set to a zero value (`MaxItems: 0`, `Default: nil`)
 - `Computed` set from a variable rather than a constant, since the field may not be computed-only
-- an `Elem` that comes from a function call rather than a literal
+- a property or block a function builds rather than hands back written out
 - `ForceNew`, `Sensitive`, `Description`, `Deprecated`, and `Set`, which describe state and are fine on computed fields
 
 ## The fix
