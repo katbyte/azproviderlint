@@ -61,19 +61,18 @@ Terraform keeps no write-only value, so it cannot tell when one has changed. The
 
 ## What is checked
 
-For each plugin SDK property with `WriteOnly: true`, written out in a map of properties:
+For each plugin SDK property with `WriteOnly: true` in a map of properties, written out or handed back by a function:
 
 - a `<name>_version` property sits beside it
 - each names the other in `RequiredWith`, unless the other is `Required` and so always set
 - the version is checked with `validation.IntAtLeast(1)`, or `IntBetween` starting at 1
 - when the name ends in `_wo` and the property without that ending can be set, each names the other in `ConflictsWith` or `ExactlyOneOf`
 
-A name in those lists can be the whole path to a property in a block, such as `secret.0.value_wo`. A list that is not written out in place is taken to name what it should.
+A name in those lists can be the whole path to a property in a block, such as `secret.0.value_wo`. A list that is not written out in place, or is in a function, is taken to name what it should.
 
 These are not checked:
 
 - framework schemas
-- a property whose schema comes from a function
 - state migrations
 
 ## Fix

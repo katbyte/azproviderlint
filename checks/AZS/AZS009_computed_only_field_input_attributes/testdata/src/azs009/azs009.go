@@ -111,6 +111,8 @@ func (typedResource) Attributes() map[string]*pluginsdk.Schema {
 			Type:     pluginsdk.TypeString,
 			Optional: true, // want `Optional has no effect in Attributes\(\), where every field is computed - use Computed`
 		},
+		"zones":    settableProp(), // want `property "zones" from azs009.settableProp\(\) can be set or checked, which has no effect in Attributes\(\), where every field is computed`
+		"location": readOnlyProp(),
 		"block": {
 			Type: pluginsdk.TypeList,
 			Elem: &pluginsdk.Resource{
@@ -244,5 +246,86 @@ func passingEdgeCases() {
 		Computed:   true,
 		ConfigMode: schema.SchemaConfigMode(2), // want `ConfigMode: SchemaConfigModeBlock has no effect on a computed-only field - remove it`
 		Elem:       &schema.Resource{Schema: map[string]*schema.Schema{}},
+	}
+}
+
+// what a function hands back is reported where it is used, as the function may be shared with a field the user sets
+func fromFunctions() {
+	_ = &schema.Schema{
+		Type:     schema.TypeList,
+		Computed: true,
+		Elem:     settableBlock(), // want `the properties from azs009.settableBlock\(\) can be set or checked, which has no effect inside a computed-only block - use a schema that is only read back`
+	}
+
+	_ = &schema.Schema{
+		Type:     schema.TypeList,
+		Computed: true,
+		Elem: &schema.Resource{
+			Schema: settableProps(), // want `the properties from azs009.settableProps\(\) can be set or checked`
+		},
+	}
+
+	_ = &schema.Schema{
+		Type:     schema.TypeList,
+		Computed: true,
+		Elem: &schema.Resource{
+			Schema: map[string]*schema.Schema{
+				"name": settableProp(), // want `property "name" from azs009.settableProp\(\) can be set or checked, which has no effect inside a computed-only block`
+				"id":   readOnlyProp(),
+			},
+		},
+	}
+
+	_ = &schema.Schema{
+		Type:     schema.TypeList,
+		Computed: true,
+		Elem:     checkedValue(), // want `the element from azs009.checkedValue\(\) can be set or checked, which has no effect on the element of a computed-only field`
+	}
+
+	_ = &schema.Schema{
+		Type:     schema.TypeList,
+		Computed: true,
+		Elem:     readOnlyBlock(),
+	}
+}
+
+func settableProp() *schema.Schema {
+	return &schema.Schema{
+		Type:     schema.TypeString,
+		Optional: true,
+	}
+}
+
+func readOnlyProp() *schema.Schema {
+	return &schema.Schema{
+		Type:     schema.TypeString,
+		Computed: true,
+	}
+}
+
+func checkedValue() *schema.Schema {
+	return &schema.Schema{
+		Type:         schema.TypeString,
+		ValidateFunc: validateString,
+	}
+}
+
+func settableBlock() *schema.Resource {
+	return &schema.Resource{
+		Schema: settableProps(),
+	}
+}
+
+func settableProps() map[string]*schema.Schema {
+	return map[string]*schema.Schema{
+		"name": settableProp(),
+	}
+}
+
+func readOnlyBlock() *schema.Resource {
+	return &schema.Resource{
+		Schema: map[string]*schema.Schema{
+			"id": readOnlyProp(),
+		},
 	}
 }

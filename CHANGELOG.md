@@ -6,6 +6,7 @@
 - add rule `AZS024`: string properties the user sets that have no validation ([#128](https://github.com/katbyte/azproviderlint/pull/128), [#145](https://github.com/katbyte/azproviderlint/pull/145))
 - add rule `AZS025`: number properties the user sets that have no validation ([#145](https://github.com/katbyte/azproviderlint/pull/145))
 - `AZS029`: the write-only property rule, which was `AZS025` - change any `azignore` comment or setting that names it ([#145](https://github.com/katbyte/azproviderlint/pull/145))
+- `AZS003`, `AZS009` and `AZS029`: properties and blocks a function hands back are checked too ([#146](https://github.com/katbyte/azproviderlint/pull/146))
 
 ## v0.18.0 (2026-11-27)
 

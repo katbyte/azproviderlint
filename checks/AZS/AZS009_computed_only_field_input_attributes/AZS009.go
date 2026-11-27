@@ -12,6 +12,7 @@ import (
 	"slices"
 
 	"github.com/katbyte/azproviderlint/lib/astx"
+	"github.com/katbyte/azproviderlint/lib/property"
 	"github.com/katbyte/azproviderlint/lib/tf"
 	"golang.org/x/tools/go/analysis"
 	"golang.org/x/tools/go/analysis/passes/inspect"
@@ -28,20 +29,8 @@ var Analyzer = &analysis.Analyzer{
 	Name:     "AZS009",
 	Doc:      "check for computed-only schema fields that set input-only attributes (ValidateFunc, MaxItems, Default, ...) or nest Optional/Required fields",
 	URL:      "https://github.com/katbyte/azproviderlint/blob/main/checks/AZS/AZS009_computed_only_field_input_attributes/README.md",
-	Requires: []*analysis.Analyzer{inspect.Analyzer},
+	Requires: []*analysis.Analyzer{inspect.Analyzer, property.Analyzer},
 	Run:      run,
-}
-
-// inputOnly lists the Schema fields that only mean something for a value the user writes: how it
-// is validated, defaulted, normalised, counted, or constrained against other arguments. It is the
-// plugin SDK's own computed-only rejection list plus RequiredWith and WriteOnly.
-var inputOnly = []string{
-	"Default", "DefaultFunc", "InputDefault",
-	"ValidateFunc", "ValidateDiagFunc",
-	"DiffSuppressFunc", "DiffSuppressOnRefresh", "StateFunc",
-	"MaxItems", "MinItems",
-	"AtLeastOneOf", "ExactlyOneOf", "ConflictsWith", "RequiredWith",
-	"WriteOnly",
 }
 
 const (
@@ -67,7 +56,20 @@ func run(pass *analysis.Pass) (any, error) {
 		}
 
 		cl, ok := n.(*ast.CompositeLit)
-		if !ok || visited[cl] || !tf.IsSchemaHelperType(pass, cl, "Schema") {
+		if !ok || visited[cl] {
+			return true
+		}
+
+		// a property a function hands back into Attributes() is reported where it is used
+		if !tf.IsSchemaHelperType(pass, cl, "Schema") {
+			if _, isMap := types.Unalias(pass.TypesInfo.TypeOf(cl)).(*types.Map); isMap && inAttributesMethod(pass, stack) {
+				for _, elt := range cl.Elts {
+					if kv, isPair := elt.(*ast.KeyValueExpr); isPair {
+						handedBack(pass, kv, inAttributes)
+					}
+				}
+			}
+
 			return true
 		}
 
@@ -115,9 +117,9 @@ func check(pass *analysis.Pass, cl *ast.CompositeLit, visited map[*ast.Composite
 		}
 	}
 
-	for _, name := range inputOnly {
+	for _, name := range property.InputOnly {
 		kv := kvs[name]
-		if kv == nil || !isSet(pass, kv.Value) {
+		if kv == nil || !property.IsSet(pass, kv.Value) {
 			continue
 		}
 		pass.Report(analysis.Diagnostic{
@@ -135,6 +137,22 @@ func check(pass *analysis.Pass, cl *ast.CompositeLit, visited map[*ast.Composite
 		})
 	}
 
+	// what a function hands back is reported where it is used, as the function may be shared with a field the user sets
+	if given, isGiven := property.BlockOf(pass, value(kvs, "Elem")); isGiven {
+		if given.Settable {
+			fromFunction(pass, kvs["Elem"].Key, "the properties", kvs["Elem"].Value, inBlock)
+		}
+
+		return
+	}
+	if given, isGiven := property.Of(pass, value(kvs, "Elem")); isGiven {
+		if given.Inputs {
+			fromFunction(pass, kvs["Elem"].Key, "the element", kvs["Elem"].Value, onElem)
+		}
+
+		return
+	}
+
 	elem, ok := stripAddr(value(kvs, "Elem")).(*ast.CompositeLit)
 	if !ok {
 		return
@@ -144,10 +162,20 @@ func check(pass *analysis.Pass, cl *ast.CompositeLit, visited map[*ast.Composite
 	case tf.IsSchemaHelperType(pass, elem, "Schema"):
 		check(pass, elem, visited, onElem, false)
 	case tf.IsSchemaHelperType(pass, elem, "Resource"):
+		if given, isGiven := property.BlockOf(pass, value(keyValues(elem), "Schema")); isGiven {
+			if given.Settable {
+				fromFunction(pass, keyValues(elem)["Schema"].Key, "the properties", keyValues(elem)["Schema"].Value, inBlock)
+			}
+
+			return
+		}
+
 		props, ok := value(keyValues(elem), "Schema").(*ast.CompositeLit)
 		if !ok {
 			return
 		}
+
+		visited[props] = true
 		for _, elt := range props.Elts {
 			kv, ok := elt.(*ast.KeyValueExpr)
 			if !ok {
@@ -156,8 +184,29 @@ func check(pass *analysis.Pass, cl *ast.CompositeLit, visited map[*ast.Composite
 			if prop, ok := stripAddr(kv.Value).(*ast.CompositeLit); ok && tf.IsSchemaHelperType(pass, prop, "Schema") {
 				check(pass, prop, visited, inBlock, true)
 			}
+
+			handedBack(pass, kv, inBlock)
 		}
 	}
+}
+
+// handedBack reports a property a function hands back that can be set, or says how a value the user sets is handled.
+func handedBack(pass *analysis.Pass, kv *ast.KeyValueExpr, where string) {
+	if given, isGiven := property.Of(pass, kv.Value); isGiven && (given.Set() || given.Inputs) {
+		fromFunction(pass, kv.Key, "property "+types.ExprString(kv.Key), kv.Value, where)
+	}
+}
+
+// fromFunction reports what came from the function e calls, which can be set or checked where that has no effect, and names the function.
+func fromFunction(pass *analysis.Pass, at ast.Node, what string, e ast.Expr, where string) {
+	name := "a function"
+	if call, isCall := ast.Unparen(stripAddr(e)).(*ast.CallExpr); isCall {
+		if fn := astx.CalledFunc(pass, call); fn != nil && fn.Pkg() != nil {
+			name = fn.Pkg().Name() + "." + fn.Name() + "()"
+		}
+	}
+
+	pass.Reportf(at.Pos(), "%s from %s can be set or checked, which has no effect %s - use a schema that is only read back", what, name, where)
 }
 
 // flagFix turns a nested field's Optional/Required into Computed: the key is renamed when the
@@ -199,28 +248,6 @@ func inAttributesMethod(pass *analysis.Pass, stack []ast.Node) bool {
 		return ok && named.Obj().Name() == "Schema" && named.Obj().Pkg() != nil && named.Obj().Pkg().Name() == "schema"
 	}
 	return false
-}
-
-// isSet reports whether e gives the attribute a value: not nil, and not a zero constant.
-func isSet(pass *analysis.Pass, e ast.Expr) bool {
-	tv := pass.TypesInfo.Types[e]
-	if tv.IsNil() {
-		return false
-	}
-	if tv.Value == nil {
-		return true
-	}
-	switch tv.Value.Kind() {
-	case constant.Bool:
-		return constant.BoolVal(tv.Value)
-	case constant.String:
-		return constant.StringVal(tv.Value) != ""
-	case constant.Int, constant.Float:
-		return constant.Sign(tv.Value) != 0
-	case constant.Complex, constant.Unknown:
-		return true
-	}
-	return true
 }
 
 func keyValues(cl *ast.CompositeLit) map[string]*ast.KeyValueExpr {

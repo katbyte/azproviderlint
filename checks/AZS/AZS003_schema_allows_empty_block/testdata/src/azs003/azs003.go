@@ -9,8 +9,70 @@ func someDefault() (any, error) { return nil, nil }
 
 func sharedProperty() *schema.Schema { return &schema.Schema{Type: schema.TypeString, Optional: true} }
 
+func requiredProperty() *schema.Schema {
+	return &schema.Schema{Type: schema.TypeString, Required: true}
+}
+
+func optionalBlock() *schema.Resource {
+	return &schema.Resource{
+		Schema: map[string]*schema.Schema{
+			"foo": {Type: schema.TypeString, Optional: true},
+		},
+	}
+}
+
+func optionalProperties() map[string]*schema.Schema {
+	return map[string]*schema.Schema{
+		"foo": sharedProperty(),
+	}
+}
+
+func requiredBlock() *schema.Resource {
+	return &schema.Resource{
+		Schema: map[string]*schema.Schema{
+			"foo": requiredProperty(),
+			"bar": {Type: schema.TypeString, Optional: true},
+		},
+	}
+}
+
+func unreadBlock(given *schema.Schema) *schema.Resource {
+	return &schema.Resource{
+		Schema: map[string]*schema.Schema{
+			"foo": given,
+		},
+	}
+}
+
+var shared = &schema.Schema{Type: schema.TypeString, Required: true}
+
 // Should be flagged: list blocks whose properties are all optional with no defaults
 func flagged() {
+	// properties a function hands back are read for what they are: one by one, as the Elem, or as its Schema
+	_ = &schema.Schema{ // want "schema allows an empty block"
+		Type:     schema.TypeList,
+		Optional: true,
+		Elem: &schema.Resource{
+			Schema: map[string]*schema.Schema{
+				"foo": sharedProperty(),
+			},
+		},
+	}
+
+	_ = &schema.Schema{ // want "schema allows an empty block"
+		Type:     schema.TypeList,
+		Optional: true,
+		Elem:     optionalBlock(),
+	}
+
+	_ = &schema.Schema{ // want "schema allows an empty block"
+		Type:     schema.TypeList,
+		Optional: true,
+		Elem: &schema.Resource{
+			Schema: optionalProperties(),
+		},
+	}
+
 	_ = map[string]*schema.Schema{
 		"settings": { // want "schema allows an empty block as every property is optional with no default"
 			Type:     schema.TypeList,
@@ -59,6 +121,24 @@ func flagged() {
 // Should NOT be flagged: a constraint, required property or default on any property makes
 // empty blocks impossible or harmless
 func constrained() {
+	// a Required property from a function stops the block being empty, wherever it is
+	_ = &schema.Schema{
+		Type:     schema.TypeList,
+		Optional: true,
+		Elem: &schema.Resource{
+			Schema: map[string]*schema.Schema{
+				"foo": requiredProperty(),
+				"bar": {Type: schema.TypeString, Optional: true},
+			},
+		},
+	}
+
+	_ = &schema.Schema{
+		Type:     schema.TypeList,
+		Optional: true,
+		Elem:     requiredBlock(),
+	}
+
 	_ = &schema.Schema{
 		Type:     schema.TypeList,
 		Optional: true,
@@ -143,15 +223,22 @@ func outOfScope() {
 		Elem:     &schema.Schema{Type: schema.TypeString},
 	}
 
-	// properties defined elsewhere cannot be inspected
+	// a property in a variable cannot be read, and may be the one that stops the block being empty
 	_ = &schema.Schema{
 		Type:     schema.TypeList,
 		Optional: true,
 		Elem: &schema.Resource{
 			Schema: map[string]*schema.Schema{
-				"foo": sharedProperty(),
+				"foo": shared,
 			},
 		},
+	}
+
+	// nor can a block whose properties a function is handed
+	_ = &schema.Schema{
+		Type:     schema.TypeList,
+		Optional: true,
+		Elem:     unreadBlock(nil),
 	}
 
 	// empty nested schema maps have nothing to constrain
