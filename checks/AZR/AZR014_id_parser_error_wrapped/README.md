@@ -34,9 +34,9 @@ These are not checked:
 
 ## Fix
 
-The `fmt.Errorf` call is replaced with the error.
+The `fmt.Errorf` call is replaced with the error. An ID that was read only to be printed in the message becomes `_`, and the last fix in a file that then has no other use of `fmt` removes the import.
 
-There is no fix where it would take the last use of `fmt` out of the file, which would leave an import that does not compile.
+There is no fix where the ID was declared before it was read, which would leave that variable unused.
 
 ## Ignoring Reports
 
