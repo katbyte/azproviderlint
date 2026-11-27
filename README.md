@@ -76,6 +76,7 @@ Rules are named `AZ`, a category letter, and a number. The letters follow [tfpro
 | [AZR009](checks/AZR/AZR009_lifecycle_logging) | no lifecycle narration logging in Create/Read/Update/Delete |
 | [AZR010](checks/AZR/AZR010_flatten_handles_nil_input) | flatten functions handle nil input themselves, not their callers |
 | [AZR011](checks/AZR/AZR011_typed_type_missing_sdk_assertion) | typed resources must assert the sdk interface they implement |
+| [AZR012](checks/AZR/AZR012_import_check_ignores_overwrite_flag) | the already-exists check on create must sit inside the overwrite feature flag check |
 | [AZR015](checks/AZR/AZR015_create_callback_missing_identity) | the create callback of a resource with an identity must set the identity too |
 
 ### AZD - Data Sources
@@ -107,6 +108,7 @@ Rules are named `AZ`, a category letter, and a number. The letters follow [tfpro
 | [AZS018](checks/AZS/AZS018_description_note) | resource and property **descriptions** must not have a note in them |
 | [AZS019](checks/AZS/AZS019_description_question) | resource and property **descriptions** must not be a question |
 | [AZS020](checks/AZS/AZS020_description_unknown_name) | resource and property **descriptions** must not name a resource or property that does not exist |
+| [AZS025](checks/AZS/AZS025_write_only_property_wiring) | a write-only property must be tied to its version and to the property it stands in for |
 
 ### AZC - Clients & SDK Usage
 
