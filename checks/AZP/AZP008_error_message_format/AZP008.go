@@ -1,8 +1,9 @@
-// Package AZG014 defines an analyzer that reports an error message that is not formatted the way the provider's others are.
-package AZG014
+// Package AZP008 defines an analyzer that reports an error message that is not formatted correctly.
+package AZP008
 
 import (
 	"flag"
+	"fmt"
 	"go/ast"
 	"go/constant"
 	"go/token"
@@ -18,32 +19,38 @@ import (
 )
 
 // Analyzer checks how the errors a provider makes are formatted, so a user reads every one the same way: starting in lower case, the error
-// underneath printed in full and words written out. It can also ask for values in backticks, as the docs have them.
+// underneath printed one way, words written out and values in backticks, as the docs have them.
 var Analyzer = &analysis.Analyzer{
-	Name:     "AZG014",
-	Doc:      "check that error messages are formatted the way the provider's others are",
-	URL:      "https://github.com/katbyte/azproviderlint/blob/main/checks/AZG/AZG014_error_message_formatting/README.md",
+	Name:     "AZP008",
+	Doc:      "check that error messages are formatted correctly",
+	URL:      "https://github.com/katbyte/azproviderlint/blob/main/checks/AZP/AZP008_error_message_format/README.md",
 	Requires: []*analysis.Analyzer{inspect.Analyzer},
 	Run:      run,
 }
 
 // each kind of wording can be switched off on its own
-var capital, errorVerb, contraction, quotedValue bool
+var capital, contraction bool
+
+// errorVerb is how the error underneath is printed, and quote how a value is put in quotes; none for either leaves it alone
+var errorVerb, quote string
+
+// inFull is how the provider prints an error unless told otherwise, and none the value that switches an option off
+const inFull, none = "%+v", "none"
 
 // names are the words a message may start with a capital for. Words given as options are added to these.
 var names = []string{"Azure", "Microsoft", "Terraform"}
 
 func init() {
-	Analyzer.Flags.Init("AZG014", flag.ContinueOnError)
+	Analyzer.Flags.Init("AZP008", flag.ContinueOnError)
 	Analyzer.Flags.BoolVar(&capital, "capital", true, "report a message that starts with a capital letter (false leaves it alone)")
 	Analyzer.Flags.Func("name", "a name a message may start with a capital for, such as Azure; repeat for each, which adds to the ones the rule knows", func(name string) error {
 		names = append(names, name)
 
 		return nil
 	})
-	Analyzer.Flags.BoolVar(&errorVerb, "error-verb", true, "report an error printed with %s or %v, which should be %+v (false leaves it alone)")
+	Analyzer.Flags.StringVar(&errorVerb, "error-verb", inFull, "how an error is printed: %+v, %w, %v, %s or none; %w is always allowed, as it prints the same and keeps the error")
 	Analyzer.Flags.BoolVar(&contraction, "contraction", true, "report a contraction such as can't (false leaves it alone)")
-	Analyzer.Flags.BoolVar(&quotedValue, "quoted-value", false, "also report a value put in quotes with %q, which the docs put in backticks")
+	Analyzer.Flags.StringVar(&quote, "quoted-error", "backticks", "how a value in a message is put in quotes: backticks, %q or none")
 }
 
 // written is each contraction this rule knows, and how it is written out.
@@ -59,6 +66,13 @@ var contracted = regexp.MustCompile(`(?i)\b(?:[a-z]+n't|it's)\b`)
 var verb = regexp.MustCompile(`%([-+# 0]*)([0-9*]*)(\.[0-9*]*)?(\[\d+\])?([a-zA-Z%])`)
 
 func run(pass *analysis.Pass) (any, error) {
+	if !slices.Contains([]string{inFull, "%w", "%v", "%s", none}, errorVerb) {
+		return nil, fmt.Errorf("AZP008: invalid error-verb flag %q: expected %%+v, %%w, %%v, %%s or none", errorVerb)
+	}
+	if !slices.Contains([]string{"backticks", "%q", none}, quote) {
+		return nil, fmt.Errorf("AZP008: invalid quoted-error flag %q: expected backticks, %%q or none", quote)
+	}
+
 	insp, ok := pass.ResultOf[inspect.Analyzer].(*inspector.Inspector)
 	if !ok {
 		return nil, nil
@@ -158,16 +172,24 @@ func run(pass *analysis.Pass) (any, error) {
 				continue
 			}
 
-			bare := at[11]-at[0] == 2
+			bare, spelled, isError, isString := at[11]-at[0] == 2, text[at[0]:at[1]], types.Implements(value, failure), types.Identical(value.Underlying(), types.Typ[types.String])
 			switch {
-			case errorVerb && bare && letter == "v" && strings.HasSuffix(text[:at[0]], " +"):
-				report(at[0]-1, at[1], "error message has +%v, with the plus on the wrong side - use %+v", "print it with %+v", "%+v")
+			case errorVerb != none && bare && letter == "v" && strings.HasSuffix(text[:at[0]], " +"):
+				// what was meant is %+v, or what an error is printed with
+				meant := inFull
+				if isError {
+					meant = errorVerb
+				}
+				report(at[0]-1, at[1], "error message has +%v, with the plus on the wrong side - use "+meant, "print it with "+meant, meant)
 
-			case errorVerb && bare && (letter == "s" || letter == "v") && types.Implements(value, failure):
-				report(at[0], at[1], "error is printed with %"+letter+" - use %+v, which keeps everything the error says", "print it with %+v", "%+v")
+			case errorVerb != none && isError && spelled != errorVerb && slices.Contains([]string{inFull, "%v", "%s"}, spelled):
+				report(at[0], at[1], "error is printed with "+spelled+" - use "+errorVerb, "print it with "+errorVerb, errorVerb)
 
-			case quotedValue && bare && letter == "q" && types.Identical(value.Underlying(), types.Typ[types.String]) && (!isLit || lit.Value[0] == '"'):
+			case quote == "backticks" && bare && letter == "q" && isString && (!isLit || lit.Value[0] == '"'):
 				report(at[0], at[1], "error message puts a value in quotes with %q - put it in backticks, as the docs do", "put it in backticks", "`%s`")
+
+			case quote == "%q" && bare && (letter == "s" || letter == "v") && isString && at[0] > 0 && text[at[0]-1] == '`' && at[1] < len(text) && text[at[1]] == '`':
+				report(at[0]-1, at[1]+1, "error message puts a value in backticks - use %q", "put it in quotes with %q", "%q")
 			}
 		}
 	})
