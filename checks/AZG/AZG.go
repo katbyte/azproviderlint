@@ -14,7 +14,7 @@ import (
 	AZG008 "github.com/katbyte/azproviderlint/checks/AZG/AZG008_unchecked_nil_dereference"
 	AZG009 "github.com/katbyte/azproviderlint/checks/AZG/AZG009_pointer_from_enum_conversion"
 	AZG010 "github.com/katbyte/azproviderlint/checks/AZG/AZG010_unneeded_import_alias"
-	AZG014 "github.com/katbyte/azproviderlint/checks/AZG/AZG014_error_message_wording"
+	AZG014 "github.com/katbyte/azproviderlint/checks/AZG/AZG014_error_message_formatting"
 )
 
 // Checks contains all AZG (general Go style & readability) analyzers.

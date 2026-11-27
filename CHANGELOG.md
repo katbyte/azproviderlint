@@ -1,6 +1,6 @@
 ## Unreleased
 
-- add rule `AZG014`: error messages that start with a capital, print an error with `%s` or `%v`, or use a contraction, with fixes ([#133](https://github.com/katbyte/azproviderlint/pull/133))
+- add rule `AZG014`: error messages not formatted the way the provider's others are, such as starting with a capital or using a contraction, with fixes ([#133](https://github.com/katbyte/azproviderlint/pull/133))
 
 ## v0.17.1 (2026-11-26)
 

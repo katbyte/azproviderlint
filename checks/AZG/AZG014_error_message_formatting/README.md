@@ -1,6 +1,6 @@
-# AZG014 - error messages must start in lower case, print the error underneath in full, and have no contractions
+# AZG014 - error messages must be formatted the way the provider's others are
 
-AZG014 reports an error message that is not worded the way the provider's others are.
+AZG014 reports an error message that is not formatted the way the provider's others are. Each way it checks can be switched off on its own.
 
 A user reads these when something has gone wrong, after what it happened in: `creating Thing: expected a name`. Printed in full, the error underneath keeps what the API said.
 

@@ -1,4 +1,4 @@
-// Package AZG014 defines an analyzer that reports an error message that is not worded the way the provider's others are.
+// Package AZG014 defines an analyzer that reports an error message that is not formatted the way the provider's others are.
 package AZG014
 
 import (
@@ -17,12 +17,12 @@ import (
 	"golang.org/x/tools/go/ast/inspector"
 )
 
-// Analyzer checks the wording of the errors a provider makes, so a user reads every one the same way: starting in lower case, the error
+// Analyzer checks how the errors a provider makes are formatted, so a user reads every one the same way: starting in lower case, the error
 // underneath printed in full and words written out. It can also ask for values in backticks, as the docs have them.
 var Analyzer = &analysis.Analyzer{
 	Name:     "AZG014",
-	Doc:      "check that error messages start in lower case, print the error underneath in full, and have no contractions",
-	URL:      "https://github.com/katbyte/azproviderlint/blob/main/checks/AZG/AZG014_error_message_wording/README.md",
+	Doc:      "check that error messages are formatted the way the provider's others are",
+	URL:      "https://github.com/katbyte/azproviderlint/blob/main/checks/AZG/AZG014_error_message_formatting/README.md",
 	Requires: []*analysis.Analyzer{inspect.Analyzer},
 	Run:      run,
 }
