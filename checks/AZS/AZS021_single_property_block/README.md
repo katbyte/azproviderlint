@@ -54,13 +54,13 @@ block "certificate" can be given once and holds only "thumbprint" - move it out 
 
 ## What is checked
 
-A plugin SDK list or set with `MaxItems: 1`, whose `Elem` is a `pluginsdk.Resource` with its properties written out.
+A plugin SDK list or set with `MaxItems: 1`, whose `Elem` is a `pluginsdk.Resource` with one property. The properties can be written out, or handed back by a function as the `Elem` or its `Schema`, in whichever package the function is. One from a function is counted but not named in the report.
 
 The comment is on a line of its own, right above the block. A comment inside the block is about the field under it and does not count, nor does one at the end of a line, nor a note for a linter such as `// lintignore:XS003`.
 
 These are not checked:
 
-- a block whose properties come from a function
+- a block whose properties a function builds rather than hands back written out
 - a framework attribute or block
 - a schema in a test file, which is never shipped
 - anything in a package named `migration` or `migrations`, which is what old state looked like

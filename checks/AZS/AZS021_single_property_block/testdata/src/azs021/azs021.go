@@ -168,7 +168,38 @@ func resource() *pluginsdk.Resource {
 				},
 			},
 
-			// properties that come from a function cannot be counted
+			"identity_from_function": { // want `block "identity_from_function" can be given once and holds one property - move it out of the block`
+				Type:     pluginsdk.TypeList,
+				Optional: true,
+				MaxItems: 1,
+				Elem:     identity(),
+			},
+
+			"backup_from_function": { // want `block "backup_from_function" can be given once and holds one property - move it out of the block`
+				Type:     pluginsdk.TypeList,
+				Optional: true,
+				MaxItems: 1,
+				Elem: &pluginsdk.Resource{
+					Schema: backup(),
+				},
+			},
+
+			"network_from_function": {
+				Type:     pluginsdk.TypeList,
+				Optional: true,
+				MaxItems: 1,
+				Elem:     network(),
+			},
+
+			// one handed back by a function is kept with a comment like any other
+			"logging_from_function": {
+				Type:     pluginsdk.TypeList,
+				Optional: true,
+				MaxItems: 1,
+				Elem:     identity(),
+			},
+
+			// none, or ones that cannot be read, are not counted
 			"encryption": {
 				Type:     pluginsdk.TypeList,
 				Optional: true,
@@ -191,6 +222,42 @@ func resource() *pluginsdk.Resource {
 func encryption() *pluginsdk.Resource { return &pluginsdk.Resource{} }
 
 func replication() map[string]*pluginsdk.Schema { return nil }
+
+func identity() *pluginsdk.Resource {
+	return &pluginsdk.Resource{
+		Schema: map[string]*pluginsdk.Schema{
+			"type": {
+				Type:     pluginsdk.TypeString,
+				Required: true,
+			},
+		},
+	}
+}
+
+func backup() map[string]*pluginsdk.Schema {
+	return map[string]*pluginsdk.Schema{
+		"retention_days": {
+			Type:     pluginsdk.TypeInt,
+			Optional: true,
+		},
+	}
+}
+
+func network() *pluginsdk.Resource {
+	return &pluginsdk.Resource{
+		Schema: map[string]*pluginsdk.Schema{
+			"subnet_id": {
+				Type:     pluginsdk.TypeString,
+				Required: true,
+			},
+
+			"private_ip_address": {
+				Type:     pluginsdk.TypeString,
+				Optional: true,
+			},
+		},
+	}
+}
 
 func scaling() *pluginsdk.Schema {
 	return &pluginsdk.Schema{ // want `block can be given once and holds only "capacity" - move it out of the block, or say why the block is kept in a comment above it`

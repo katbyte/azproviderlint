@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/katbyte/azproviderlint/lib/astx"
+	"github.com/katbyte/azproviderlint/lib/property"
 	"github.com/katbyte/azproviderlint/lib/tf"
 	"golang.org/x/tools/go/analysis"
 	"golang.org/x/tools/go/analysis/passes/inspect"
@@ -20,7 +21,7 @@ var Analyzer = &analysis.Analyzer{
 	Name:     "AZS021",
 	Doc:      "check for MaxItems: 1 blocks that hold a single property and have no comment saying why",
 	URL:      "https://github.com/katbyte/azproviderlint/blob/main/checks/AZS/AZS021_single_property_block/README.md",
-	Requires: []*analysis.Analyzer{inspect.Analyzer},
+	Requires: []*analysis.Analyzer{inspect.Analyzer, property.Analyzer},
 	Run:      run,
 }
 
@@ -69,30 +70,36 @@ func run(pass *analysis.Pass) (any, error) {
 			return
 		}
 
-		// properties that come from a function cannot be counted
-		ref, ok := fields["Elem"].(*ast.UnaryExpr)
-		if !ok {
-			return
-		}
-		resource, ok := ref.X.(*ast.CompositeLit)
-		if !ok || !tf.IsSchemaHelperType(pass, resource, "Resource") {
-			return
+		// the block's properties are written out in it, or handed back by a function as its Elem or Schema, and then counted but not named
+		count, only := 0, ast.Expr(nil)
+		if given, isGiven := property.BlockOf(pass, fields["Elem"]); isGiven {
+			count = given.Properties
 		}
 
-		var properties *ast.CompositeLit
-		for _, elt := range resource.Elts {
-			if kv, isPair := elt.(*ast.KeyValueExpr); isPair {
-				if key, isField := kv.Key.(*ast.Ident); isField && key.Name == "Schema" {
-					properties, _ = kv.Value.(*ast.CompositeLit)
+		if ref, isRef := fields["Elem"].(*ast.UnaryExpr); isRef {
+			if resource, isResource := ref.X.(*ast.CompositeLit); isResource && tf.IsSchemaHelperType(pass, resource, "Resource") {
+				for _, elt := range resource.Elts {
+					kv, isPair := elt.(*ast.KeyValueExpr)
+					if key, isField := kv.Key.(*ast.Ident); !isPair || !isField || key.Name != "Schema" {
+						continue
+					}
+
+					if given, isGiven := property.BlockOf(pass, kv.Value); isGiven {
+						count = given.Properties
+					}
+					if written, isWritten := kv.Value.(*ast.CompositeLit); isWritten {
+						count = len(written.Elts)
+						if count == 1 {
+							if first, isFirst := written.Elts[0].(*ast.KeyValueExpr); isFirst {
+								only = first.Key
+							}
+						}
+					}
 				}
 			}
 		}
-		if properties == nil || len(properties.Elts) != 1 {
-			return
-		}
 
-		only, ok := properties.Elts[0].(*ast.KeyValueExpr)
-		if !ok {
+		if count != 1 {
 			return
 		}
 
@@ -121,15 +128,15 @@ func run(pass *analysis.Pass) (any, error) {
 			}
 		}
 
-		block, property := "block", "one property"
+		block, held := "block", "one property"
 		if name, ok := pass.TypesInfo.Types[keys[lit]]; ok && name.Value != nil && name.Value.Kind() == constant.String {
 			block = fmt.Sprintf("block %q", constant.StringVal(name.Value))
 		}
-		if name, ok := pass.TypesInfo.Types[only.Key]; ok && name.Value != nil && name.Value.Kind() == constant.String {
-			property = fmt.Sprintf("only %q", constant.StringVal(name.Value))
+		if name, ok := pass.TypesInfo.Types[only]; ok && name.Value != nil && name.Value.Kind() == constant.String {
+			held = fmt.Sprintf("only %q", constant.StringVal(name.Value))
 		}
 
-		pass.Reportf(start.Pos(), "%s can be given once and holds %s - move it out of the block, or say why the block is kept in a comment above it", block, property)
+		pass.Reportf(start.Pos(), "%s can be given once and holds %s - move it out of the block, or say why the block is kept in a comment above it", block, held)
 	})
 
 	return nil, nil
