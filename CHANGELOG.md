@@ -1,3 +1,7 @@
+## Unreleased
+
+- add rule `AZR012`: creates that return the "already exists" error without asking whether the provider is set to overwrite ([#129](https://github.com/katbyte/azproviderlint/pull/129))
+
 ## v0.17.1 (2026-11-26)
 
 - `AZS005`: in a framework attribute, `NestedObject` now goes after `DeprecationMessage`, with the other fields that say what it holds ([#124](https://github.com/katbyte/azproviderlint/pull/124))
