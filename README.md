@@ -61,6 +61,7 @@ Rules are named `AZ`, a category letter, and a number. The letters follow [tfpro
 | [AZP005](checks/AZP/AZP005_case_insensitive_segments_feature_flag) | do not set the case-insensitive segments feature flag |
 | [AZP006](checks/AZP/AZP006_helper_package_not_named_helpers) | a service's shared code belongs in helpers, not helper |
 | [AZP007](checks/AZP/AZP007_moved_urls) | URLs must use the address the page has moved to |
+| [AZP008](checks/AZP/AZP008_error_message_format) | error messages must be formatted correctly |
 
 ### AZR - Resource Implementation
 
