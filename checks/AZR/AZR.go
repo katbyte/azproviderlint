@@ -14,6 +14,8 @@ import (
 	AZR009 "github.com/katbyte/azproviderlint/checks/AZR/AZR009_lifecycle_logging"
 	AZR010 "github.com/katbyte/azproviderlint/checks/AZR/AZR010_flatten_handles_nil_input"
 	AZR011 "github.com/katbyte/azproviderlint/checks/AZR/AZR011_typed_type_missing_sdk_assertion"
+	AZR012 "github.com/katbyte/azproviderlint/checks/AZR/AZR012_import_check_ignores_overwrite_flag"
+	AZR015 "github.com/katbyte/azproviderlint/checks/AZR/AZR015_create_callback_missing_identity"
 	AZR016 "github.com/katbyte/azproviderlint/checks/AZR/AZR016_update_returns_after_one_change"
 )
 
@@ -29,5 +31,7 @@ var Checks = []*analysis.Analyzer{
 	AZR009.Analyzer,
 	AZR010.Analyzer,
 	AZR011.Analyzer,
+	AZR012.Analyzer,
+	AZR015.Analyzer,
 	AZR016.Analyzer,
 }
