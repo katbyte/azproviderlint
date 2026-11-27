@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"github.com/katbyte/azproviderlint/lib/astx"
+	"github.com/katbyte/azproviderlint/lib/property"
 	"github.com/katbyte/azproviderlint/lib/tf"
 	"golang.org/x/tools/go/analysis"
 	"golang.org/x/tools/go/analysis/passes/inspect"
@@ -23,7 +24,7 @@ var Analyzer = &analysis.Analyzer{
 	Name:     "AZS028",
 	Doc:      "check that a list or set of blocks has a singular name, and a list or set of values a plural one",
 	URL:      "https://github.com/katbyte/azproviderlint/blob/main/checks/AZS/AZS028_list_property_names/README.md",
-	Requires: []*analysis.Analyzer{inspect.Analyzer},
+	Requires: []*analysis.Analyzer{inspect.Analyzer, property.Analyzer},
 	Run:      run,
 }
 
@@ -66,6 +67,29 @@ func run(pass *analysis.Pass) (any, error) {
 		return nil, nil
 	}
 
+	// check reports a list or set named the wrong way for what it holds: blocks, when the user sets it, or values
+	check := func(at ast.Expr, name string, blocks, values, set bool) {
+		words := strings.Split(name, "_")
+		last := words[len(words)-1]
+
+		// a list's name is plural when its last word is, or the word before one that may trail it, as in days_of_week
+		many := false
+		for i, word := range words {
+			if i == len(words)-1 || slices.Contains(trailing, words[i+1]) {
+				many = many || slices.Contains(plural, word) || (strings.HasSuffix(word, "s") && !strings.HasSuffix(word, "ss") && !strings.HasSuffix(word, "us") && !strings.HasSuffix(word, "is") && !slices.Contains(singular, word))
+			}
+		}
+
+		switch {
+		// a block the user writes is one thing each time it is written; one that is only read back is a list of them
+		case blockSingular && blocks && set && (slices.Contains(plural, last) || (strings.HasSuffix(last, "s") && !strings.HasSuffix(last, "ss") && !strings.HasSuffix(last, "us") && !strings.HasSuffix(last, "is"))) && !slices.Contains(singular, last):
+			pass.Reportf(at.Pos(), "block %s has a plural name - a block is one thing each time it is written, so name it in the singular", strconv.Quote(name))
+
+		case listPlural && values && !many:
+			pass.Reportf(at.Pos(), "list %s has a singular name - it holds many values, so name it in the plural", strconv.Quote(name))
+		}
+	}
+
 	// a property is named by its key in the map it sits in, which is met before the property is
 	keys := map[*ast.CompositeLit]ast.Expr{}
 	insp.Preorder([]ast.Node{(*ast.CompositeLit)(nil)}, func(n ast.Node) {
@@ -74,7 +98,7 @@ func run(pass *analysis.Pass) (any, error) {
 			return
 		}
 
-		fields, inside := map[string]ast.Expr{}, map[string]*ast.CompositeLit{}
+		fields := map[string]ast.Expr{}
 		for _, elt := range lit.Elts {
 			kv, isPair := elt.(*ast.KeyValueExpr)
 			if !isPair {
@@ -86,51 +110,49 @@ func run(pass *analysis.Pass) (any, error) {
 				value = ref.X
 			}
 
-			inner, isInner := value.(*ast.CompositeLit)
-			if isInner {
+			if inner, isInner := value.(*ast.CompositeLit); isInner {
 				keys[inner] = kv.Key
 			}
 			if key, isField := kv.Key.(*ast.Ident); isField {
-				fields[key.Name], inside[key.Name] = kv.Value, inner
+				fields[key.Name] = kv.Value
+			}
+
+			// a list or set whose schema a function hands back, in any package, is named here
+			given, isGiven := property.Of(pass, kv.Value)
+			if !isGiven || given.Deprecated || (given.Type != "TypeList" && given.Type != "TypeSet") || given.Elem == "" {
+				continue
+			}
+			if key, isName := pass.TypesInfo.Types[kv.Key]; isName && key.Value != nil && key.Value.Kind() == constant.String {
+				check(kv.Key, constant.StringVal(key.Value), given.Elem == property.Resource, given.Elem != property.Resource, given.Set())
 			}
 		}
 
-		t := pass.TypesInfo.TypeOf(lit)
-		if ptr, isPointer := types.Unalias(t).(*types.Pointer); isPointer {
-			t = ptr.Elem()
-		}
-
-		named, isNamed := types.Unalias(t).(*types.Named)
 		key, isName := pass.TypesInfo.Types[keys[lit]]
-		if !isNamed || named.Obj().Pkg() == nil || named.Obj().Pkg().Name() != "schema" || !isName || key.Value == nil || key.Value.Kind() != constant.String {
+		if !tf.IsSchemaHelperType(pass, lit, "Schema") || !isName || key.Value == nil || key.Value.Kind() != constant.String {
 			return
 		}
 
 		// a name on its way out is not worth changing
-		if fields["Deprecated"] != nil || fields["DeprecationMessage"] != nil {
+		kind := types.ExprString(fields["Type"])
+		if fields["Deprecated"] != nil || fields["Elem"] == nil || (!strings.HasSuffix(kind, "TypeList") && !strings.HasSuffix(kind, "TypeSet")) {
 			return
 		}
 
-		name, kind := constant.StringVal(key.Value), types.ExprString(fields["Type"])
-		words := strings.Split(name, "_")
-		last := words[len(words)-1]
-
-		// a list's name is plural when its last word is, or the word before one that may trail it, as in days_of_week
-		many := false
-		for i, word := range words {
-			if i == len(words)-1 || slices.Contains(trailing, words[i+1]) {
-				many = many || slices.Contains(plural, word) || (strings.HasSuffix(word, "s") && !strings.HasSuffix(word, "ss") && !strings.HasSuffix(word, "us") && !strings.HasSuffix(word, "is") && !slices.Contains(singular, word))
-			}
+		// what it holds is told by its type, whether written out or handed back by a function
+		elem := fields["Elem"]
+		if ref, isRef := elem.(*ast.UnaryExpr); isRef {
+			elem = ref.X
 		}
-		collection := named.Obj().Name() == "Schema" && (strings.HasSuffix(kind, "TypeList") || strings.HasSuffix(kind, "TypeSet")) && inside["Elem"] != nil
-		switch {
-		// a block the user writes is one thing each time it is written; one that is only read back is a list of them
-		case blockSingular && collection && (slices.Contains(plural, last) || (strings.HasSuffix(last, "s") && !strings.HasSuffix(last, "ss") && !strings.HasSuffix(last, "us") && !strings.HasSuffix(last, "is"))) && !slices.Contains(singular, last) && tf.IsSchemaHelperType(pass, inside["Elem"], "Resource") && (astx.IsTrueConstant(pass, fields["Required"]) || astx.IsTrueConstant(pass, fields["Optional"])):
-			pass.Reportf(keys[lit].Pos(), "block %s has a plural name - a block is one thing each time it is written, so name it in the singular", strconv.Quote(name))
-
-		case listPlural && collection && !many && tf.IsSchemaHelperType(pass, inside["Elem"], "Schema"):
-			pass.Reportf(keys[lit].Pos(), "list %s has a singular name - it holds many values, so name it in the plural", strconv.Quote(name))
+		held := pass.TypesInfo.TypeOf(elem)
+		if ptr, isPointer := types.Unalias(held).(*types.Pointer); isPointer {
+			held = ptr.Elem()
 		}
+		named, isNamed := types.Unalias(held).(*types.Named)
+		if !isNamed || named.Obj().Pkg() == nil || named.Obj().Pkg().Name() != "schema" {
+			return
+		}
+
+		check(keys[lit], constant.StringVal(key.Value), named.Obj().Name() == "Resource", named.Obj().Name() == "Schema", astx.IsTrueConstant(pass, fields["Required"]) || astx.IsTrueConstant(pass, fields["Optional"]))
 	})
 
 	return nil, nil

@@ -1,6 +1,10 @@
 package azs028
 
-import "azs028/pluginsdk"
+import (
+	"github.com/hashicorp/go-azure-helpers/resourcemanager/commonschema"
+
+	"azs028/pluginsdk"
+)
 
 func resource() *pluginsdk.Resource {
 	return &pluginsdk.Resource{
@@ -161,14 +165,38 @@ func resource() *pluginsdk.Resource {
 				},
 			},
 
-			// what a list holds cannot be read when it comes from a function
-			"setting": {
+			// what a list holds is told by the type a function hands back
+			"setting": { // want `list "setting" has a singular name`
 				Type:     pluginsdk.TypeList,
 				Optional: true,
 				Elem:     values(),
 			},
+
+			"members": { // want `block "members" has a plural name`
+				Type:     pluginsdk.TypeList,
+				Optional: true,
+				Elem:     member(),
+			},
+
+			// a list whose schema comes from a function, in the provider or outside it, is named where it is used
+			"zone":          commonschema.ZonesMultipleOptional(), // want `list "zone" has a singular name`
+			"identities":    commonschema.Identity(),              // want `block "identities" has a plural name`
+			"peer_address":  addresses(),                          // want `list "peer_address" has a singular name`
+			"zones_from_us": commonschema.ZonesMultipleOptional(),
 		},
 	}
 }
 
 func values() *pluginsdk.Schema { return nil }
+
+func member() *pluginsdk.Resource { return nil }
+
+func addresses() *pluginsdk.Schema {
+	return &pluginsdk.Schema{
+		Type:     pluginsdk.TypeList,
+		Optional: true,
+		Elem: &pluginsdk.Schema{
+			Type: pluginsdk.TypeString,
+		},
+	}
+}

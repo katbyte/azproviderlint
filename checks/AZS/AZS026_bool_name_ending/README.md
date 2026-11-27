@@ -43,6 +43,8 @@ A bool, in a plugin SDK or framework schema, whose name does not end in one of `
 
 `_disabled` is not allowed: the guide asks for a bool the API calls disable to be turned around and named for what it turns on.
 
+A property whose schema a function hands back, such as `"zone_redundant": helpers.ZoneRedundant()`, is checked where it is named, in whichever package the function is.
+
 These are not checked:
 
 - a property that is `Deprecated`

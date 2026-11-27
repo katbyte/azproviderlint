@@ -50,10 +50,11 @@ A word is plural when it ends in `s`, but not in `ss`, `us` or `is`. The rule kn
 
 A block is named by its last word. A list is plural when its last word is, or the word before one of these: `after`, `allowed`, `base64`, `for`, `from`, `in`, `not`, `of`, `only`, `to`, `with`. So `days_of_week` and `tables_to_include` are plural.
 
+A list whose schema a function hands back, such as `"zones": commonschema.ZonesMultipleOptional()`, is checked where it is named, in whichever package the function is. So is one whose `Elem` comes from a function.
+
 These are not checked:
 
 - a property that is `Deprecated`
-- a list whose `Elem` comes from a function
 - state migrations
 
 Renaming a property that has shipped is a breaking change, so this is for new schema.

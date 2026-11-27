@@ -1,6 +1,8 @@
 package azs026
 
 import (
+	"github.com/hashicorp/go-azure-helpers/resourcemanager/commonschema"
+
 	fwschema "azs026/framework/schema"
 	"azs026/pluginsdk"
 )
@@ -8,6 +10,13 @@ import (
 func resource() *pluginsdk.Resource {
 	return &pluginsdk.Resource{
 		Schema: map[string]*pluginsdk.Schema{
+			// a bool whose schema comes from a function, in the provider or outside it, is named where it is used
+			"geo_redundant":       redundant(),                  // want `bool property "geo_redundant" should end in _enabled`
+			"zone_redundant_flag": commonschema.ZoneRedundant(), // want `bool property "zone_redundant_flag" should end in _enabled`
+			"zone_from_helper":    commonschema.Zone(),
+			"backup_enabled":      redundant(),
+			"secure_from_helper":  oldRedundant(),
+
 			"zone_redundant": { // want `bool property "zone_redundant" should end in _enabled, _required, _accepted, _allowed, _supported, _verified, _configured or _only`
 				Type:     pluginsdk.TypeBool,
 				Optional: true,
@@ -73,5 +82,21 @@ func framework() fwschema.Schema {
 				Optional: true,
 			},
 		},
+	}
+}
+
+func redundant() *pluginsdk.Schema {
+	return &pluginsdk.Schema{
+		Type:     pluginsdk.TypeBool,
+		Optional: true,
+	}
+}
+
+// a name on its way out is not worth changing, wherever its schema is written
+func oldRedundant() *pluginsdk.Schema {
+	return &pluginsdk.Schema{
+		Type:       pluginsdk.TypeBool,
+		Optional:   true,
+		Deprecated: "use `secure_enabled`",
 	}
 }

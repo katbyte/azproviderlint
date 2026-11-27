@@ -8,6 +8,7 @@ import (
 	"go/types"
 	"strings"
 
+	"github.com/katbyte/azproviderlint/lib/property"
 	"github.com/katbyte/azproviderlint/lib/tf"
 	"golang.org/x/tools/go/analysis"
 	"golang.org/x/tools/go/analysis/passes/inspect"
@@ -20,7 +21,7 @@ var Analyzer = &analysis.Analyzer{
 	Name:     "AZS026",
 	Doc:      "check that a bool property ends in _enabled, or a word for its state such as _required",
 	URL:      "https://github.com/katbyte/azproviderlint/blob/main/checks/AZS/AZS026_bool_name_ending/README.md",
-	Requires: []*analysis.Analyzer{inspect.Analyzer},
+	Requires: []*analysis.Analyzer{inspect.Analyzer, property.Analyzer},
 	Run:      run,
 }
 
@@ -46,6 +47,22 @@ func run(pass *analysis.Pass) (any, error) {
 	// a state migration's schema is what old state looked like, and its names cannot change
 	if !ok || tf.InStateMigration(pass) {
 		return nil, nil
+	}
+
+	// check reports a bool's name that does not end the way one should
+	check := func(at ast.Expr, name string) {
+		ends := false
+		for _, ending := range endings {
+			ends = ends || strings.HasSuffix(name, ending) || name == strings.TrimPrefix(ending, "_")
+		}
+
+		if !ends {
+			allowed := strings.Join(endings, ", ")
+			if last := strings.LastIndex(allowed, ", "); last >= 0 {
+				allowed = allowed[:last] + " or " + allowed[last+2:]
+			}
+			pass.Reportf(at.Pos(), "bool property %q should end in %s", name, allowed)
+		}
 	}
 
 	// a property is named by its key in the map it sits in, which is met before the property is
@@ -74,6 +91,13 @@ func run(pass *analysis.Pass) (any, error) {
 			if key, isField := kv.Key.(*ast.Ident); isField {
 				fields[key.Name] = kv.Value
 			}
+
+			// a bool whose schema a function hands back, in any package, is named here
+			if given, isGiven := property.Of(pass, kv.Value); isGiven && (given.Type == "TypeBool" || given.Type == "BoolAttribute") && !given.Deprecated {
+				if key, isName := pass.TypesInfo.Types[kv.Key]; isName && key.Value != nil && key.Value.Kind() == constant.String {
+					check(kv.Key, constant.StringVal(key.Value))
+				}
+			}
 		}
 
 		t := pass.TypesInfo.TypeOf(lit)
@@ -96,18 +120,7 @@ func run(pass *analysis.Pass) (any, error) {
 			return
 		}
 
-		name, ends := constant.StringVal(key.Value), false
-		for _, ending := range endings {
-			ends = ends || strings.HasSuffix(name, ending) || name == strings.TrimPrefix(ending, "_")
-		}
-
-		if !ends {
-			allowed := strings.Join(endings, ", ")
-			if last := strings.LastIndex(allowed, ", "); last >= 0 {
-				allowed = allowed[:last] + " or " + allowed[last+2:]
-			}
-			pass.Reportf(keys[lit].Pos(), "bool property %q should end in %s", name, allowed)
-		}
+		check(keys[lit], constant.StringVal(key.Value))
 	})
 
 	return nil, nil
