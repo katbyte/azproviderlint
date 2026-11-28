@@ -5,6 +5,7 @@ package property
 import (
 	"go/ast"
 	"go/constant"
+	"go/token"
 	"go/types"
 	"reflect"
 	"slices"
@@ -38,18 +39,18 @@ type Schema struct {
 
 	Required, Optional, Computed, WriteOnly, Deprecated, Framework bool
 
-	// Validated is whether it has validation, OnlyNotEmpty whether that only says a string is not empty, and Validate the ValidateFunc as written.
-	Validated, OnlyNotEmpty bool
-	Validate                string
+	// Validated is whether it has validation, Loose whether that check says next to nothing, as loose does, and Validate the ValidateFunc as written.
+	Validated, Loose bool
+	Validate         string
 
 	// Default is whether it has a Default or DefaultFunc, OneOf whether it has an AtLeastOneOf or ExactlyOneOf, and Inputs whether it sets a
 	// field that only matters for a value the user sets, one of InputOnly.
 	Default, OneOf, Inputs bool
 
 	// Elem is what a list, set or map holds: Resource for blocks, otherwise the Type of its values, or "" when that cannot be read. ElemValidated
-	// and ElemOnlyNotEmpty say of its values what Validated and OnlyNotEmpty say of a property.
-	Elem                            string
-	ElemValidated, ElemOnlyNotEmpty bool
+	// and ElemLoose say of its values what Validated and Loose say of a property.
+	Elem                     string
+	ElemValidated, ElemLoose bool
 }
 
 // Set is whether the user sets the property.
@@ -57,7 +58,7 @@ func (s Schema) Set() bool { return s.Required || s.Optional }
 
 // Values is what the values a list, set or map holds say, as far as the property says.
 func (s Schema) Values() Schema {
-	return Schema{Type: s.Elem, Validated: s.ElemValidated, OnlyNotEmpty: s.ElemOnlyNotEmpty, Framework: s.Framework, Deprecated: s.Deprecated}
+	return Schema{Type: s.Elem, Validated: s.ElemValidated, Loose: s.ElemLoose, Framework: s.Framework, Deprecated: s.Deprecated}
 }
 
 // ReadOnly is whether the property is only read back.
@@ -129,8 +130,8 @@ type Value struct {
 	// Element is whether it is the values of a list or set.
 	Element bool
 
-	// Checked is whether it has validation, and OnlyNotEmpty whether that only says a string is not empty.
-	Checked, OnlyNotEmpty bool
+	// Checked is whether it has validation, and Loose whether that check says next to nothing, as loose does.
+	Checked, Loose bool
 
 	// Framework is whether it is a framework attribute, which is validated with Validators and not a ValidateFunc.
 	Framework bool
@@ -197,9 +198,9 @@ func (*gives) AFact() {}
 
 func (f *gives) String() string {
 	said := []string{f.S.Type}
-	for i, is := range []bool{f.S.Required, f.S.Optional, f.S.Computed, f.S.WriteOnly, f.S.Deprecated, f.S.Framework, f.S.Validated, f.S.OnlyNotEmpty, f.S.Default, f.S.OneOf, f.S.Inputs, f.S.ElemValidated, f.S.ElemOnlyNotEmpty} {
+	for i, is := range []bool{f.S.Required, f.S.Optional, f.S.Computed, f.S.WriteOnly, f.S.Deprecated, f.S.Framework, f.S.Validated, f.S.Loose, f.S.Default, f.S.OneOf, f.S.Inputs, f.S.ElemValidated, f.S.ElemLoose} {
 		if is {
-			said = append(said, []string{"required", "optional", "computed", "write-only", "deprecated", "framework", "validated", "not-empty", "default", "one-of", "inputs", "elem-validated", "elem-not-empty"}[i])
+			said = append(said, []string{"required", "optional", "computed", "write-only", "deprecated", "framework", "validated", "loose", "default", "one-of", "inputs", "elem-validated", "elem-loose"}[i])
 		}
 	}
 	if f.S.Elem != "" {
@@ -230,6 +231,47 @@ const Resource = "Resource"
 
 // notEmpty are the checks that say only that a string has something in it.
 var notEmpty = []string{"StringIsNotEmpty", "StringIsNotWhiteSpace", "NoZeroValues"}
+
+// loose reports whether a check says next to nothing about what the API accepts: that a string is not empty, or that a number is not zero, or
+// at least 0 or 1.
+func loose(pass *analysis.Pass, check ast.Expr, kind Kind) bool {
+	call, isCall := ast.Unparen(check).(*ast.CallExpr)
+	named := check
+	if isCall {
+		named = call.Fun
+	}
+	name := types.ExprString(named)
+	name = name[strings.LastIndex(name, ".")+1:]
+
+	// is says whether e is the number n
+	is := func(e ast.Expr, n int64) bool {
+		tv := pass.TypesInfo.Types[e]
+
+		return tv.Value != nil && (tv.Value.Kind() == constant.Int || tv.Value.Kind() == constant.Float) && constant.Compare(tv.Value, token.EQL, constant.MakeInt64(n))
+	}
+
+	// only says whether the check is given just the number n, or a list of just n
+	only := func(n int64) bool {
+		if !isCall || len(call.Args) != 1 {
+			return false
+		}
+		if list, isList := ast.Unparen(call.Args[0]).(*ast.CompositeLit); isList {
+			return len(list.Elts) == 1 && is(list.Elts[0], n)
+		}
+
+		return is(call.Args[0], n)
+	}
+
+	switch kind {
+	case String:
+		return slices.Contains(notEmpty, name) || (name == "LengthAtLeast" && only(1))
+
+	case Int, Float:
+		return name == "IntPositive" || name == "NoZeroValues" || (slices.Contains([]string{"IntAtLeast", "FloatAtLeast", "AtLeast"}, name) && (only(0) || only(1))) || (slices.Contains([]string{"IntNotInSlice", "NoneOf"}, name) && only(0))
+	}
+
+	return false
+}
 
 // element is what a list or set says about the schema of the values in it: the name of the property, and whether the user sets it.
 type element struct {
@@ -304,7 +346,7 @@ func run(pass *analysis.Pass) (any, error) {
 			list, isList := fields["Validators"].(*ast.CompositeLit)
 			out.Type, out.Framework = name, true
 			out.Validated = fields["Validators"] != nil && (!isList || len(list.Elts) > 0)
-			out.OnlyNotEmpty = out.Validated && kinds[name] == String && isList && len(list.Elts) == 1 && strings.HasSuffix(types.ExprString(list.Elts[0]), "LengthAtLeast(1)")
+			out.Loose = out.Validated && isList && len(list.Elts) == 1 && loose(pass, list.Elts[0], kinds[name])
 
 			return out, fields, true
 		}
@@ -320,7 +362,7 @@ func run(pass *analysis.Pass) (any, error) {
 			out.Validate = ""
 		}
 		out.Validated = (fields["ValidateFunc"] != nil && !astx.IsNilValue(pass, fields["ValidateFunc"])) || (fields["ValidateDiagFunc"] != nil && !astx.IsNilValue(pass, fields["ValidateDiagFunc"]))
-		out.OnlyNotEmpty = out.Validated && kinds[out.Type] == String && fields["ValidateDiagFunc"] == nil && slices.Contains(notEmpty, out.Validate[strings.LastIndex(out.Validate, ".")+1:])
+		out.Loose = out.Validated && fields["ValidateDiagFunc"] == nil && loose(pass, fields["ValidateFunc"], kinds[out.Type])
 
 		// what a list, set or map holds, written out or from a function
 		elem := fields["Elem"]
@@ -332,14 +374,14 @@ func run(pass *analysis.Pass) (any, error) {
 			if schemaType(pass.TypesInfo.TypeOf(elem)) == Resource {
 				out.Elem = Resource
 			} else if inner, _, isValue := judge(s, elem); isValue {
-				out.Elem, out.ElemValidated, out.ElemOnlyNotEmpty = inner.Type, inner.Validated, inner.OnlyNotEmpty
+				out.Elem, out.ElemValidated, out.ElemLoose = inner.Type, inner.Validated, inner.Loose
 			}
 
 		case *ast.CallExpr:
 			if schemaType(pass.TypesInfo.TypeOf(elem)) == Resource {
 				out.Elem = Resource
 			} else if inner := s.Get(astx.CalledFunc(pass, elem)).S; inner.Type != "" {
-				out.Elem, out.ElemValidated, out.ElemOnlyNotEmpty = inner.Type, inner.Validated, inner.OnlyNotEmpty
+				out.Elem, out.ElemValidated, out.ElemLoose = inner.Type, inner.Validated, inner.Loose
 			}
 		}
 
@@ -495,7 +537,7 @@ func run(pass *analysis.Pass) (any, error) {
 	keys, elements := map[*ast.CompositeLit]ast.Expr{}, map[*ast.CompositeLit]element{}
 	add := func(at ast.Node, name ast.Expr, property Schema, isElement bool, from *types.Func) {
 		if kinds[property.Type] != 0 && !property.Deprecated {
-			out.values = append(out.values, Value{At: at, Name: name, Kind: kinds[property.Type], Element: isElement, Checked: property.Validated, OnlyNotEmpty: property.OnlyNotEmpty, Framework: property.Framework, From: from})
+			out.values = append(out.values, Value{At: at, Name: name, Kind: kinds[property.Type], Element: isElement, Checked: property.Validated, Loose: property.Loose, Framework: property.Framework, From: from})
 		}
 	}
 	listed := func(property Schema) bool {

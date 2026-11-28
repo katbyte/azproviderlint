@@ -14,3 +14,9 @@ func StringLenBetween(low, high int) schema.SchemaValidateFunc { return nil }
 func IntBetween(low, high int) schema.SchemaValidateFunc { return nil }
 
 func FloatAtLeast(low float64) schema.SchemaValidateFunc { return nil }
+
+func IntAtLeast(low int) schema.SchemaValidateFunc { return nil }
+
+func IntPositive(any, string) ([]string, []error) { return nil, nil }
+
+func IntNotInSlice(invalid []int) schema.SchemaValidateFunc { return nil }

@@ -28,6 +28,7 @@ func resource() *pluginsdk.Resource {
 				ValidateFunc: validation.IntBetween(1, 10),
 			},
 
+			// without strict, any check counts, even one that only says it is not negative
 			"threshold": {
 				Type:         pluginsdk.TypeFloat,
 				Optional:     true,

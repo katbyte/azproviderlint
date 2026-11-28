@@ -10,6 +10,10 @@ func validate(any, string) ([]string, []error) { return nil, nil }
 
 func StringIsNotEmpty(any, string) ([]string, []error) { return nil, nil }
 
+func IntPositive(any, string) ([]string, []error) { return nil, nil }
+
+func IntAtLeast(int) func(any, string) ([]string, []error) { return nil }
+
 func Name() *schema.Schema { // want Name:"gives\\(TypeString,required\\)"
 	return &schema.Schema{
 		Type:     schema.TypeString,
@@ -68,11 +72,39 @@ func Ratio() fwschema.Float64Attribute { // want Ratio:"gives\\(Float64Attribute
 	}
 }
 
-func NotEmpty() *schema.Schema { // want NotEmpty:"gives\\(TypeString,required,validated,not-empty,inputs\\)"
+func NotEmpty() *schema.Schema { // want NotEmpty:"gives\\(TypeString,required,validated,loose,inputs\\)"
 	return &schema.Schema{
 		Type:         schema.TypeString,
 		Required:     true,
 		ValidateFunc: StringIsNotEmpty,
+	}
+}
+
+// a number only checked for not being zero or negative says next to nothing, as does a list of them; a lowest value above 1 says something
+func Positive() *schema.Schema { // want Positive:"gives\\(TypeInt,optional,validated,loose,inputs\\)"
+	return &schema.Schema{
+		Type:         schema.TypeInt,
+		Optional:     true,
+		ValidateFunc: IntPositive,
+	}
+}
+
+func Sizes() *schema.Schema { // want Sizes:"gives\\(TypeList,optional,elem-validated,elem-loose,elem=TypeInt\\)"
+	return &schema.Schema{
+		Type:     schema.TypeList,
+		Optional: true,
+		Elem: &schema.Schema{
+			Type:         schema.TypeInt,
+			ValidateFunc: IntAtLeast(1),
+		},
+	}
+}
+
+func Nodes() *schema.Schema { // want Nodes:"gives\\(TypeInt,optional,validated,inputs\\)"
+	return &schema.Schema{
+		Type:         schema.TypeInt,
+		Optional:     true,
+		ValidateFunc: IntAtLeast(3),
 	}
 }
 
